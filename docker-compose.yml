@@ -1,0 +1,25 @@
+services:
+  cooperapp:
+    build: .
+    container_name: cooperapp
+    restart: unless-stopped
+    environment:
+      - APP_PORT=${APP_PORT:-8000}
+      - DATABASE_URL=sqlite:////app/data/cooperapp.db
+      - DEBUG=false
+    volumes:
+      - cooperapp_data:/app/data
+      - cooperapp_uploads:/app/uploads
+      - cooperapp_exports:/app/exports
+    ports:
+      - "127.0.0.1:${APP_PORT:-8000}:${APP_PORT:-8000}"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:${APP_PORT:-8000}/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  cooperapp_data:
+  cooperapp_uploads:
+  cooperapp_exports:
