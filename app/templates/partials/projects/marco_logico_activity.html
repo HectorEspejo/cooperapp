@@ -1,0 +1,91 @@
+<div class="ml-tree-node ml-activity" data-activity-id="{{ activity.id }}">
+    <div class="ml-node-header ml-activity-header">
+        <button class="ml-toggle" onclick="toggleNode(this)">
+            <span class="toggle-icon">▼</span>
+        </button>
+        <span class="ml-node-label ml-activity-label">{{ activity.numero }}</span>
+        <span class="ml-node-text">{{ activity.descripcion }}</span>
+
+        <!-- Activity Status -->
+        <div class="ml-activity-status">
+            <select
+                class="ml-status-select estado-{{ activity.estado.value }}"
+                hx-post="/projects/activities/{{ activity.id }}/status"
+                hx-target="#marco-logico-content"
+                hx-swap="innerHTML"
+                hx-include="closest select"
+                name="estado"
+            >
+                {% for estado in estados_actividad %}
+                <option value="{{ estado.value }}" {% if activity.estado == estado %}selected{% endif %}>
+                    {{ estado.value|replace('_', ' ')|title }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Activity Dates -->
+        <div class="ml-activity-dates">
+            {% if activity.fecha_inicio_prevista or activity.fecha_fin_prevista %}
+            <span class="date-planned" title="Fechas previstas">
+                {{ activity.fecha_inicio_prevista.strftime('%d/%m') if activity.fecha_inicio_prevista else '?' }}
+                -
+                {{ activity.fecha_fin_prevista.strftime('%d/%m') if activity.fecha_fin_prevista else '?' }}
+            </span>
+            {% endif %}
+            {% if activity.fecha_inicio_real or activity.fecha_fin_real %}
+            <span class="date-real" title="Fechas reales">
+                {{ activity.fecha_inicio_real.strftime('%d/%m') if activity.fecha_inicio_real else '?' }}
+                -
+                {{ activity.fecha_fin_real.strftime('%d/%m') if activity.fecha_fin_real else '?' }}
+            </span>
+            {% endif %}
+        </div>
+
+        <div class="ml-node-actions">
+            <button
+                class="btn btn-icon {% if not activity.verification_sources and activity.estado.value == 'completada' %}btn-alert{% endif %}"
+                title="Fuentes de verificacion{% if not activity.verification_sources and activity.estado.value == 'completada' %} (sin fuentes){% endif %}"
+                onclick="openVerificationModal('activity', {{ activity.id }})"
+            >
+                📋
+                {% if activity.verification_sources %}
+                <span class="source-count-badge">{{ activity.verification_sources|length }}</span>
+                {% endif %}
+            </button>
+            <button
+                class="btn btn-icon"
+                title="Anadir Indicador"
+                hx-get="/projects/{{ project.id }}/marco-logico/indicator-form?framework_id={{ framework.id }}&activity_id={{ activity.id }}"
+                hx-target="#indicator-modal-container"
+                hx-swap="innerHTML"
+                onclick="document.getElementById('indicator-modal-container').classList.add('active')"
+            >+I</button>
+            <button
+                class="btn btn-icon"
+                title="Editar Actividad"
+                hx-get="/projects/{{ project.id }}/marco-logico/activity-form?activity_id={{ activity.id }}"
+                hx-target="#indicator-modal-container"
+                hx-swap="innerHTML"
+                onclick="document.getElementById('indicator-modal-container').classList.add('active')"
+            >✎</button>
+            <button
+                class="btn btn-icon btn-danger"
+                title="Eliminar"
+                hx-delete="/projects/activities/{{ activity.id }}"
+                hx-target="#marco-logico-content"
+                hx-swap="innerHTML"
+                hx-confirm="¿Eliminar esta actividad?"
+            >✕</button>
+        </div>
+    </div>
+
+    <!-- Activity Indicators -->
+    {% if activity.indicators %}
+    <div class="ml-indicators-inline ml-node-children">
+        {% for indicator in activity.indicators %}
+            {% include "partials/projects/marco_logico_indicator.html" %}
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>

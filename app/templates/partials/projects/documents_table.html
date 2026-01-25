@@ -1,0 +1,123 @@
+{% if documents %}
+<div class="table-container">
+    <table class="documents-table">
+        <thead>
+            <tr>
+                <th class="col-preview">Vista</th>
+                <th class="col-name">Documento</th>
+                <th class="col-categoria">Categoria</th>
+                <th class="col-size">Tamano</th>
+                <th class="col-date">Fecha</th>
+                <th class="col-estado">Estado</th>
+                <th class="col-vinculado">Vinculado</th>
+                <th class="col-actions">Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for doc in documents %}
+            <tr class="document-row {% if doc.sellado %}sealed{% endif %}">
+                <td class="col-preview">
+                    {% if doc.is_image %}
+                    <div class="doc-thumbnail" onclick="openDocumentPreview({{ doc.id }})">
+                        <img src="/api/documents/{{ doc.id }}/download" alt="{{ doc.original_filename }}">
+                    </div>
+                    {% elif doc.is_pdf %}
+                    <div class="doc-thumbnail doc-pdf" onclick="openDocumentPreview({{ doc.id }})">
+                        <span>📄</span>
+                    </div>
+                    {% else %}
+                    <div class="doc-thumbnail doc-file">
+                        <span>📎</span>
+                    </div>
+                    {% endif %}
+                </td>
+                <td class="col-name">
+                    <div class="doc-name-wrapper">
+                        <span class="doc-filename" title="{{ doc.original_filename }}">
+                            {{ doc.original_filename|truncate(35) }}
+                        </span>
+                        {% if doc.descripcion %}
+                        <span class="doc-description">{{ doc.descripcion|truncate(50) }}</span>
+                        {% endif %}
+                    </div>
+                </td>
+                <td class="col-categoria">
+                    <span class="categoria-badge categoria-{{ doc.categoria.value }}">
+                        {{ categoria_nombres[doc.categoria.value] }}
+                    </span>
+                </td>
+                <td class="col-size">
+                    <span class="doc-size">{{ doc.file_size_human }}</span>
+                </td>
+                <td class="col-date">
+                    <span class="doc-date">{{ doc.created_at.strftime('%d/%m/%Y') }}</span>
+                </td>
+                <td class="col-estado">
+                    {% if doc.sellado %}
+                    <span class="sellado-badge sellado" title="Sellado el {{ doc.fecha_sellado.strftime('%d/%m/%Y %H:%M') if doc.fecha_sellado else '' }}">
+                        🔒 Sellado
+                    </span>
+                    {% else %}
+                    <span class="sellado-badge pendiente">
+                        📝 Pendiente
+                    </span>
+                    {% endif %}
+                </td>
+                <td class="col-vinculado">
+                    {% if doc.verification_sources %}
+                    <span class="vinculado-badge vinculado" title="{{ doc.verification_sources|length }} fuente(s) de verificacion">
+                        🔗 {{ doc.verification_sources|length }}
+                    </span>
+                    {% else %}
+                    <span class="vinculado-badge huerfano">
+                        Sin vincular
+                    </span>
+                    {% endif %}
+                </td>
+                <td class="col-actions">
+                    <div class="action-buttons">
+                        <a
+                            href="/api/documents/{{ doc.id }}/download"
+                            class="btn btn-icon btn-sm"
+                            title="Descargar"
+                            download
+                        >📥</a>
+                        {% if doc.is_image or doc.is_pdf %}
+                        <button
+                            class="btn btn-icon btn-sm"
+                            title="Previsualizar"
+                            onclick="openDocumentPreview({{ doc.id }})"
+                        >👁</button>
+                        {% endif %}
+                        {% if not doc.sellado %}
+                        <button
+                            class="btn btn-icon btn-sm btn-success"
+                            title="Sellar documento"
+                            hx-post="/projects/{{ project.id }}/documents/{{ doc.id }}/seal"
+                            hx-target="#documents-content"
+                            hx-swap="innerHTML"
+                            hx-confirm="¿Sellar este documento? Esta accion no se puede deshacer."
+                        >🔒</button>
+                        <button
+                            class="btn btn-icon btn-sm btn-danger"
+                            title="Eliminar"
+                            hx-delete="/projects/{{ project.id }}/documents/{{ doc.id }}"
+                            hx-target="#documents-content"
+                            hx-swap="innerHTML"
+                            hx-confirm="¿Eliminar este documento?"
+                        >✕</button>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="empty-state documents-empty">
+    <div class="empty-icon">📄</div>
+    <h3>No hay documentos</h3>
+    <p>Sube el primer documento usando el formulario de arriba.</p>
+</div>
+{% endif %}

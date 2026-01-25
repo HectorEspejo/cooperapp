@@ -1,0 +1,118 @@
+<div class="modal-overlay" onclick="closeIndicatorModal(event)">
+    <div class="ml-modal" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h3>{% if mode == 'edit' %}Editar Actividad{% else %}Nueva Actividad{% endif %}</h3>
+            <button class="btn-close" onclick="closeIndicatorModal()">&times;</button>
+        </div>
+
+        <form
+            class="modal-body"
+            {% if mode == 'edit' %}
+            hx-put="/projects/activities/{{ activity.id }}"
+            {% else %}
+            hx-post="/projects/results/{{ result_id }}/activities"
+            {% endif %}
+            hx-target="#marco-logico-content"
+            hx-swap="innerHTML"
+            hx-on::after-request="closeIndicatorModal()"
+        >
+            <div class="form-grid">
+                <div class="form-group" style="max-width: 120px;">
+                    <label>Codigo</label>
+                    <input
+                        type="text"
+                        name="numero"
+                        value="{{ activity.numero if activity else next_numero }}"
+                        placeholder="A1.1"
+                        required
+                    >
+                </div>
+                {% if mode == 'edit' %}
+                <div class="form-group">
+                    <label>Estado</label>
+                    <select name="estado">
+                        {% for estado in estados_actividad %}
+                        <option value="{{ estado.value }}" {% if activity and activity.estado == estado %}selected{% endif %}>
+                            {{ estado.value|replace('_', ' ')|title }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label>Descripcion</label>
+                <textarea
+                    name="descripcion"
+                    rows="2"
+                    placeholder="Descripcion de la actividad..."
+                    required
+                >{{ activity.descripcion if activity else '' }}</textarea>
+            </div>
+
+            <div class="form-section">
+                <h4>Fechas Previstas</h4>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Inicio</label>
+                        <input
+                            type="date"
+                            name="fecha_inicio_prevista"
+                            value="{{ activity.fecha_inicio_prevista.isoformat() if activity and activity.fecha_inicio_prevista else '' }}"
+                        >
+                    </div>
+                    <div class="form-group">
+                        <label>Fin</label>
+                        <input
+                            type="date"
+                            name="fecha_fin_prevista"
+                            value="{{ activity.fecha_fin_prevista.isoformat() if activity and activity.fecha_fin_prevista else '' }}"
+                        >
+                    </div>
+                </div>
+            </div>
+
+            {% if mode == 'edit' %}
+            <div class="form-section">
+                <h4>Fechas Reales</h4>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Inicio</label>
+                        <input
+                            type="date"
+                            name="fecha_inicio_real"
+                            value="{{ activity.fecha_inicio_real.isoformat() if activity and activity.fecha_inicio_real else '' }}"
+                        >
+                    </div>
+                    <div class="form-group">
+                        <label>Fin</label>
+                        <input
+                            type="date"
+                            name="fecha_fin_real"
+                            value="{{ activity.fecha_fin_real.isoformat() if activity and activity.fecha_fin_real else '' }}"
+                        >
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeIndicatorModal()">
+                    Cancelar
+                </button>
+                <button type="submit" class="btn btn-primary">
+                    {% if mode == 'edit' %}Guardar Cambios{% else %}Crear Actividad{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function closeIndicatorModal(event) {
+    if (event && event.target !== event.currentTarget) return;
+    document.getElementById('indicator-modal-container').classList.remove('active');
+    document.getElementById('indicator-modal-container').innerHTML = '';
+}
+</script>

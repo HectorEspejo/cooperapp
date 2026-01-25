@@ -1,0 +1,100 @@
+<div class="ml-indicator-card" data-indicator-id="{{ indicator.id }}">
+    <div class="ml-indicator-header">
+        <span class="ml-indicator-code">{{ indicator.codigo }}</span>
+        <span class="ml-indicator-desc">{{ indicator.descripcion }}</span>
+        <div class="ml-indicator-actions">
+            <button
+                class="btn btn-icon btn-sm {% if not indicator.verification_sources %}btn-alert{% endif %}"
+                title="Fuentes de verificacion{% if not indicator.verification_sources %} (sin fuentes){% endif %}"
+                onclick="openVerificationModal('indicator', {{ indicator.id }})"
+            >
+                📋
+                {% if indicator.verification_sources %}
+                <span class="source-count-badge">{{ indicator.verification_sources|length }}</span>
+                {% endif %}
+            </button>
+            <button
+                class="btn btn-icon btn-sm"
+                title="Actualizar valor"
+                hx-get="/projects/indicators/{{ indicator.id }}/update-form"
+                hx-target="#indicator-modal-container"
+                hx-swap="innerHTML"
+                onclick="document.getElementById('indicator-modal-container').classList.add('active')"
+            >📝</button>
+            <button
+                class="btn btn-icon btn-sm"
+                title="Editar indicador"
+                hx-get="/projects/indicators/{{ indicator.id }}/edit"
+                hx-target="#indicator-modal-container"
+                hx-swap="innerHTML"
+                onclick="document.getElementById('indicator-modal-container').classList.add('active')"
+            >✎</button>
+            <button
+                class="btn btn-icon btn-sm"
+                title="Ver historial"
+                hx-get="/projects/indicators/{{ indicator.id }}/history"
+                hx-target="#indicator-modal-container"
+                hx-swap="innerHTML"
+                onclick="document.getElementById('indicator-modal-container').classList.add('active')"
+            >📊</button>
+            <button
+                class="btn btn-icon btn-sm btn-danger"
+                title="Eliminar"
+                hx-delete="/projects/indicators/{{ indicator.id }}"
+                hx-target="#marco-logico-content"
+                hx-swap="innerHTML"
+                hx-confirm="¿Eliminar este indicador?"
+            >✕</button>
+        </div>
+    </div>
+
+    <div class="ml-indicator-body">
+        <div class="ml-indicator-values">
+            <div class="ml-value-item">
+                <span class="ml-value-label">Base</span>
+                <span class="ml-value-num">{{ indicator.valor_base or '-' }}</span>
+            </div>
+            <div class="ml-value-item">
+                <span class="ml-value-label">Meta</span>
+                <span class="ml-value-num">{{ indicator.valor_meta or '-' }}</span>
+            </div>
+            <div class="ml-value-item ml-value-actual">
+                <span class="ml-value-label">Actual</span>
+                <span class="ml-value-num">{{ indicator.valor_actual or '-' }}</span>
+            </div>
+        </div>
+
+        {% if indicator.porcentaje_cumplimiento is not none %}
+        <div class="ml-indicator-progress">
+            {% set pct = indicator.porcentaje_cumplimiento|float %}
+            {% if pct >= 100 %}
+                {% set pct_class = 'complete' %}
+            {% elif pct >= 75 %}
+                {% set pct_class = 'high' %}
+            {% elif pct >= 50 %}
+                {% set pct_class = 'medium' %}
+            {% else %}
+                {% set pct_class = 'low' %}
+            {% endif %}
+            <div class="ml-progress-bar-mini">
+                <div
+                    class="ml-progress-fill-mini {{ pct_class }}"
+                    style="width: {{ [pct, 100]|min }}%"
+                ></div>
+            </div>
+            <span class="ml-progress-pct {{ pct_class }}">{{ "%.1f"|format(pct) }}%</span>
+        </div>
+        {% endif %}
+
+        {% if indicator.unidad_medida or indicator.fuente_verificacion %}
+        <div class="ml-indicator-meta">
+            {% if indicator.unidad_medida %}
+            <span class="ml-meta-item" title="Unidad de medida">📏 {{ indicator.unidad_medida }}</span>
+            {% endif %}
+            {% if indicator.fuente_verificacion %}
+            <span class="ml-meta-item" title="Fuente de verificacion">📋 {{ indicator.fuente_verificacion|truncate(30) }}</span>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>

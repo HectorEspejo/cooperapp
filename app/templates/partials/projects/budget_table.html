@@ -1,0 +1,253 @@
+<div class="budget-container">
+    <div class="budget-header">
+        <h3>Presupuesto</h3>
+        {% if budget.funder_name %}
+        <span class="funder-badge">{{ budget.funder_code }} - {{ budget.funder_name }}</span>
+        {% endif %}
+    </div>
+
+    <!-- Funder-specific info -->
+    {% if budget.funder_code == 'AYTO' %}
+    <div class="budget-funder-info">
+        <span class="info-item">Max. indirectos: {{ budget.funder_max_indirect_percentage }}%</span>
+        <span class="info-item">Max. personal: {{ budget.funder_max_personnel_percentage }}%</span>
+        {% if not budget.audit_required %}
+        <span class="info-item info-highlight">Auditoria opcional (subvencion < 30.000 EUR)</span>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Validation Alerts -->
+    {% if budget.validation_alerts %}
+    <div class="budget-alerts">
+        {% for alert in budget.validation_alerts %}
+        <div class="budget-alert {{ alert.alert_type }}">
+            <span class="alert-icon">{% if alert.alert_type == 'error' %}❌{% else %}⚠️{% endif %}</span>
+            <span class="alert-message">{{ alert.message }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="budget-table-wrapper">
+        <table class="budget-table">
+            <thead>
+                <tr>
+                    <th class="col-code">Codigo</th>
+                    <th class="col-name">Partida</th>
+                    <th class="col-amount">Aprobado</th>
+                    <th class="col-amount">Ejec. Espana</th>
+                    <th class="col-amount">Ejec. Terreno</th>
+                    <th class="col-amount">Total Ejec.</th>
+                    <th class="col-amount">Diferencia</th>
+                    <th class="col-percent">% Ejec.</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if budget.funder_code == 'AECID' and budget.category_subtotals %}
+                    {# AECID: Show grouped by category with subtotals #}
+                    {% for subtotal in budget.category_subtotals %}
+                    <tr class="category-header">
+                        <td colspan="8" class="category-title">{{ subtotal.category_name }}</td>
+                    </tr>
+                    {% for line in subtotal.lines %}
+                    <tr class="budget-row {% if line.has_deviation_alert %}alert-row{% endif %}{% if line.has_max_percentage_alert %} max-exceeded-row{% endif %}" data-line-id="{{ line.id }}">
+                        <td class="col-code">{{ line.code }}</td>
+                        <td class="col-name">
+                            {{ line.name }}
+                            {% if line.is_spain_only %}
+                            <span class="spain-only-badge" title="Solo Espana">ES</span>
+                            {% endif %}
+                            {% if line.max_percentage %}
+                            <span class="max-pct-badge" title="Maximo {{ line.max_percentage }}% de costes directos">max {{ line.max_percentage }}%</span>
+                            {% endif %}
+                        </td>
+                        <td class="col-amount">
+                            <input
+                                type="text"
+                                class="budget-input {% if line.has_max_percentage_alert %}input-error{% endif %}"
+                                name="aprobado"
+                                value="{{ '{:,.2f}'.format(line.aprobado) }}"
+                                hx-put="/projects/{{ project.id }}/budget-lines/{{ line.id }}"
+                                hx-target="#tab-presupuesto"
+                                hx-swap="innerHTML"
+                                hx-trigger="change"
+                                hx-include="closest tr"
+                            >
+                        </td>
+                        <td class="col-amount">
+                            <input
+                                type="text"
+                                class="budget-input"
+                                name="ejecutado_espana"
+                                value="{{ '{:,.2f}'.format(line.ejecutado_espana) }}"
+                                hx-put="/projects/{{ project.id }}/budget-lines/{{ line.id }}"
+                                hx-target="#tab-presupuesto"
+                                hx-swap="innerHTML"
+                                hx-trigger="change"
+                                hx-include="closest tr"
+                            >
+                        </td>
+                        <td class="col-amount">
+                            {% if not line.is_spain_only %}
+                            <input
+                                type="text"
+                                class="budget-input"
+                                name="ejecutado_terreno"
+                                value="{{ '{:,.2f}'.format(line.ejecutado_terreno) }}"
+                                hx-put="/projects/{{ project.id }}/budget-lines/{{ line.id }}"
+                                hx-target="#tab-presupuesto"
+                                hx-swap="innerHTML"
+                                hx-trigger="change"
+                                hx-include="closest tr"
+                            >
+                            {% else %}
+                            <span class="budget-readonly">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="col-amount budget-calculated">{{ '{:,.2f}'.format(line.total_ejecutado) }}</td>
+                        <td class="col-amount budget-calculated {% if line.diferencia < 0 %}negative{% endif %}">
+                            {{ '{:,.2f}'.format(line.diferencia) }}
+                        </td>
+                        <td class="col-percent">
+                            {% if line.has_deviation_alert %}
+                            <span class="deviation-alert" title="Desviacion mayor al 10%">⚠️</span>
+                            {% endif %}
+                            {% if line.has_max_percentage_alert %}
+                            <span class="max-exceeded-alert" title="Excede el porcentaje maximo">❌</span>
+                            {% endif %}
+                            {{ '{:.1f}'.format(line.porcentaje_ejecucion) }}%
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    <tr class="category-subtotal">
+                        <td class="col-code"></td>
+                        <td class="col-name"><em>Subtotal {{ subtotal.category_name }}</em></td>
+                        <td class="col-amount"><strong>{{ '{:,.2f}'.format(subtotal.total_aprobado) }}</strong></td>
+                        <td class="col-amount"><strong>{{ '{:,.2f}'.format(subtotal.total_ejecutado_espana) }}</strong></td>
+                        <td class="col-amount"><strong>{{ '{:,.2f}'.format(subtotal.total_ejecutado_terreno) }}</strong></td>
+                        <td class="col-amount"><strong>{{ '{:,.2f}'.format(subtotal.total_ejecutado) }}</strong></td>
+                        <td class="col-amount {% if subtotal.total_diferencia < 0 %}negative{% endif %}">
+                            <strong>{{ '{:,.2f}'.format(subtotal.total_diferencia) }}</strong>
+                        </td>
+                        <td class="col-percent"><strong>{{ '{:.1f}'.format(subtotal.porcentaje_ejecucion) }}%</strong></td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    {# Standard view for AACID and others #}
+                    {% for line in budget.lines %}
+                    <tr class="budget-row {% if line.has_deviation_alert %}alert-row{% endif %}{% if line.has_max_percentage_alert %} max-exceeded-row{% endif %}{% if line.is_optional %} optional-row{% endif %}" data-line-id="{{ line.id }}">
+                        <td class="col-code">{{ line.code }}</td>
+                        <td class="col-name">
+                            {{ line.name }}
+                            {% if line.is_spain_only %}
+                            <span class="spain-only-badge" title="Solo Espana">ES</span>
+                            {% endif %}
+                            {% if line.is_optional %}
+                            <span class="optional-badge" title="Opcional para subvenciones < 30.000 EUR">OPT</span>
+                            {% endif %}
+                            {% if line.max_percentage %}
+                            <span class="max-pct-badge" title="Maximo {{ line.max_percentage }}% de costes directos">max {{ line.max_percentage }}%</span>
+                            {% endif %}
+                        </td>
+                        <td class="col-amount">
+                            <input
+                                type="text"
+                                class="budget-input {% if line.has_max_percentage_alert %}input-error{% endif %}"
+                                name="aprobado"
+                                value="{{ '{:,.2f}'.format(line.aprobado) }}"
+                                hx-put="/projects/{{ project.id }}/budget-lines/{{ line.id }}"
+                                hx-target="#tab-presupuesto"
+                                hx-swap="innerHTML"
+                                hx-trigger="change"
+                                hx-include="closest tr"
+                            >
+                        </td>
+                        <td class="col-amount">
+                            <input
+                                type="text"
+                                class="budget-input"
+                                name="ejecutado_espana"
+                                value="{{ '{:,.2f}'.format(line.ejecutado_espana) }}"
+                                hx-put="/projects/{{ project.id }}/budget-lines/{{ line.id }}"
+                                hx-target="#tab-presupuesto"
+                                hx-swap="innerHTML"
+                                hx-trigger="change"
+                                hx-include="closest tr"
+                            >
+                        </td>
+                        <td class="col-amount">
+                            {% if not line.is_spain_only %}
+                            <input
+                                type="text"
+                                class="budget-input"
+                                name="ejecutado_terreno"
+                                value="{{ '{:,.2f}'.format(line.ejecutado_terreno) }}"
+                                hx-put="/projects/{{ project.id }}/budget-lines/{{ line.id }}"
+                                hx-target="#tab-presupuesto"
+                                hx-swap="innerHTML"
+                                hx-trigger="change"
+                                hx-include="closest tr"
+                            >
+                            {% else %}
+                            <span class="budget-readonly">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="col-amount budget-calculated">{{ '{:,.2f}'.format(line.total_ejecutado) }}</td>
+                        <td class="col-amount budget-calculated {% if line.diferencia < 0 %}negative{% endif %}">
+                            {{ '{:,.2f}'.format(line.diferencia) }}
+                        </td>
+                        <td class="col-percent">
+                            {% if line.has_deviation_alert %}
+                            <span class="deviation-alert" title="Desviacion mayor al 10%">⚠️</span>
+                            {% endif %}
+                            {% if line.has_max_percentage_alert %}
+                            <span class="max-exceeded-alert" title="Excede el porcentaje maximo">❌</span>
+                            {% endif %}
+                            {{ '{:.1f}'.format(line.porcentaje_ejecucion) }}%
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% endif %}
+            </tbody>
+            <tfoot>
+                <tr class="budget-totals">
+                    <td class="col-code"><strong>TOTAL</strong></td>
+                    <td class="col-name"></td>
+                    <td class="col-amount"><strong>{{ '{:,.2f}'.format(budget.totals.total_aprobado) }}</strong></td>
+                    <td class="col-amount"><strong>{{ '{:,.2f}'.format(budget.totals.total_ejecutado_espana) }}</strong></td>
+                    <td class="col-amount"><strong>{{ '{:,.2f}'.format(budget.totals.total_ejecutado_terreno) }}</strong></td>
+                    <td class="col-amount"><strong>{{ '{:,.2f}'.format(budget.totals.total_ejecutado) }}</strong></td>
+                    <td class="col-amount {% if budget.totals.total_diferencia < 0 %}negative{% endif %}">
+                        <strong>{{ '{:,.2f}'.format(budget.totals.total_diferencia) }}</strong>
+                    </td>
+                    <td class="col-percent"><strong>{{ '{:.1f}'.format(budget.totals.porcentaje_ejecucion_global) }}%</strong></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+
+    <div class="budget-legend">
+        <span class="legend-item">
+            <span class="spain-only-badge">ES</span> Partida solo Espana
+        </span>
+        <span class="legend-item">
+            <span class="deviation-alert">⚠️</span> Desviacion > 10%
+        </span>
+        {% if budget.funder_max_indirect_percentage %}
+        <span class="legend-item">
+            <span class="max-exceeded-alert">❌</span> Indirectos > {{ budget.funder_max_indirect_percentage }}%
+        </span>
+        {% endif %}
+        {% if budget.funder_max_personnel_percentage %}
+        <span class="legend-item">
+            <span class="max-exceeded-alert">❌</span> Personal > {{ budget.funder_max_personnel_percentage }}%
+        </span>
+        {% endif %}
+        {% if not budget.audit_required %}
+        <span class="legend-item">
+            <span class="optional-badge">OPT</span> Partida opcional
+        </span>
+        {% endif %}
+    </div>
+</div>

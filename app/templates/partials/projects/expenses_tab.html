@@ -1,0 +1,181 @@
+<div class="expenses-container" id="expenses-content">
+    <!-- Summary Stats -->
+    <div class="expenses-summary">
+        <div class="summary-stats">
+            <div class="summary-stat">
+                <span class="stat-value">{{ summary.total_registrados }}</span>
+                <span class="stat-label">Registrados</span>
+            </div>
+            <div class="summary-stat stat-warning">
+                <span class="stat-value">{{ summary.total_borradores + summary.total_pendientes }}</span>
+                <span class="stat-label">Pendientes</span>
+            </div>
+            <div class="summary-stat stat-success">
+                <span class="stat-value">{{ summary.total_validados }}</span>
+                <span class="stat-label">Validados</span>
+            </div>
+            <div class="summary-stat stat-info">
+                <span class="stat-value">{{ summary.total_justificados }}</span>
+                <span class="stat-label">Justificados</span>
+            </div>
+        </div>
+        <div class="summary-amounts">
+            <div class="amount-item">
+                <span class="amount-label">Total registrado:</span>
+                <span class="amount-value">{{ "{:,.2f}".format(summary.importe_total) }} EUR</span>
+            </div>
+            <div class="amount-item">
+                <span class="amount-label">Validado:</span>
+                <span class="amount-value amount-success">{{ "{:,.2f}".format(summary.importe_validado) }} EUR</span>
+            </div>
+            <div class="amount-item">
+                <span class="amount-label">Espana:</span>
+                <span class="amount-value">{{ "{:,.2f}".format(summary.importe_espana) }} EUR</span>
+            </div>
+            <div class="amount-item">
+                <span class="amount-label">Terreno:</span>
+                <span class="amount-value">{{ "{:,.2f}".format(summary.importe_terreno) }} EUR</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters Bar -->
+    <div class="expenses-filters">
+        <form
+            class="filters-form"
+            hx-get="/projects/{{ project.id }}/expenses/table"
+            hx-target="#expenses-table-container"
+            hx-trigger="change"
+        >
+            <div class="filter-group">
+                <select name="budget_line_id" class="filter-select">
+                    <option value="">Todas las partidas</option>
+                    {% for line in budget_lines %}
+                    <option value="{{ line.id }}">{{ line.code }} - {{ line.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="filter-group">
+                <select name="estado" class="filter-select">
+                    <option value="">Todos los estados</option>
+                    <option value="borrador">Borrador</option>
+                    <option value="pendiente_revision">Pendiente revision</option>
+                    <option value="validado">Validado</option>
+                    <option value="rechazado">Rechazado</option>
+                    <option value="justificado">Justificado</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <select name="ubicacion" class="filter-select">
+                    <option value="">Todas las ubicaciones</option>
+                    <option value="espana">Espana</option>
+                    <option value="terreno">Terreno</option>
+                </select>
+            </div>
+            <div class="filter-group filter-dates">
+                <input type="date" name="fecha_desde" placeholder="Desde" class="filter-date">
+                <span class="date-separator">-</span>
+                <input type="date" name="fecha_hasta" placeholder="Hasta" class="filter-date">
+            </div>
+        </form>
+        <button
+            type="button"
+            class="btn btn-primary"
+            hx-get="/projects/{{ project.id }}/expenses/new"
+            hx-target="#expense-modal-content"
+            hx-trigger="click"
+            onclick="openExpenseModal()"
+        >
+            + Nuevo Gasto
+        </button>
+    </div>
+
+    <!-- Expenses Table -->
+    <div id="expenses-table-container">
+        {% include "partials/projects/expenses_table.html" %}
+    </div>
+</div>
+
+<!-- Modal Container -->
+<div id="expense-modal" class="modal-overlay" style="display: none;" onclick="closeExpenseModal(event)">
+    <div class="expense-modal" onclick="event.stopPropagation()">
+        <div id="expense-modal-content">
+            <!-- Modal content loaded via htmx -->
+        </div>
+    </div>
+</div>
+
+<script>
+function openExpenseModal() {
+    document.getElementById('expense-modal').style.display = 'flex';
+}
+
+function closeExpenseModal(event) {
+    // If called from overlay click, only close if clicking on the overlay itself (not modal content)
+    // If called without event or from htmx/escape key, always close
+    if (event && event.target && event.target.id !== 'expense-modal' && event.type === 'click') {
+        return; // Don't close if clicking inside modal content
+    }
+    var modal = document.getElementById('expense-modal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+// Close modal on escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeExpenseModal();
+    }
+});
+
+// Currency conversion helper
+function updateCurrencyConversion() {
+    const cantidadOriginal = parseFloat(document.getElementById('cantidad_original')?.value || 0);
+    const tipoCambio = parseFloat(document.getElementById('tipo_cambio')?.value || 1);
+    const moneda = document.getElementById('moneda_original')?.value;
+
+    if (moneda === 'EUR' || !tipoCambio) {
+        document.getElementById('cantidad_euros').value = cantidadOriginal.toFixed(2);
+    } else {
+        document.getElementById('cantidad_euros').value = (cantidadOriginal * tipoCambio).toFixed(2);
+    }
+
+    updateImputeAmount();
+}
+
+function updateImputeAmount() {
+    const cantidadEuros = parseFloat(document.getElementById('cantidad_euros')?.value || 0);
+    const porcentaje = parseFloat(document.getElementById('porcentaje')?.value || 100);
+    const imputable = (cantidadEuros * porcentaje / 100).toFixed(2);
+
+    const imputeEl = document.getElementById('cantidad_imputable_display');
+    if (imputeEl) {
+        imputeEl.textContent = imputable + ' EUR';
+    }
+}
+
+function checkBudgetBalance() {
+    const select = document.getElementById('budget_line_id');
+    const ubicacion = document.querySelector('input[name="ubicacion"]:checked')?.value;
+    const cantidadEuros = parseFloat(document.getElementById('cantidad_euros')?.value || 0);
+    const porcentaje = parseFloat(document.getElementById('porcentaje')?.value || 100);
+    const imputable = cantidadEuros * porcentaje / 100;
+
+    const warningEl = document.getElementById('balance-warning');
+    if (!select || !ubicacion || !warningEl) return;
+
+    const option = select.options[select.selectedIndex];
+    const disponibleEspana = parseFloat(option.dataset.disponibleEspana || 0);
+    const disponibleTerreno = parseFloat(option.dataset.disponibleTerreno || 0);
+
+    const disponible = ubicacion === 'espana' ? disponibleEspana : disponibleTerreno;
+
+    if (imputable > disponible) {
+        warningEl.style.display = 'block';
+        warningEl.textContent = 'El importe imputable (' + imputable.toFixed(2) + ' EUR) supera el saldo disponible (' + disponible.toFixed(2) + ' EUR)';
+    } else {
+        warningEl.style.display = 'none';
+    }
+}
+</script>

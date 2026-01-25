@@ -1,0 +1,79 @@
+{% if framework and framework.specific_objectives %}
+<div class="ml-tree">
+    {% for objective in framework.specific_objectives %}
+    <div class="ml-tree-node ml-objective" data-objective-id="{{ objective.id }}">
+        <div class="ml-node-header">
+            <button class="ml-toggle" onclick="toggleNode(this)">
+                <span class="toggle-icon">▼</span>
+            </button>
+            <span class="ml-node-label">OE{{ objective.numero }}</span>
+            <span class="ml-node-text">{{ objective.descripcion }}</span>
+            <div class="ml-node-actions">
+                <button
+                    class="btn btn-icon"
+                    title="Anadir Resultado"
+                    hx-get="/projects/{{ project.id }}/marco-logico/result-form?objective_id={{ objective.id }}"
+                    hx-target="#indicator-modal-container"
+                    hx-swap="innerHTML"
+                    onclick="document.getElementById('indicator-modal-container').classList.add('active')"
+                >+R</button>
+                <button
+                    class="btn btn-icon"
+                    title="Anadir Indicador"
+                    hx-get="/projects/{{ project.id }}/marco-logico/indicator-form?framework_id={{ framework.id }}&objective_id={{ objective.id }}"
+                    hx-target="#indicator-modal-container"
+                    hx-swap="innerHTML"
+                    onclick="document.getElementById('indicator-modal-container').classList.add('active')"
+                >+I</button>
+                <button
+                    class="btn btn-icon"
+                    title="Editar Objetivo"
+                    hx-get="/projects/{{ project.id }}/marco-logico/objective-form?objective_id={{ objective.id }}"
+                    hx-target="#indicator-modal-container"
+                    hx-swap="innerHTML"
+                    onclick="document.getElementById('indicator-modal-container').classList.add('active')"
+                >✎</button>
+                <button
+                    class="btn btn-icon btn-danger"
+                    title="Eliminar"
+                    hx-delete="/projects/objectives/{{ objective.id }}"
+                    hx-target="#marco-logico-content"
+                    hx-swap="innerHTML"
+                    hx-confirm="¿Eliminar este objetivo y todos sus elementos?"
+                >✕</button>
+            </div>
+        </div>
+
+        <!-- Objective Indicators -->
+        {% if objective.indicators %}
+        <div class="ml-indicators-inline">
+            {% for indicator in objective.indicators %}
+                {% include "partials/projects/marco_logico_indicator.html" %}
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Results -->
+        <div class="ml-node-children">
+            {% for result in objective.results %}
+                {% include "partials/projects/marco_logico_result.html" %}
+            {% endfor %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="ml-empty">
+    <p>No hay objetivos especificos definidos.</p>
+    <p class="text-muted">Haga clic en "+ Objetivo Especifico" para comenzar.</p>
+</div>
+{% endif %}
+
+<script>
+function toggleNode(btn) {
+    const node = btn.closest('.ml-tree-node');
+    node.classList.toggle('collapsed');
+    const icon = btn.querySelector('.toggle-icon');
+    icon.textContent = node.classList.contains('collapsed') ? '▶' : '▼';
+}
+</script>

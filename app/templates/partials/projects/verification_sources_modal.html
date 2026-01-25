@@ -1,0 +1,101 @@
+<div class="modal-overlay" onclick="closeVerificationModal()">
+    <div class="verification-modal ml-modal" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h3>Fuentes de Verificacion</h3>
+            <button type="button" class="btn-close" onclick="closeVerificationModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <!-- Target Info -->
+            <div class="verification-target-info">
+                {% if target_type == 'indicator' %}
+                <div class="target-badge target-indicator">
+                    <span class="target-code">{{ target.codigo }}</span>
+                    <span class="target-desc">{{ target.descripcion|truncate(80) }}</span>
+                </div>
+                {% else %}
+                <div class="target-badge target-activity">
+                    <span class="target-code">{{ target.numero }}</span>
+                    <span class="target-desc">{{ target.descripcion|truncate(80) }}</span>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Summary -->
+            <div class="verification-summary">
+                <div class="summary-stat">
+                    <span class="stat-value">{{ summary.total }}</span>
+                    <span class="stat-label">Total</span>
+                </div>
+                <div class="summary-stat stat-success">
+                    <span class="stat-value">{{ summary.validados }}</span>
+                    <span class="stat-label">Validados</span>
+                </div>
+                <div class="summary-stat stat-warning">
+                    <span class="stat-value">{{ summary.pendientes }}</span>
+                    <span class="stat-label">Pendientes</span>
+                </div>
+            </div>
+
+            <!-- Add Source Form -->
+            <div class="verification-add-form">
+                <h4>Vincular documento</h4>
+                <form
+                    hx-post="/projects/{{ target_type }}s/{{ target_id }}/verification-sources"
+                    hx-target=".verification-modal"
+                    hx-swap="outerHTML"
+                >
+                    <div class="form-row">
+                        <div class="form-group" style="flex: 2;">
+                            <label>Documento</label>
+                            <select name="document_id" required>
+                                <option value="">Seleccionar documento...</option>
+                                {% for doc in available_documents %}
+                                <option value="{{ doc.id }}">
+                                    {{ doc.original_filename }} ({{ doc.categoria.value }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label>Tipo</label>
+                            <select name="tipo" required>
+                                {% for tipo in tipos %}
+                                <option value="{{ tipo.value }}">{{ tipo_nombres[tipo.value] }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group" style="flex: 2;">
+                            <label>Descripcion (opcional)</label>
+                            <input type="text" name="descripcion" placeholder="Descripcion...">
+                        </div>
+                        <button type="submit" class="btn btn-sm btn-primary" style="align-self: flex-end;">
+                            + Vincular
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Sources List -->
+            <div class="verification-sources-list">
+                <h4>Fuentes vinculadas</h4>
+                {% if sources %}
+                <div class="sources-grid">
+                    {% for source in sources %}
+                    {% include "partials/projects/verification_source_row.html" %}
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="sources-empty">
+                    <p>No hay fuentes de verificacion vinculadas.</p>
+                    <p class="text-muted">Usa el formulario de arriba para vincular documentos.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeVerificationModal()">
+                Cerrar
+            </button>
+        </div>
+    </div>
+</div>

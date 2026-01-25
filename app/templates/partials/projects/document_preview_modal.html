@@ -1,0 +1,53 @@
+<div class="modal-overlay" onclick="closeDocumentPreview()">
+    <div class="document-preview-modal" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h3>{{ document.original_filename }}</h3>
+            <button type="button" class="btn-close" onclick="closeDocumentPreview()">&times;</button>
+        </div>
+        <div class="modal-body preview-body">
+            {% if document.is_image %}
+            <div class="preview-image">
+                <img src="/api/documents/{{ document.id }}/download" alt="{{ document.original_filename }}">
+            </div>
+            {% elif document.is_pdf %}
+            <div class="preview-pdf">
+                <iframe src="/api/documents/{{ document.id }}/download" type="application/pdf"></iframe>
+            </div>
+            {% else %}
+            <div class="preview-unsupported">
+                <span class="preview-icon">📎</span>
+                <p>Vista previa no disponible para este tipo de archivo.</p>
+                <a href="/api/documents/{{ document.id }}/download" class="btn btn-primary" download>
+                    📥 Descargar archivo
+                </a>
+            </div>
+            {% endif %}
+        </div>
+        <div class="modal-footer">
+            <div class="preview-info">
+                <span class="info-item">
+                    <strong>Categoria:</strong> {{ categoria_nombres[document.categoria.value] }}
+                </span>
+                <span class="info-item">
+                    <strong>Tamano:</strong> {{ document.file_size_human }}
+                </span>
+                <span class="info-item">
+                    <strong>Subido:</strong> {{ document.created_at.strftime('%d/%m/%Y %H:%M') }}
+                </span>
+                {% if document.sellado %}
+                <span class="info-item">
+                    <strong>Sellado:</strong> {{ document.fecha_sellado.strftime('%d/%m/%Y %H:%M') if document.fecha_sellado else 'Si' }}
+                </span>
+                {% endif %}
+            </div>
+            <div class="preview-actions">
+                <a href="/api/documents/{{ document.id }}/download" class="btn btn-primary" download>
+                    📥 Descargar
+                </a>
+                <button type="button" class="btn btn-secondary" onclick="closeDocumentPreview()">
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

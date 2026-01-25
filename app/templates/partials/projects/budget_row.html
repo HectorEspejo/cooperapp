@@ -1,0 +1,62 @@
+<tr class="budget-row {% if line.has_deviation_alert %}alert-row{% endif %}" data-line-id="{{ line.id }}">
+    <td class="col-code">{{ line.code }}</td>
+    <td class="col-name">
+        {{ line.name }}
+        {% if line.is_spain_only %}
+        <span class="spain-only-badge" title="Solo Espana">ES</span>
+        {% endif %}
+    </td>
+    <td class="col-amount">
+        <input
+            type="text"
+            class="budget-input"
+            name="aprobado"
+            value="{{ '{:,.2f}'.format(line.aprobado) }}"
+            hx-put="/projects/{{ project.id }}/budget-lines/{{ line.id }}"
+            hx-target="closest tr"
+            hx-swap="outerHTML"
+            hx-trigger="change"
+            hx-include="closest tr"
+        >
+    </td>
+    <td class="col-amount">
+        <input
+            type="text"
+            class="budget-input"
+            name="ejecutado_espana"
+            value="{{ '{:,.2f}'.format(line.ejecutado_espana) }}"
+            hx-put="/projects/{{ project.id }}/budget-lines/{{ line.id }}"
+            hx-target="closest tr"
+            hx-swap="outerHTML"
+            hx-trigger="change"
+            hx-include="closest tr"
+        >
+    </td>
+    <td class="col-amount">
+        {% if not line.is_spain_only %}
+        <input
+            type="text"
+            class="budget-input"
+            name="ejecutado_terreno"
+            value="{{ '{:,.2f}'.format(line.ejecutado_terreno) }}"
+            hx-put="/projects/{{ project.id }}/budget-lines/{{ line.id }}"
+            hx-target="closest tr"
+            hx-swap="outerHTML"
+            hx-trigger="change"
+            hx-include="closest tr"
+        >
+        {% else %}
+        <span class="budget-readonly">-</span>
+        {% endif %}
+    </td>
+    <td class="col-amount budget-calculated">{{ '{:,.2f}'.format(line.total_ejecutado) }}</td>
+    <td class="col-amount budget-calculated {% if line.diferencia < 0 %}negative{% endif %}">
+        {{ '{:,.2f}'.format(line.diferencia) }}
+    </td>
+    <td class="col-percent">
+        {% if line.has_deviation_alert %}
+        <span class="deviation-alert" title="Desviacion mayor al 10%">⚠️</span>
+        {% endif %}
+        {{ '{:.1f}'.format(line.porcentaje_ejecucion) }}%
+    </td>
+</tr>

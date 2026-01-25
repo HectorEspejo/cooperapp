@@ -1,0 +1,46 @@
+<tr id="project-row-{{ project.id }}">
+    <td>
+        <div class="code-cell">
+            <span class="code-contable">{{ project.codigo_contable }}</span>
+            <span class="code-area">{{ project.codigo_area }}</span>
+        </div>
+    </td>
+    <td>
+        <a href="/projects/{{ project.id }}" class="project-link">
+            {{ project.titulo[:60] }}{% if project.titulo|length > 60 %}...{% endif %}
+        </a>
+    </td>
+    <td>{{ project.pais }}</td>
+    <td>
+        <span class="estado-badge estado-{{ project.estado.value }}">
+            {{ project.estado.value|replace('_', ' ')|title }}
+        </span>
+    </td>
+    <td>
+        <span class="tipo-badge tipo-{{ project.tipo.value }}">
+            {{ project.tipo.value|replace('_', ' ')|title }}
+        </span>
+    </td>
+    <td class="amount-cell">{{ "{:,.2f}".format(project.subvencion) }} €</td>
+    <td>
+        <div class="dates-cell">
+            <span>{{ project.fecha_inicio.strftime('%d/%m/%Y') }}</span>
+            <span class="date-separator">→</span>
+            <span>{{ project.fecha_finalizacion.strftime('%d/%m/%Y') }}</span>
+        </div>
+    </td>
+    <td>
+        <div class="actions-cell">
+            <a href="/projects/{{ project.id }}" class="btn btn-icon" title="Ver">👁️</a>
+            <a href="/projects/{{ project.id }}/edit" class="btn btn-icon" title="Editar">✏️</a>
+            <button
+                class="btn btn-icon btn-danger"
+                title="Eliminar"
+                hx-delete="/projects/{{ project.id }}"
+                hx-confirm="¿Eliminar proyecto {{ project.codigo_contable }}?"
+                hx-target="#project-row-{{ project.id }}"
+                hx-swap="outerHTML"
+            >🗑️</button>
+        </div>
+    </td>
+</tr>

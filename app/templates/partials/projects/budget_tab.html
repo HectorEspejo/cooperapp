@@ -1,0 +1,37 @@
+{% if budget.has_budget %}
+    {% include "partials/projects/budget_table.html" %}
+{% else %}
+<div class="budget-init-form">
+    <div class="empty-state budget-empty">
+        <div class="empty-icon">📊</div>
+        <h3>Sin presupuesto configurado</h3>
+        <p>
+            El financiador actual (<strong>{{ project.financiador.value }}</strong>) no tiene plantillas de presupuesto definidas,
+            o el presupuesto no se ha inicializado correctamente.
+        </p>
+    </div>
+
+    <form
+        class="init-budget-form"
+        hx-post="/projects/{{ project.id }}/budget/initialize"
+        hx-target="#tab-presupuesto"
+        hx-swap="innerHTML"
+    >
+        <p class="help-text">
+            Si deseas usar las plantillas de otro financiador, selecciona uno a continuacion:
+        </p>
+        <div class="form-group">
+            <label for="funder_id">Financiador</label>
+            <select name="funder_id" id="funder_id" required>
+                <option value="">Selecciona un financiador...</option>
+                {% for funder in funders %}
+                <option value="{{ funder.id }}" {% if budget.funder_code == funder.code %}selected{% endif %}>
+                    {{ funder.name }} ({{ funder.code }})
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary">Inicializar Presupuesto</button>
+    </form>
+</div>
+{% endif %}

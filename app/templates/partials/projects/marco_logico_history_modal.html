@@ -1,0 +1,103 @@
+<div class="modal-overlay" onclick="closeIndicatorModal(event)">
+    <div class="ml-modal ml-modal-wide" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h3>Historial de {{ indicator.codigo }}</h3>
+            <button class="btn-close" onclick="closeIndicatorModal()">&times;</button>
+        </div>
+
+        <div class="modal-body">
+            <div class="ml-history-header">
+                <p class="ml-indicator-desc">{{ indicator.descripcion }}</p>
+                <div class="ml-current-values">
+                    <div class="ml-value-box">
+                        <span class="label">Base</span>
+                        <span class="value">{{ indicator.valor_base or '-' }}</span>
+                    </div>
+                    <div class="ml-value-box">
+                        <span class="label">Meta</span>
+                        <span class="value">{{ indicator.valor_meta or '-' }}</span>
+                    </div>
+                    <div class="ml-value-box ml-value-current">
+                        <span class="label">Actual</span>
+                        <span class="value">{{ indicator.valor_actual or '-' }}</span>
+                    </div>
+                    {% if indicator.porcentaje_cumplimiento is not none %}
+                    <div class="ml-value-box ml-value-pct">
+                        <span class="label">Avance</span>
+                        <span class="value">{{ "%.1f"|format(indicator.porcentaje_cumplimiento) }}%</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if history %}
+            <div class="ml-history-list">
+                <table class="ml-history-table">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Valor Anterior</th>
+                            <th>Valor Nuevo</th>
+                            <th>% Anterior</th>
+                            <th>% Nuevo</th>
+                            <th>Observaciones</th>
+                            <th>Usuario</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for update in history %}
+                        <tr>
+                            <td class="col-date">{{ update.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
+                            <td class="col-value">{{ update.valor_anterior or '-' }}</td>
+                            <td class="col-value">{{ update.valor_nuevo or '-' }}</td>
+                            <td class="col-pct">
+                                {% if update.porcentaje_anterior is not none %}
+                                {{ "%.1f"|format(update.porcentaje_anterior) }}%
+                                {% else %}
+                                -
+                                {% endif %}
+                            </td>
+                            <td class="col-pct">
+                                {% if update.porcentaje_nuevo is not none %}
+                                {{ "%.1f"|format(update.porcentaje_nuevo) }}%
+                                {% else %}
+                                -
+                                {% endif %}
+                            </td>
+                            <td class="col-obs">{{ update.observaciones or '-' }}</td>
+                            <td class="col-user">{{ update.updated_by or '-' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="ml-history-empty">
+                <p>No hay actualizaciones registradas para este indicador.</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeIndicatorModal()">
+                Cerrar
+            </button>
+            <button
+                class="btn btn-primary"
+                hx-get="/projects/indicators/{{ indicator.id }}/update-form"
+                hx-target="#indicator-modal-container"
+                hx-swap="innerHTML"
+            >
+                Actualizar Valor
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+function closeIndicatorModal(event) {
+    if (event && event.target !== event.currentTarget) return;
+    document.getElementById('indicator-modal-container').classList.remove('active');
+    document.getElementById('indicator-modal-container').innerHTML = '';
+}
+</script>
