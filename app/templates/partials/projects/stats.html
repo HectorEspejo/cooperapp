@@ -1,0 +1,28 @@
+<div class="stats-card">
+    <div class="stats-icon icon-primary">📊</div>
+    <div class="stats-content">
+        <span class="stats-value">{{ stats.total_projects }}</span>
+        <span class="stats-label">Total Proyectos</span>
+    </div>
+</div>
+<div class="stats-card">
+    <div class="stats-icon icon-success">💰</div>
+    <div class="stats-content">
+        <span class="stats-value">{{ "{:,.2f}".format(stats.total_subvencion) }} €</span>
+        <span class="stats-label">Subvención Total</span>
+    </div>
+</div>
+<div class="stats-card">
+    <div class="stats-icon icon-warning">🔄</div>
+    <div class="stats-content">
+        <span class="stats-value">{{ stats.by_estado.get('ejecucion', 0) }}</span>
+        <span class="stats-label">En Ejecución</span>
+    </div>
+</div>
+<div class="stats-card">
+    <div class="stats-icon icon-info">📝</div>
+    <div class="stats-content">
+        <span class="stats-value">{{ stats.by_estado.get('formulacion', 0) }}</span>
+        <span class="stats-label">En Formulación</span>
+    </div>
+</div>

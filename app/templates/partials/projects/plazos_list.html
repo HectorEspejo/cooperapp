@@ -1,0 +1,33 @@
+{% if project.plazos %}
+<ul class="plazos-list">
+    {% for plazo in project.plazos %}
+    <li class="plazo-item {% if plazo.completado %}completado{% endif %} {% if plazo.fecha_limite < now().date() and not plazo.completado %}vencido{% endif %}">
+        <div class="plazo-check">
+            <button
+                class="btn-check {% if plazo.completado %}checked{% endif %}"
+                hx-post="/projects/plazos/{{ plazo.id }}/toggle"
+                hx-target="#plazos-list"
+                hx-swap="innerHTML"
+                title="{{ 'Marcar como pendiente' if plazo.completado else 'Marcar como completado' }}"
+            >
+                {% if plazo.completado %}✓{% endif %}
+            </button>
+        </div>
+        <div class="plazo-content">
+            <span class="plazo-titulo">{{ plazo.titulo }}</span>
+            <span class="plazo-fecha">{{ plazo.fecha_limite.strftime('%d/%m/%Y') }}</span>
+        </div>
+        <button
+            class="btn btn-icon btn-danger"
+            hx-delete="/projects/plazos/{{ plazo.id }}"
+            hx-target="#plazos-list"
+            hx-swap="innerHTML"
+            hx-confirm="¿Eliminar este plazo?"
+            title="Eliminar"
+        >✕</button>
+    </li>
+    {% endfor %}
+</ul>
+{% else %}
+<p class="empty-plazos">No hay plazos definidos para este proyecto.</p>
+{% endif %}

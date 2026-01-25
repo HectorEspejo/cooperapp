@@ -1,0 +1,272 @@
+{% extends "base.html" %}
+
+{% block title %}{{ project.titulo }} - CooperApp{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <a href="/projects" class="btn btn-secondary">← Volver</a>
+    <div class="header-actions">
+        <a href="/projects/{{ project.id }}/edit" class="btn btn-primary">Editar</a>
+        <button
+            class="btn btn-danger"
+            hx-delete="/projects/{{ project.id }}"
+            hx-confirm="¿Estás seguro de que quieres eliminar este proyecto?"
+            hx-target="body"
+            hx-swap="innerHTML"
+            hx-push-url="/projects"
+        >
+            Eliminar
+        </button>
+    </div>
+</div>
+
+<div class="detail-card">
+    {% if justification_alert %}
+    <div class="project-alert project-alert-{{ justification_alert.type }}">
+        <span class="alert-icon">{% if justification_alert.type == 'error' %}⚠{% else %}⏰{% endif %}</span>
+        <span class="alert-message">{{ justification_alert.message }}</span>
+        {% if project.fecha_justificacion %}
+        <span class="alert-date">({{ project.fecha_justificacion.strftime('%d/%m/%Y') }})</span>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <div class="detail-header">
+        <div class="detail-codes">
+            <span class="code-badge">{{ project.codigo_contable }}</span>
+            <span class="code-area">{{ project.codigo_area }}</span>
+        </div>
+        <span class="estado-badge estado-{{ project.estado.value }}">
+            {{ project.estado.value|replace('_', ' ')|title }}
+        </span>
+    </div>
+
+    <h1 class="detail-title">{{ project.titulo }}</h1>
+
+    <!-- Tab Navigation -->
+    <div class="detail-tabs">
+        <button class="tab-btn active" data-tab="info" onclick="switchTab('info')">Informacion</button>
+        <button class="tab-btn" data-tab="plazos" onclick="switchTab('plazos')">Plazos</button>
+        <button
+            class="tab-btn"
+            data-tab="presupuesto"
+            onclick="switchTab('presupuesto')"
+            hx-get="/projects/{{ project.id }}/budget"
+            hx-target="#tab-presupuesto"
+            hx-trigger="click once"
+        >
+            Presupuesto
+        </button>
+        <button
+            class="tab-btn"
+            data-tab="gastos"
+            onclick="switchTab('gastos')"
+            hx-get="/projects/{{ project.id }}/expenses"
+            hx-target="#tab-gastos"
+            hx-trigger="click once"
+        >
+            Gastos
+        </button>
+        <button
+            class="tab-btn"
+            data-tab="transferencias"
+            onclick="switchTab('transferencias')"
+            hx-get="/projects/{{ project.id }}/transfers"
+            hx-target="#tab-transferencias"
+            hx-trigger="click once"
+        >
+            Transferencias
+        </button>
+        <button
+            class="tab-btn"
+            data-tab="marco-logico"
+            onclick="switchTab('marco-logico')"
+            hx-get="/projects/{{ project.id }}/marco-logico"
+            hx-target="#tab-marco-logico"
+            hx-trigger="click once"
+        >
+            Marco Logico
+        </button>
+        <button
+            class="tab-btn"
+            data-tab="documentos"
+            onclick="switchTab('documentos')"
+            hx-get="/projects/{{ project.id }}/documents"
+            hx-target="#tab-documentos"
+            hx-trigger="click once"
+        >
+            Documentos
+        </button>
+        <button
+            class="tab-btn"
+            data-tab="informes"
+            onclick="switchTab('informes')"
+            hx-get="/projects/{{ project.id }}/reports"
+            hx-target="#tab-informes"
+            hx-trigger="click once"
+        >
+            Informes
+        </button>
+    </div>
+
+    <!-- Tab: Info -->
+    <div id="tab-info" class="tab-content active">
+        <div class="detail-grid">
+            <div class="detail-section">
+                <h3>Informacion General</h3>
+                <dl class="detail-list">
+                    <dt>Pais</dt>
+                    <dd>{{ project.pais }}</dd>
+                    <dt>Sector</dt>
+                    <dd>{{ project.sector }}</dd>
+                    <dt>Tipo</dt>
+                    <dd>{{ project.tipo.value|replace('_', ' ')|title }}</dd>
+                    <dt>Financiador</dt>
+                    <dd>{{ project.financiador.value }}</dd>
+                    <dt>Ampliado</dt>
+                    <dd>{{ 'Si' if project.ampliado else 'No' }}</dd>
+                </dl>
+            </div>
+
+            <div class="detail-section">
+                <h3>Financiacion</h3>
+                <div class="amount-display">
+                    <span class="amount-value">{{ "{:,.2f}".format(project.subvencion) }} EUR</span>
+                    <span class="amount-label">Subvencion</span>
+                </div>
+                {% if project.cuenta_bancaria %}
+                <div class="bank-account">
+                    <dt>Cuenta Bancaria</dt>
+                    <dd class="iban">{{ project.cuenta_bancaria }}</dd>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="detail-section">
+                <h3>Cronograma</h3>
+                <dl class="detail-list">
+                    <dt>Fecha de Inicio</dt>
+                    <dd>{{ project.fecha_inicio.strftime('%d/%m/%Y') }}</dd>
+                    <dt>Fecha de Finalizacion</dt>
+                    <dd>{{ project.fecha_finalizacion.strftime('%d/%m/%Y') }}</dd>
+                    {% if project.fecha_justificacion %}
+                    <dt>Fecha de Justificacion</dt>
+                    <dd>{{ project.fecha_justificacion.strftime('%d/%m/%Y') }}</dd>
+                    {% endif %}
+                </dl>
+            </div>
+
+            <div class="detail-section">
+                <h3>Metadatos</h3>
+                <dl class="detail-list">
+                    <dt>Creado</dt>
+                    <dd>{{ project.created_at.strftime('%d/%m/%Y %H:%M') }}</dd>
+                    <dt>Actualizado</dt>
+                    <dd>{{ project.updated_at.strftime('%d/%m/%Y %H:%M') }}</dd>
+                </dl>
+            </div>
+        </div>
+
+        <!-- ODS Section -->
+        {% if project.ods_objetivos %}
+        <div class="detail-section ods-section">
+            <h3>Objetivos de Desarrollo Sostenible (ODS)</h3>
+            <div class="ods-badges">
+                {% for ods in project.ods_objetivos %}
+                <span class="ods-badge ods-{{ ods.numero }}" title="{{ ods.nombre }}">
+                    ODS {{ ods.numero }}
+                </span>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Tab: Plazos -->
+    <div id="tab-plazos" class="tab-content">
+        <div class="detail-section plazos-section">
+            <div class="section-header">
+                <h3>Plazos</h3>
+            </div>
+
+            <div id="plazos-list">
+                {% include "partials/projects/plazos_list.html" %}
+            </div>
+
+            <!-- Add new plazo form -->
+            <form
+                class="add-plazo-form"
+                hx-post="/projects/{{ project.id }}/plazos"
+                hx-target="#plazos-list"
+                hx-swap="innerHTML"
+            >
+                <input type="text" name="plazo_titulo" placeholder="Nuevo plazo..." required>
+                <input type="date" name="plazo_fecha" required>
+                <button type="submit" class="btn btn-sm btn-primary">Anadir</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tab: Presupuesto -->
+    <div id="tab-presupuesto" class="tab-content">
+        <div class="loading-placeholder">
+            <p>Cargando presupuesto...</p>
+        </div>
+    </div>
+
+    <!-- Tab: Gastos -->
+    <div id="tab-gastos" class="tab-content">
+        <div class="loading-placeholder">
+            <p>Cargando gastos...</p>
+        </div>
+    </div>
+
+    <!-- Tab: Transferencias -->
+    <div id="tab-transferencias" class="tab-content">
+        <div class="loading-placeholder">
+            <p>Cargando transferencias...</p>
+        </div>
+    </div>
+
+    <!-- Tab: Marco Logico -->
+    <div id="tab-marco-logico" class="tab-content">
+        <div class="loading-placeholder">
+            <p>Cargando marco logico...</p>
+        </div>
+    </div>
+
+    <!-- Tab: Documentos -->
+    <div id="tab-documentos" class="tab-content">
+        <div class="loading-placeholder">
+            <p>Cargando documentos...</p>
+        </div>
+    </div>
+
+    <!-- Tab: Informes -->
+    <div id="tab-informes" class="tab-content">
+        <div class="loading-placeholder">
+            <p>Cargando informes...</p>
+        </div>
+    </div>
+</div>
+
+<script>
+function switchTab(tabName) {
+    // Hide all tab contents
+    document.querySelectorAll('.tab-content').forEach(function(tab) {
+        tab.classList.remove('active');
+    });
+
+    // Deactivate all tab buttons
+    document.querySelectorAll('.tab-btn').forEach(function(btn) {
+        btn.classList.remove('active');
+    });
+
+    // Show selected tab content
+    document.getElementById('tab-' + tabName).classList.add('active');
+
+    // Activate selected tab button
+    document.querySelector('.tab-btn[data-tab="' + tabName + '"]').classList.add('active');
+}
+</script>
+{% endblock %}

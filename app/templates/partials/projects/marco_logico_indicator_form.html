@@ -1,0 +1,131 @@
+<div class="modal-overlay" onclick="closeIndicatorModal(event)">
+    <div class="ml-modal" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h3>{% if mode == 'edit' %}Editar Indicador{% else %}Nuevo Indicador{% endif %}</h3>
+            <button class="btn-close" onclick="closeIndicatorModal()">&times;</button>
+        </div>
+
+        <form
+            class="modal-body"
+            {% if mode == 'edit' %}
+            hx-put="/projects/indicators/{{ indicator.id }}"
+            {% else %}
+            hx-post="/projects/{{ project_id }}/marco-logico/indicators"
+            {% endif %}
+            hx-target="#marco-logico-content"
+            hx-swap="innerHTML"
+            hx-on::after-request="closeIndicatorModal()"
+        >
+            <input type="hidden" name="framework_id" value="{{ framework_id }}">
+            {% if objective_id %}
+            <input type="hidden" name="objective_id" value="{{ objective_id }}">
+            {% endif %}
+            {% if result_id %}
+            <input type="hidden" name="result_id" value="{{ result_id }}">
+            {% endif %}
+            {% if activity_id %}
+            <input type="hidden" name="activity_id" value="{{ activity_id }}">
+            {% endif %}
+
+            <div class="form-grid">
+                <div class="form-group" style="max-width: 120px;">
+                    <label>Codigo</label>
+                    <input
+                        type="text"
+                        name="codigo"
+                        value="{{ indicator.codigo if indicator else next_code }}"
+                        placeholder="IOV1"
+                        required
+                    >
+                </div>
+                <div class="form-group">
+                    <label>Descripcion</label>
+                    <input
+                        type="text"
+                        name="descripcion"
+                        value="{{ indicator.descripcion if indicator else '' }}"
+                        placeholder="Descripcion del indicador..."
+                        required
+                    >
+                </div>
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Unidad de Medida</label>
+                    <input
+                        type="text"
+                        name="unidad_medida"
+                        value="{{ indicator.unidad_medida if indicator else '' }}"
+                        placeholder="Ej: Personas, %, Unidades..."
+                    >
+                </div>
+                <div class="form-group">
+                    <label>Fuente de Verificacion</label>
+                    <input
+                        type="text"
+                        name="fuente_verificacion"
+                        value="{{ indicator.fuente_verificacion if indicator else '' }}"
+                        placeholder="Ej: Encuestas, Informes..."
+                    >
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h4>Valores</h4>
+                <div class="form-grid-3">
+                    <div class="form-group">
+                        <label>Valor Base</label>
+                        <input
+                            type="text"
+                            name="valor_base"
+                            value="{{ indicator.valor_base if indicator else '' }}"
+                            placeholder="0"
+                        >
+                    </div>
+                    <div class="form-group">
+                        <label>Valor Meta</label>
+                        <input
+                            type="text"
+                            name="valor_meta"
+                            value="{{ indicator.valor_meta if indicator else '' }}"
+                            placeholder="100"
+                        >
+                    </div>
+                    {% if mode != 'edit' %}
+                    <div class="form-group">
+                        <label>Valor Actual</label>
+                        <input
+                            type="text"
+                            name="valor_actual"
+                            placeholder="0"
+                        >
+                    </div>
+                    {% endif %}
+                </div>
+                {% if mode != 'edit' %}
+                <p class="help-text">
+                    Si los valores son numericos, el porcentaje de cumplimiento se calculara automaticamente.
+                </p>
+                {% endif %}
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeIndicatorModal()">
+                    Cancelar
+                </button>
+                <button type="submit" class="btn btn-primary">
+                    {% if mode == 'edit' %}Guardar{% else %}Crear Indicador{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function closeIndicatorModal(event) {
+    if (event && event.target !== event.currentTarget) return;
+    document.getElementById('indicator-modal-container').classList.remove('active');
+    document.getElementById('indicator-modal-container').innerHTML = '';
+}
+</script>

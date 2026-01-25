@@ -1,0 +1,87 @@
+<div class="modal-overlay" onclick="closeIndicatorModal(event)">
+    <div class="ml-modal" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h3>Actualizar Indicador: {{ indicator.codigo }}</h3>
+            <button class="btn-close" onclick="closeIndicatorModal()">&times;</button>
+        </div>
+
+        <form
+            class="modal-body"
+            hx-post="/projects/indicators/{{ indicator.id }}/update-value"
+            hx-target="#marco-logico-content"
+            hx-swap="innerHTML"
+        >
+            <div class="ml-update-info">
+                <p class="ml-indicator-desc">{{ indicator.descripcion }}</p>
+
+                <div class="ml-current-values">
+                    <div class="ml-value-box">
+                        <span class="label">Base</span>
+                        <span class="value">{{ indicator.valor_base or '-' }}</span>
+                    </div>
+                    <div class="ml-value-box">
+                        <span class="label">Meta</span>
+                        <span class="value">{{ indicator.valor_meta or '-' }}</span>
+                    </div>
+                    <div class="ml-value-box ml-value-current">
+                        <span class="label">Actual</span>
+                        <span class="value">{{ indicator.valor_actual or '-' }}</span>
+                    </div>
+                    {% if indicator.porcentaje_cumplimiento is not none %}
+                    <div class="ml-value-box ml-value-pct">
+                        <span class="label">Avance</span>
+                        <span class="value">{{ "%.1f"|format(indicator.porcentaje_cumplimiento) }}%</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Nuevo Valor</label>
+                <input
+                    type="text"
+                    name="valor_nuevo"
+                    value="{{ indicator.valor_actual or '' }}"
+                    placeholder="Ingrese el nuevo valor..."
+                    required
+                    autofocus
+                >
+            </div>
+
+            <div class="form-group">
+                <label>Observaciones</label>
+                <textarea
+                    name="observaciones"
+                    rows="3"
+                    placeholder="Comentarios sobre la actualizacion..."
+                ></textarea>
+            </div>
+
+            <div class="form-group">
+                <label>Actualizado por</label>
+                <input
+                    type="text"
+                    name="updated_by"
+                    placeholder="Nombre de quien actualiza..."
+                >
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeIndicatorModal()">
+                    Cancelar
+                </button>
+                <button type="submit" class="btn btn-primary" onclick="closeIndicatorModal()">
+                    Actualizar Valor
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function closeIndicatorModal(event) {
+    if (event && event.target !== event.currentTarget) return;
+    document.getElementById('indicator-modal-container').classList.remove('active');
+    document.getElementById('indicator-modal-container').innerHTML = '';
+}
+</script>

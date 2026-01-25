@@ -1,0 +1,282 @@
+<div class="reports-section">
+    <div class="section-header">
+        <h3>Informes</h3>
+    </div>
+
+    <!-- Validation Warnings -->
+    {% if validation.warnings %}
+    <div class="validation-warnings">
+        <h4>Avisos</h4>
+        <ul class="warning-list">
+            {% for warning in validation.warnings %}
+            <li class="warning-item warning-{{ warning.tipo }}">
+                <span class="warning-icon">⚠</span>
+                <span class="warning-message">{{ warning.mensaje }} ({{ warning.count }})</span>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <!-- Generation Section -->
+    <div class="generation-section">
+        <h4>Generar Informes</h4>
+        <div class="generation-grid">
+            {% for rt in report_types %}
+            <button
+                class="btn btn-secondary generation-btn"
+                hx-post="/api/projects/{{ project.id }}/reports/generate"
+                hx-vals='{"tipo": "{{ rt.tipo.value }}"}'
+                hx-headers='{"Content-Type": "application/json"}'
+                hx-target="#reports-list"
+                hx-swap="outerHTML"
+                hx-on::after-request="if(event.detail.successful) htmx.ajax('GET', '/projects/{{ project.id }}/reports', {target:'#tab-informes', swap:'innerHTML'})"
+            >
+                <span class="btn-icon">📊</span>
+                <span class="btn-label">{{ rt.nombre }}</span>
+            </button>
+            {% endfor %}
+        </div>
+
+        <div class="pack-section">
+            <button
+                class="btn btn-primary btn-pack"
+                hx-post="/api/projects/{{ project.id }}/reports/pack"
+                hx-headers='{"Content-Type": "application/json"}'
+                hx-target="#reports-list"
+                hx-swap="outerHTML"
+                hx-on::after-request="if(event.detail.successful) htmx.ajax('GET', '/projects/{{ project.id }}/reports', {target:'#tab-informes', swap:'innerHTML'})"
+            >
+                <span class="btn-icon">📦</span>
+                <span class="btn-label">Generar Pack Justificacion (ZIP)</span>
+            </button>
+            <p class="pack-description">
+                Genera un archivo ZIP con Cuenta Justificativa, Ejecucion Presupuestaria y Relacion de Transferencias.
+            </p>
+        </div>
+    </div>
+
+    <!-- Reports List -->
+    <div class="reports-list-section">
+        <h4>Informes Generados</h4>
+        <div id="reports-list">
+            {% if reports %}
+            <table class="data-table reports-table">
+                <thead>
+                    <tr>
+                        <th>Tipo</th>
+                        <th>Archivo</th>
+                        <th>Financiador</th>
+                        <th>Generado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for report in reports %}
+                    <tr>
+                        <td>
+                            <span class="report-type-badge">
+                                {{ report.tipo_nombre }}
+                            </span>
+                            {% if report.notas %}
+                            <span class="report-note">{{ report.notas }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="filename">{{ report.nombre_archivo }}</td>
+                        <td>
+                            <span class="funder-badge funder-{{ report.formato_financiador|lower|replace(' ', '-') }}">
+                                {{ report.formato_financiador }}
+                            </span>
+                        </td>
+                        <td>{{ report.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
+                        <td class="actions-cell">
+                            <a
+                                href="/api/reports/{{ report.id }}/download"
+                                class="btn btn-sm btn-primary"
+                                download
+                            >
+                                Descargar
+                            </a>
+                            <button
+                                class="btn btn-sm btn-danger"
+                                hx-delete="/api/reports/{{ report.id }}"
+                                hx-confirm="¿Eliminar este informe?"
+                                hx-target="#tab-informes"
+                                hx-swap="innerHTML"
+                                hx-on::after-request="if(event.detail.successful) htmx.ajax('GET', '/projects/{{ project.id }}/reports', {target:'#tab-informes', swap:'innerHTML'})"
+                            >
+                                Eliminar
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty-state">
+                <p>No hay informes generados todavia.</p>
+                <p>Usa los botones de arriba para generar informes Excel.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.reports-section {
+    padding: 1rem;
+}
+
+.validation-warnings {
+    background: #fff3cd;
+    border: 1px solid #ffc107;
+    border-radius: 4px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.validation-warnings h4 {
+    margin: 0 0 0.5rem 0;
+    color: #856404;
+}
+
+.warning-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.warning-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0;
+    color: #856404;
+}
+
+.warning-icon {
+    font-size: 1rem;
+}
+
+.generation-section {
+    margin-bottom: 2rem;
+}
+
+.generation-section h4 {
+    margin: 0 0 1rem 0;
+}
+
+.generation-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.generation-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    text-align: left;
+}
+
+.btn-icon {
+    font-size: 1.2rem;
+}
+
+.btn-label {
+    flex: 1;
+}
+
+.pack-section {
+    border-top: 1px solid #dee2e6;
+    padding-top: 1rem;
+}
+
+.btn-pack {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+}
+
+.pack-description {
+    margin-top: 0.5rem;
+    font-size: 0.875rem;
+    color: #6c757d;
+}
+
+.reports-list-section h4 {
+    margin: 0 0 1rem 0;
+}
+
+.reports-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.reports-table th,
+.reports-table td {
+    padding: 0.75rem;
+    border-bottom: 1px solid #dee2e6;
+    text-align: left;
+}
+
+.reports-table th {
+    background: #f8f9fa;
+    font-weight: 600;
+}
+
+.report-type-badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    background: #e9ecef;
+    border-radius: 4px;
+    font-size: 0.875rem;
+}
+
+.report-note {
+    display: block;
+    font-size: 0.75rem;
+    color: #6c757d;
+    margin-top: 0.25rem;
+}
+
+.filename {
+    font-family: monospace;
+    font-size: 0.875rem;
+    color: #495057;
+}
+
+.funder-badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: white;
+}
+
+.funder-badge.funder-aacid { background: #006633; }
+.funder-badge.funder-aecid { background: #C41E3A; }
+.funder-badge.funder-diputación-de-málaga { background: #003366; }
+.funder-badge.funder-ayuntamiento-de-málaga { background: #8B1E3F; }
+
+.actions-cell {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 2rem;
+    background: #f8f9fa;
+    border-radius: 4px;
+    color: #6c757d;
+}
+
+.empty-state p {
+    margin: 0.5rem 0;
+}
+</style>

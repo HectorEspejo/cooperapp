@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}Proyectos - CooperApp{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Proyectos de Cooperación</h1>
+    <a href="/projects/new" class="btn btn-primary">
+        + Nuevo Proyecto
+    </a>
+</div>
+
+<!-- Stats Cards -->
+<div class="stats-grid" id="stats-container">
+    <div class="stats-card">
+        <div class="stats-icon icon-primary">📊</div>
+        <div class="stats-content">
+            <span class="stats-value">{{ stats.total_projects }}</span>
+            <span class="stats-label">Total Proyectos</span>
+        </div>
+    </div>
+    <div class="stats-card">
+        <div class="stats-icon icon-success">💰</div>
+        <div class="stats-content">
+            <span class="stats-value">{{ "{:,.2f}".format(stats.total_subvencion) }} €</span>
+            <span class="stats-label">Subvención Total</span>
+        </div>
+    </div>
+    <div class="stats-card">
+        <div class="stats-icon icon-warning">🔄</div>
+        <div class="stats-content">
+            <span class="stats-value">{{ stats.by_estado.get('ejecucion', 0) }}</span>
+            <span class="stats-label">En Ejecución</span>
+        </div>
+    </div>
+    <div class="stats-card">
+        <div class="stats-icon icon-info">📝</div>
+        <div class="stats-content">
+            <span class="stats-value">{{ stats.by_estado.get('formulacion', 0) }}</span>
+            <span class="stats-label">En Formulación</span>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="filters-bar">
+    <div class="search-box">
+        <input
+            type="text"
+            name="search"
+            placeholder="Buscar proyectos..."
+            value="{{ filters.search or '' }}"
+            hx-get="/projects/partials/list"
+            hx-trigger="input changed delay:300ms"
+            hx-target="#projects-list"
+            hx-include="[name='estado'], [name='tipo'], [name='pais']"
+        >
+    </div>
+    <div class="filter-group">
+        <select
+            name="estado"
+            hx-get="/projects/partials/list"
+            hx-trigger="change"
+            hx-target="#projects-list"
+            hx-include="[name='search'], [name='tipo'], [name='pais']"
+        >
+            <option value="">Todos los estados</option>
+            {% for e in estados %}
+            <option value="{{ e.value }}" {% if filters.estado == e.value %}selected{% endif %}>
+                {{ e.value|replace('_', ' ')|title }}
+            </option>
+            {% endfor %}
+        </select>
+        <select
+            name="tipo"
+            hx-get="/projects/partials/list"
+            hx-trigger="change"
+            hx-target="#projects-list"
+            hx-include="[name='search'], [name='estado'], [name='pais']"
+        >
+            <option value="">Todos los tipos</option>
+            {% for t in tipos %}
+            <option value="{{ t.value }}" {% if filters.tipo == t.value %}selected{% endif %}>
+                {{ t.value|replace('_', ' ')|title }}
+            </option>
+            {% endfor %}
+        </select>
+        <select
+            name="pais"
+            hx-get="/projects/partials/list"
+            hx-trigger="change"
+            hx-target="#projects-list"
+            hx-include="[name='search'], [name='estado'], [name='tipo']"
+        >
+            <option value="">Todos los países</option>
+            {% for p in paises %}
+            <option value="{{ p }}" {% if filters.pais == p %}selected{% endif %}>{{ p }}</option>
+            {% endfor %}
+        </select>
+    </div>
+</div>
+
+<!-- Projects List -->
+<div id="projects-list">
+    {% include "partials/projects/list.html" %}
+</div>
+{% endblock %}

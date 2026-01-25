@@ -1,0 +1,29 @@
+{% if transfers %}
+<div class="table-container">
+    <table class="transfers-table">
+        <thead>
+            <tr>
+                <th class="col-numero">N</th>
+                <th class="col-date">Fecha Emision</th>
+                <th class="col-date">Fecha Recepcion</th>
+                <th class="col-amount">Importe EUR</th>
+                <th class="col-exchange">T. Cambio</th>
+                <th class="col-amount">Importe Local</th>
+                <th class="col-estado">Estado</th>
+                <th class="col-actions">Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for transfer in transfers %}
+            {% include "partials/projects/transfer_row.html" %}
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="empty-state transfers-empty">
+    <div class="empty-icon">🏦</div>
+    <h3>No hay transferencias registradas</h3>
+    <p>Crea la primera transferencia para enviar fondos a la contraparte.</p>
+</div>
+{% endif %}

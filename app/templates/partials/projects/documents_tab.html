@@ -1,0 +1,185 @@
+<div class="documents-container" id="documents-content">
+    <!-- Summary Stats -->
+    <div class="documents-summary">
+        <div class="summary-stats">
+            <div class="summary-stat">
+                <span class="stat-value">{{ summary.total }}</span>
+                <span class="stat-label">Total</span>
+            </div>
+            <div class="summary-stat stat-success">
+                <span class="stat-value">{{ summary.sellados }}</span>
+                <span class="stat-label">Sellados</span>
+            </div>
+            <div class="summary-stat stat-warning">
+                <span class="stat-value">{{ summary.pendientes_sellar }}</span>
+                <span class="stat-label">Pendientes</span>
+            </div>
+            <div class="summary-stat stat-info">
+                <span class="stat-value">{{ summary.vinculados }}</span>
+                <span class="stat-label">Vinculados</span>
+            </div>
+            <div class="summary-stat">
+                <span class="stat-value">{{ summary.huerfanos }}</span>
+                <span class="stat-label">Sin vincular</span>
+            </div>
+        </div>
+        <div class="summary-amounts">
+            <div class="amount-item">
+                <span class="amount-label">Tamano total:</span>
+                <span class="amount-value">{{ summary.tamano_total_human }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upload Zone -->
+    <div class="documents-upload-section">
+        <form
+            id="document-upload-form"
+            class="upload-form"
+            hx-post="/projects/{{ project.id }}/documents"
+            hx-target="#documents-content"
+            hx-swap="innerHTML"
+            hx-encoding="multipart/form-data"
+        >
+            <div class="upload-zone" id="upload-zone">
+                <div class="upload-zone-content">
+                    <span class="upload-icon">📁</span>
+                    <p class="upload-text">Arrastra archivos aqui o haz clic para seleccionar</p>
+                    <input
+                        type="file"
+                        name="file"
+                        id="file-input"
+                        class="upload-input"
+                        accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"
+                        required
+                    >
+                </div>
+            </div>
+            <div class="upload-options">
+                <div class="form-group">
+                    <label for="categoria">Categoria</label>
+                    <select name="categoria" id="categoria" required>
+                        {% for cat in categorias %}
+                        <option value="{{ cat.value }}">{{ categoria_nombres[cat.value] }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group" style="flex: 1;">
+                    <label for="descripcion">Descripcion (opcional)</label>
+                    <input type="text" name="descripcion" id="descripcion" placeholder="Descripcion del documento...">
+                </div>
+                <button type="submit" class="btn btn-primary" id="upload-btn" disabled>
+                    Subir documento
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Filters Bar -->
+    <div class="documents-filters">
+        <form
+            class="filters-form"
+            hx-get="/projects/{{ project.id }}/documents/table"
+            hx-target="#documents-table-container"
+            hx-trigger="change"
+        >
+            <select name="categoria" class="filter-select">
+                <option value="">Todas las categorias</option>
+                {% for cat in categorias %}
+                <option value="{{ cat.value }}">{{ categoria_nombres[cat.value] }}</option>
+                {% endfor %}
+            </select>
+            <select name="sellado" class="filter-select">
+                <option value="">Todos los estados</option>
+                <option value="true">Sellados</option>
+                <option value="false">Sin sellar</option>
+            </select>
+            <select name="vinculado" class="filter-select">
+                <option value="">Todos</option>
+                <option value="true">Vinculados</option>
+                <option value="false">Sin vincular</option>
+            </select>
+        </form>
+        <div class="filters-actions">
+            <a
+                href="/api/projects/{{ project.id }}/documents/zip"
+                class="btn btn-secondary btn-sm"
+                title="Descargar todos como ZIP"
+            >
+                📥 Descargar ZIP
+            </a>
+        </div>
+    </div>
+
+    <!-- Documents Table -->
+    <div id="documents-table-container">
+        {% include "partials/projects/documents_table.html" %}
+    </div>
+
+    <!-- Document Preview Modal Container -->
+    <div id="document-preview-modal" class="modal-container"></div>
+</div>
+
+<script>
+// Define project-specific preview function
+function openDocumentPreview(documentId) {
+    htmx.ajax('GET', '/projects/{{ project.id }}/documents/' + documentId + '/preview', {
+        target: '#document-preview-modal',
+        swap: 'innerHTML'
+    }).then(function() {
+        document.getElementById('document-preview-modal').classList.add('active');
+    });
+}
+
+function closeDocumentPreview() {
+    var modal = document.getElementById('document-preview-modal');
+    if (modal) {
+        modal.classList.remove('active');
+        modal.innerHTML = '';
+    }
+}
+
+// Initialize upload zone when tab loads
+(function() {
+    var uploadZone = document.getElementById('upload-zone');
+    var fileInput = document.getElementById('file-input');
+    var uploadBtn = document.getElementById('upload-btn');
+
+    if (!uploadZone || !fileInput || !uploadBtn) return;
+
+    uploadZone.addEventListener('click', function() {
+        fileInput.click();
+    });
+
+    fileInput.addEventListener('change', function() {
+        if (this.files.length > 0) {
+            uploadZone.classList.add('has-file');
+            uploadZone.querySelector('.upload-text').textContent = this.files[0].name;
+            uploadBtn.disabled = false;
+        }
+    });
+
+    uploadZone.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        this.classList.add('dragover');
+    });
+
+    uploadZone.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        this.classList.remove('dragover');
+    });
+
+    uploadZone.addEventListener('drop', function(e) {
+        e.preventDefault();
+        this.classList.remove('dragover');
+
+        if (e.dataTransfer.files.length > 0) {
+            fileInput.files = e.dataTransfer.files;
+            this.classList.add('has-file');
+            this.querySelector('.upload-text').textContent = e.dataTransfer.files[0].name;
+            uploadBtn.disabled = false;
+        }
+    });
+})();
+</script>
+

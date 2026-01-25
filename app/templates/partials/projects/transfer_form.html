@@ -1,0 +1,261 @@
+<div class="modal-header">
+    <h3>{% if is_edit %}Editar Transferencia #{{ transfer.numero }}{% else %}Nueva Transferencia{% endif %}</h3>
+    <button type="button" class="btn-close" onclick="closeTransferModal()">&times;</button>
+</div>
+
+<form
+    class="transfer-form"
+    {% if is_edit %}
+    hx-put="/projects/{{ project.id }}/transfers/{{ transfer.id }}"
+    {% else %}
+    hx-post="/projects/{{ project.id }}/transfers"
+    {% endif %}
+    hx-target="#transfers-content"
+    hx-swap="outerHTML"
+>
+    <div class="modal-body">
+        <!-- Budget Info -->
+        <div class="budget-info-bar">
+            <div class="info-item">
+                <span class="info-label">Disponible:</span>
+                <span class="info-value {% if summary.total_pendiente <= 0 %}text-danger{% endif %}">
+                    {{ "{:,.2f}".format(summary.total_pendiente) }} EUR
+                </span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Transferencia:</span>
+                <span class="info-value">{{ next_numero }}/{{ transfer.total_previstas if transfer else '?' }}</span>
+            </div>
+        </div>
+
+        <!-- Section: Basic Info -->
+        <div class="form-section">
+            <h4>Datos Basicos</h4>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="total_previstas">Total transferencias previstas</label>
+                    <input
+                        type="number"
+                        id="total_previstas"
+                        name="total_previstas"
+                        min="1"
+                        max="20"
+                        value="{{ transfer.total_previstas if transfer else 3 }}"
+                        required
+                    >
+                </div>
+                <div class="form-group">
+                    <label for="fecha_peticion">Fecha de solicitud</label>
+                    <input
+                        type="date"
+                        id="fecha_peticion"
+                        name="fecha_peticion"
+                        value="{{ transfer.fecha_peticion.isoformat() if transfer and transfer.fecha_peticion else '' }}"
+                    >
+                </div>
+            </div>
+        </div>
+
+        <!-- Section: Amounts -->
+        <div class="form-section">
+            <h4>Importes</h4>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="importe_euros">Importe EUR *</label>
+                    <input
+                        type="number"
+                        id="importe_euros"
+                        name="importe_euros"
+                        step="0.01"
+                        min="0"
+                        max="{{ summary.total_pendiente }}"
+                        value="{{ transfer.importe_euros if transfer else '' }}"
+                        required
+                        onchange="calculateLocalAmount()"
+                    >
+                    <small class="help-text">Maximo disponible: {{ "{:,.2f}".format(summary.total_pendiente) }} EUR</small>
+                </div>
+                <div class="form-group">
+                    <label for="gastos_transferencia">Gastos de transferencia</label>
+                    <input
+                        type="number"
+                        id="gastos_transferencia"
+                        name="gastos_transferencia"
+                        step="0.01"
+                        min="0"
+                        value="{{ transfer.gastos_transferencia if transfer else 0 }}"
+                    >
+                </div>
+            </div>
+        </div>
+
+        <!-- Section: Intermediate Currency (collapsible) -->
+        <div class="form-section">
+            <div class="form-group checkbox-group">
+                <label>
+                    <input
+                        type="checkbox"
+                        id="usa_moneda_intermedia"
+                        name="usa_moneda_intermedia"
+                        onchange="toggleIntermediateCurrency()"
+                        {% if transfer and transfer.usa_moneda_intermedia %}checked{% endif %}
+                    >
+                    Usar moneda intermedia (ej: USD)
+                </label>
+            </div>
+            <div id="intermediate-currency-section" style="display: {% if transfer and transfer.usa_moneda_intermedia %}block{% else %}none{% endif %};">
+                <div class="form-grid form-grid-3">
+                    <div class="form-group">
+                        <label for="moneda_intermedia">Moneda</label>
+                        <select id="moneda_intermedia" name="moneda_intermedia">
+                            <option value="">Seleccionar...</option>
+                            <option value="USD" {% if transfer and transfer.moneda_intermedia == 'USD' %}selected{% endif %}>USD - Dolar</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="importe_moneda_intermedia">Importe</label>
+                        <input
+                            type="number"
+                            id="importe_moneda_intermedia"
+                            name="importe_moneda_intermedia"
+                            step="0.01"
+                            min="0"
+                            value="{{ transfer.importe_moneda_intermedia if transfer and transfer.importe_moneda_intermedia else '' }}"
+                        >
+                    </div>
+                    <div class="form-group">
+                        <label for="tipo_cambio_intermedio">Tipo de cambio</label>
+                        <input
+                            type="number"
+                            id="tipo_cambio_intermedio"
+                            name="tipo_cambio_intermedio"
+                            step="0.000001"
+                            min="0"
+                            value="{{ transfer.tipo_cambio_intermedio if transfer and transfer.tipo_cambio_intermedio else '' }}"
+                        >
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section: Local Currency -->
+        <div class="form-section">
+            <h4>Moneda Local</h4>
+            <div class="form-grid form-grid-3">
+                <div class="form-group">
+                    <label for="moneda_local">Moneda</label>
+                    <select id="moneda_local" name="moneda_local">
+                        <option value="">Seleccionar...</option>
+                        {% for moneda in monedas %}
+                        <option
+                            value="{{ moneda.value }}"
+                            {% if transfer and transfer.moneda_local == moneda.value %}selected{% elif not transfer and default_moneda == moneda.value %}selected{% endif %}
+                        >
+                            {{ moneda.value }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="importe_moneda_local">Importe local</label>
+                    <input
+                        type="number"
+                        id="importe_moneda_local"
+                        name="importe_moneda_local"
+                        step="0.01"
+                        min="0"
+                        value="{{ transfer.importe_moneda_local if transfer and transfer.importe_moneda_local else '' }}"
+                        onchange="calculateExchangeRate()"
+                    >
+                </div>
+                <div class="form-group">
+                    <label for="tipo_cambio_local">Tipo de cambio</label>
+                    <input
+                        type="number"
+                        id="tipo_cambio_local"
+                        name="tipo_cambio_local"
+                        step="0.000001"
+                        min="0"
+                        value="{{ transfer.tipo_cambio_local if transfer and transfer.tipo_cambio_local else '' }}"
+                        onchange="calculateLocalAmount()"
+                    >
+                    <small class="help-text">1 EUR = X moneda local</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section: Bank Info -->
+        <div class="form-section">
+            <h4>Datos Bancarios</h4>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="cuenta_origen">Cuenta origen (IBAN)</label>
+                    <input
+                        type="text"
+                        id="cuenta_origen"
+                        name="cuenta_origen"
+                        maxlength="34"
+                        value="{{ transfer.cuenta_origen if transfer else project.cuenta_bancaria or '' }}"
+                        placeholder="ES00 0000 0000 0000 0000 0000"
+                    >
+                </div>
+                <div class="form-group">
+                    <label for="entidad_bancaria">Entidad bancaria</label>
+                    <select id="entidad_bancaria" name="entidad_bancaria">
+                        <option value="">Seleccionar...</option>
+                        {% for entidad in entidades %}
+                        <option
+                            value="{{ entidad.value }}"
+                            {% if transfer and transfer.entidad_bancaria == entidad %}selected{% endif %}
+                        >
+                            {{ entidad.value }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="cuenta_destino">Cuenta destino</label>
+                <input
+                    type="text"
+                    id="cuenta_destino"
+                    name="cuenta_destino"
+                    maxlength="100"
+                    value="{{ transfer.cuenta_destino if transfer else '' }}"
+                    placeholder="Cuenta bancaria de la contraparte"
+                >
+            </div>
+        </div>
+
+        <!-- Section: Notes -->
+        <div class="form-section">
+            <div class="form-group">
+                <label for="observaciones">Observaciones</label>
+                <textarea
+                    id="observaciones"
+                    name="observaciones"
+                    rows="3"
+                    placeholder="Notas adicionales sobre esta transferencia..."
+                >{{ transfer.observaciones if transfer else '' }}</textarea>
+            </div>
+            <div class="form-group checkbox-group">
+                <label>
+                    <input
+                        type="checkbox"
+                        id="es_ultima"
+                        name="es_ultima"
+                        {% if transfer and transfer.es_ultima %}checked{% endif %}
+                    >
+                    Esta es la ultima transferencia del proyecto
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeTransferModal()">Cancelar</button>
+        <button type="submit" class="btn btn-primary">
+            {% if is_edit %}Guardar Cambios{% else %}Crear Transferencia{% endif %}
+        </button>
+    </div>
+</form>

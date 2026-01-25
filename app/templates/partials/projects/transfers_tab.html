@@ -1,0 +1,132 @@
+<div class="transfers-container" id="transfers-content">
+    <!-- Summary Stats -->
+    <div class="transfers-summary">
+        <div class="summary-stats">
+            <div class="summary-stat">
+                <span class="stat-value">{{ "{:,.2f}".format(summary.presupuesto_a_transferir) }}</span>
+                <span class="stat-label">A Transferir (EUR)</span>
+            </div>
+            <div class="summary-stat stat-success">
+                <span class="stat-value">{{ "{:,.2f}".format(summary.total_enviado) }}</span>
+                <span class="stat-label">Enviado</span>
+            </div>
+            <div class="summary-stat stat-warning">
+                <span class="stat-value">{{ "{:,.2f}".format(summary.total_pendiente) }}</span>
+                <span class="stat-label">Pendiente</span>
+            </div>
+            <div class="summary-stat stat-info">
+                <span class="stat-value">{{ "{:.1f}".format(summary.porcentaje_transferido) }}%</span>
+                <span class="stat-label">Transferido</span>
+            </div>
+            <div class="summary-stat">
+                <span class="stat-value">{{ summary.transferencias_realizadas }}/{{ summary.transferencias_previstas or '-' }}</span>
+                <span class="stat-label">Transferencias</span>
+            </div>
+        </div>
+        <div class="summary-amounts">
+            <div class="amount-item">
+                <span class="amount-label">Subvencion:</span>
+                <span class="amount-value">{{ "{:,.2f}".format(summary.presupuesto_total) }} EUR</span>
+            </div>
+            <div class="amount-item">
+                <span class="amount-label">Gastos Espana validados:</span>
+                <span class="amount-value">{{ "{:,.2f}".format(summary.gastos_espana_validados) }} EUR</span>
+            </div>
+            {% if summary.total_gastos_transferencia > 0 %}
+            <div class="amount-item">
+                <span class="amount-label">Gastos bancarios:</span>
+                <span class="amount-value">{{ "{:,.2f}".format(summary.total_gastos_transferencia) }} EUR</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Action Bar -->
+    <div class="transfers-actions">
+        <div class="actions-left">
+            {% if default_moneda %}
+            <span class="moneda-info">Moneda destino: <strong>{{ default_moneda }}</strong> ({{ project.pais }})</span>
+            {% endif %}
+        </div>
+        <button
+            type="button"
+            class="btn btn-primary"
+            hx-get="/projects/{{ project.id }}/transfers/new"
+            hx-target="#transfer-modal-content"
+            hx-trigger="click"
+            onclick="openTransferModal()"
+        >
+            + Nueva Transferencia
+        </button>
+    </div>
+
+    <!-- Transfers Table -->
+    <div id="transfers-table-container">
+        {% include "partials/projects/transfers_table.html" %}
+    </div>
+</div>
+
+<!-- Modal Container -->
+<div id="transfer-modal" class="modal-overlay" style="display: none;" onclick="closeTransferModal(event)">
+    <div class="transfer-modal" onclick="event.stopPropagation()">
+        <div id="transfer-modal-content">
+            <!-- Modal content loaded via htmx -->
+        </div>
+    </div>
+</div>
+
+<script>
+function openTransferModal() {
+    document.getElementById('transfer-modal').style.display = 'flex';
+}
+
+function closeTransferModal(event) {
+    if (!event || event.target.id === 'transfer-modal') {
+        document.getElementById('transfer-modal').style.display = 'none';
+    }
+}
+
+// Close modal on escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeTransferModal();
+    }
+});
+
+// Toggle intermediate currency section
+function toggleIntermediateCurrency() {
+    const checkbox = document.getElementById('usa_moneda_intermedia');
+    const section = document.getElementById('intermediate-currency-section');
+    if (section) {
+        section.style.display = checkbox.checked ? 'block' : 'none';
+    }
+}
+
+// Calculate local currency amount based on exchange rate
+function calculateLocalAmount() {
+    const importeEuros = parseFloat(document.getElementById('importe_euros')?.value || 0);
+    const tipoCambio = parseFloat(document.getElementById('tipo_cambio_local')?.value || 0);
+
+    if (tipoCambio > 0) {
+        const importeLocal = importeEuros * tipoCambio;
+        const importeLocalField = document.getElementById('importe_moneda_local');
+        if (importeLocalField) {
+            importeLocalField.value = importeLocal.toFixed(2);
+        }
+    }
+}
+
+// Calculate exchange rate from local amount
+function calculateExchangeRate() {
+    const importeEuros = parseFloat(document.getElementById('importe_euros')?.value || 0);
+    const importeLocal = parseFloat(document.getElementById('importe_moneda_local')?.value || 0);
+
+    if (importeEuros > 0 && importeLocal > 0) {
+        const tipoCambio = importeLocal / importeEuros;
+        const tipoCambioField = document.getElementById('tipo_cambio_local');
+        if (tipoCambioField) {
+            tipoCambioField.value = tipoCambio.toFixed(6);
+        }
+    }
+}
+</script>

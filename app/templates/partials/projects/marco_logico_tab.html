@@ -1,0 +1,92 @@
+<div class="marco-logico-container" id="marco-logico-content">
+    <!-- Summary Header -->
+    {% include "partials/projects/marco_logico_summary.html" %}
+
+    <!-- General Objective Section -->
+    <div class="ml-section">
+        <div class="ml-section-header">
+            <h3>Objetivo General</h3>
+        </div>
+        <form
+            class="objetivo-general-form"
+            hx-post="/projects/{{ project.id }}/marco-logico"
+            hx-target="#marco-logico-content"
+            hx-swap="innerHTML"
+        >
+            <textarea
+                name="objetivo_general"
+                rows="3"
+                placeholder="Describa el objetivo general del proyecto..."
+            >{{ framework.objetivo_general if framework and framework.objetivo_general else '' }}</textarea>
+            <div class="form-actions-inline">
+                <button type="submit" class="btn btn-sm btn-primary">Guardar</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- General Level Indicators -->
+    {% if framework and framework.indicators %}
+    <div class="ml-section ml-indicators-section">
+        <div class="ml-section-header">
+            <h4>Indicadores del Objetivo General</h4>
+            <button
+                class="btn btn-sm btn-secondary"
+                hx-get="/projects/{{ project.id }}/marco-logico/indicator-form?framework_id={{ framework.id }}"
+                hx-target="#indicator-modal-container"
+                hx-swap="innerHTML"
+                onclick="document.getElementById('indicator-modal-container').classList.add('active')"
+            >
+                + Indicador
+            </button>
+        </div>
+        <div class="ml-indicators-grid">
+            {% for indicator in framework.indicators %}
+                {% if not indicator.objective_id and not indicator.result_id and not indicator.activity_id %}
+                    {% include "partials/projects/marco_logico_indicator.html" %}
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Tree View -->
+    <div class="ml-section">
+        <div class="ml-section-header">
+            <h3>Estructura del Marco Logico</h3>
+            <button
+                class="btn btn-sm btn-primary"
+                hx-get="/projects/{{ project.id }}/marco-logico/objective-form"
+                hx-target="#indicator-modal-container"
+                hx-swap="innerHTML"
+                onclick="document.getElementById('indicator-modal-container').classList.add('active')"
+            >
+                + Objetivo Especifico
+            </button>
+        </div>
+
+        <!-- Tree -->
+        {% include "partials/projects/marco_logico_tree.html" %}
+    </div>
+
+    <!-- Modal Container for Indicator Forms -->
+    <div id="indicator-modal-container" class="modal-container"></div>
+
+    <!-- Modal Container for Verification Sources -->
+    <div id="verification-modal-container" class="modal-container"></div>
+</div>
+
+<script>
+function openVerificationModal(targetType, targetId) {
+    htmx.ajax('GET', '/projects/' + targetType + 's/' + targetId + '/verification-sources', {
+        target: '#verification-modal-container',
+        swap: 'innerHTML'
+    }).then(function() {
+        document.getElementById('verification-modal-container').classList.add('active');
+    });
+}
+
+function closeVerificationModal() {
+    document.getElementById('verification-modal-container').classList.remove('active');
+    document.getElementById('verification-modal-container').innerHTML = '';
+}
+</script>

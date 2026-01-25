@@ -1,0 +1,129 @@
+<tr id="expense-row-{{ expense.id }}" class="expense-row">
+    <td class="col-date">{{ expense.fecha_factura.strftime('%d/%m/%Y') }}</td>
+    <td class="col-concept">
+        <span class="concept-text" title="{{ expense.concepto }}">
+            {{ expense.concepto[:50] }}{% if expense.concepto|length > 50 %}...{% endif %}
+        </span>
+        {% if expense.documento_path %}
+        <span class="doc-indicator" title="Documento adjunto">📎</span>
+        {% endif %}
+    </td>
+    <td class="col-expedidor">{{ expense.expedidor }}</td>
+    <td class="col-partida">
+        <span class="partida-code">{{ expense.budget_line.code }}</span>
+    </td>
+    <td class="col-amount">
+        <span class="amount-cell">{{ "{:,.2f}".format(expense.cantidad_euros) }}</span>
+        {% if expense.moneda_original != 'EUR' %}
+        <span class="original-amount">({{ "{:,.2f}".format(expense.cantidad_original) }} {{ expense.moneda_original }})</span>
+        {% endif %}
+    </td>
+    <td class="col-imputable">
+        <span class="amount-cell">{{ "{:,.2f}".format(expense.cantidad_imputable) }}</span>
+        {% if expense.porcentaje < 100 %}
+        <span class="percentage-badge">{{ expense.porcentaje }}%</span>
+        {% endif %}
+    </td>
+    <td class="col-ubicacion">
+        <span class="ubicacion-badge ubicacion-{{ expense.ubicacion.value }}">
+            {{ 'Espana' if expense.ubicacion.value == 'espana' else 'Terreno' }}
+        </span>
+    </td>
+    <td class="col-estado">
+        <span class="estado-gasto-badge estado-gasto-{{ expense.estado.value }}">
+            {% if expense.estado.value == 'borrador' %}Borrador
+            {% elif expense.estado.value == 'pendiente_revision' %}Pendiente
+            {% elif expense.estado.value == 'validado' %}Validado
+            {% elif expense.estado.value == 'rechazado' %}Rechazado
+            {% elif expense.estado.value == 'justificado' %}Justificado
+            {% endif %}
+        </span>
+    </td>
+    <td class="col-actions">
+        <div class="action-buttons">
+            {% if expense.estado.value == 'borrador' %}
+            <button
+                class="btn-icon"
+                title="Editar"
+                hx-get="/projects/{{ project.id }}/expenses/{{ expense.id }}/edit"
+                hx-target="#expense-modal-content"
+                hx-trigger="click"
+                onclick="openExpenseModal()"
+            >✏️</button>
+            <button
+                class="btn-icon btn-success"
+                title="Validar"
+                hx-post="/projects/{{ project.id }}/expenses/{{ expense.id }}/validate"
+                hx-target="#expenses-content"
+                hx-select="#expenses-content"
+                hx-swap="outerHTML"
+                hx-confirm="¿Validar este gasto? Se actualizara el presupuesto ejecutado."
+            >✓</button>
+            <button
+                class="btn-icon btn-danger"
+                title="Eliminar"
+                hx-delete="/projects/{{ project.id }}/expenses/{{ expense.id }}"
+                hx-target="#expenses-content"
+                hx-select="#expenses-content"
+                hx-swap="outerHTML"
+                hx-confirm="¿Eliminar este gasto?"
+            >🗑️</button>
+            {% elif expense.estado.value == 'pendiente_revision' %}
+            <button
+                class="btn-icon btn-success"
+                title="Validar"
+                hx-post="/projects/{{ project.id }}/expenses/{{ expense.id }}/validate"
+                hx-target="#expenses-content"
+                hx-select="#expenses-content"
+                hx-swap="outerHTML"
+                hx-confirm="¿Validar este gasto?"
+            >✓</button>
+            <button
+                class="btn-icon btn-warning"
+                title="Rechazar"
+                hx-post="/projects/{{ project.id }}/expenses/{{ expense.id }}/reject"
+                hx-target="#expenses-content"
+                hx-select="#expenses-content"
+                hx-swap="outerHTML"
+                hx-confirm="¿Rechazar este gasto?"
+            >✗</button>
+            <button
+                class="btn-icon"
+                title="Volver a borrador"
+                hx-post="/projects/{{ project.id }}/expenses/{{ expense.id }}/revert"
+                hx-target="#expenses-content"
+                hx-select="#expenses-content"
+                hx-swap="outerHTML"
+            >↩️</button>
+            {% elif expense.estado.value == 'validado' %}
+            <button
+                class="btn-icon"
+                title="Volver a borrador"
+                hx-post="/projects/{{ project.id }}/expenses/{{ expense.id }}/revert"
+                hx-target="#expenses-content"
+                hx-select="#expenses-content"
+                hx-swap="outerHTML"
+                hx-confirm="¿Revertir a borrador? Se restara el importe del presupuesto ejecutado."
+            >↩️</button>
+            {% elif expense.estado.value == 'rechazado' %}
+            <button
+                class="btn-icon"
+                title="Volver a borrador"
+                hx-post="/projects/{{ project.id }}/expenses/{{ expense.id }}/revert"
+                hx-target="#expenses-content"
+                hx-select="#expenses-content"
+                hx-swap="outerHTML"
+            >↩️</button>
+            <button
+                class="btn-icon btn-danger"
+                title="Eliminar"
+                hx-delete="/projects/{{ project.id }}/expenses/{{ expense.id }}"
+                hx-target="#expenses-content"
+                hx-select="#expenses-content"
+                hx-swap="outerHTML"
+                hx-confirm="¿Eliminar este gasto?"
+            >🗑️</button>
+            {% endif %}
+        </div>
+    </td>
+</tr>

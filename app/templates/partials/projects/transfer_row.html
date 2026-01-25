@@ -1,0 +1,160 @@
+<tr class="transfer-row" id="transfer-row-{{ transfer.id }}">
+    <td class="col-numero">
+        <span class="numero-badge">{{ transfer.numero }}/{{ transfer.total_previstas }}</span>
+        {% if transfer.es_ultima %}
+        <span class="ultima-badge" title="Ultima transferencia">U</span>
+        {% endif %}
+    </td>
+    <td class="col-date">
+        {% if transfer.fecha_emision %}
+        {{ transfer.fecha_emision.strftime('%d/%m/%Y') }}
+        {% else %}
+        <span class="text-muted">-</span>
+        {% endif %}
+    </td>
+    <td class="col-date">
+        {% if transfer.fecha_recepcion %}
+        {{ transfer.fecha_recepcion.strftime('%d/%m/%Y') }}
+        {% else %}
+        <span class="text-muted">-</span>
+        {% endif %}
+    </td>
+    <td class="col-amount">
+        <span class="amount-primary">{{ "{:,.2f}".format(transfer.importe_euros) }}</span>
+        {% if transfer.gastos_transferencia > 0 %}
+        <span class="gastos-badge" title="Gastos: {{ "{:,.2f}".format(transfer.gastos_transferencia) }} EUR">
+            -{{ "{:,.2f}".format(transfer.gastos_transferencia) }}
+        </span>
+        {% endif %}
+    </td>
+    <td class="col-exchange">
+        {% if transfer.tipo_cambio_local %}
+        {{ "{:,.4f}".format(transfer.tipo_cambio_local) }}
+        {% else %}
+        <span class="text-muted">-</span>
+        {% endif %}
+    </td>
+    <td class="col-amount">
+        {% if transfer.importe_moneda_local %}
+        <span class="amount-local">{{ "{:,.2f}".format(transfer.importe_moneda_local) }}</span>
+        <span class="moneda-badge">{{ transfer.moneda_local or '?' }}</span>
+        {% else %}
+        <span class="text-muted">-</span>
+        {% endif %}
+    </td>
+    <td class="col-estado">
+        <span class="estado-transfer-badge estado-transfer-{{ transfer.estado.value }}">
+            {{ transfer.estado.value|title }}
+        </span>
+    </td>
+    <td class="col-actions">
+        <div class="action-buttons">
+            {% if transfer.estado.value == 'solicitada' %}
+            <!-- Can edit, delete, or approve -->
+            <button
+                type="button"
+                class="btn-icon"
+                title="Editar"
+                hx-get="/projects/{{ project.id }}/transfers/{{ transfer.id }}/edit"
+                hx-target="#transfer-modal-content"
+                hx-trigger="click"
+                onclick="openTransferModal()"
+            >✏️</button>
+            <button
+                type="button"
+                class="btn-icon btn-success"
+                title="Aprobar"
+                hx-post="/projects/{{ project.id }}/transfers/{{ transfer.id }}/approve"
+                hx-target="#transfers-content"
+                hx-swap="outerHTML"
+                hx-confirm="¿Aprobar esta transferencia?"
+            >✓</button>
+            <button
+                type="button"
+                class="btn-icon btn-danger"
+                title="Eliminar"
+                hx-delete="/projects/{{ project.id }}/transfers/{{ transfer.id }}"
+                hx-target="#transfers-content"
+                hx-swap="outerHTML"
+                hx-confirm="¿Eliminar esta transferencia?"
+            >🗑️</button>
+            {% elif transfer.estado.value == 'aprobada' %}
+            <!-- Can edit, emit, or revert -->
+            <button
+                type="button"
+                class="btn-icon"
+                title="Editar"
+                hx-get="/projects/{{ project.id }}/transfers/{{ transfer.id }}/edit"
+                hx-target="#transfer-modal-content"
+                hx-trigger="click"
+                onclick="openTransferModal()"
+            >✏️</button>
+            <button
+                type="button"
+                class="btn-icon btn-success"
+                title="Confirmar emision"
+                hx-post="/projects/{{ project.id }}/transfers/{{ transfer.id }}/confirm-emission"
+                hx-target="#transfers-content"
+                hx-swap="outerHTML"
+                hx-confirm="¿Confirmar emision de esta transferencia?"
+            >📤</button>
+            <button
+                type="button"
+                class="btn-icon btn-warning"
+                title="Revertir a solicitada"
+                hx-post="/projects/{{ project.id }}/transfers/{{ transfer.id }}/revert"
+                hx-target="#transfers-content"
+                hx-swap="outerHTML"
+            >↩️</button>
+            {% elif transfer.estado.value == 'emitida' %}
+            <!-- Can confirm reception or revert -->
+            <button
+                type="button"
+                class="btn-icon btn-success"
+                title="Confirmar recepcion"
+                hx-post="/projects/{{ project.id }}/transfers/{{ transfer.id }}/confirm-reception"
+                hx-target="#transfers-content"
+                hx-swap="outerHTML"
+                hx-confirm="¿Confirmar recepcion de esta transferencia?"
+            >📥</button>
+            <button
+                type="button"
+                class="btn-icon btn-warning"
+                title="Revertir a aprobada"
+                hx-post="/projects/{{ project.id }}/transfers/{{ transfer.id }}/revert"
+                hx-target="#transfers-content"
+                hx-swap="outerHTML"
+            >↩️</button>
+            {% elif transfer.estado.value == 'recibida' %}
+            <!-- Can close or revert -->
+            <button
+                type="button"
+                class="btn-icon btn-success"
+                title="Cerrar"
+                hx-post="/projects/{{ project.id }}/transfers/{{ transfer.id }}/close"
+                hx-target="#transfers-content"
+                hx-swap="outerHTML"
+                hx-confirm="¿Cerrar esta transferencia?"
+            >🔒</button>
+            <button
+                type="button"
+                class="btn-icon btn-warning"
+                title="Revertir a emitida"
+                hx-post="/projects/{{ project.id }}/transfers/{{ transfer.id }}/revert"
+                hx-target="#transfers-content"
+                hx-swap="outerHTML"
+            >↩️</button>
+            {% elif transfer.estado.value == 'cerrada' %}
+            <!-- Can only revert -->
+            <button
+                type="button"
+                class="btn-icon btn-warning"
+                title="Reabrir"
+                hx-post="/projects/{{ project.id }}/transfers/{{ transfer.id }}/revert"
+                hx-target="#transfers-content"
+                hx-swap="outerHTML"
+            >🔓</button>
+            {% endif %}
+        </div>
+    </td>
+</tr>

@@ -1,0 +1,92 @@
+<div class="form-grid">
+    <div class="form-group">
+        <label for="codigo_contable">Código Contable *</label>
+        <input type="text" id="codigo_contable" name="codigo_contable" required
+            value="{{ project.codigo_contable if project else '' }}"
+            placeholder="Ej: 21.17.13">
+    </div>
+    <div class="form-group">
+        <label for="codigo_area">Código de Área *</label>
+        <input type="text" id="codigo_area" name="codigo_area" required
+            value="{{ project.codigo_area if project else '' }}"
+            placeholder="Ej: 2017.AACID.Haití">
+    </div>
+</div>
+
+<div class="form-group">
+    <label for="titulo">Título del Proyecto *</label>
+    <input type="text" id="titulo" name="titulo" required
+        value="{{ project.titulo if project else '' }}"
+        placeholder="Nombre completo del proyecto">
+</div>
+
+<div class="form-grid">
+    <div class="form-group">
+        <label for="pais">País *</label>
+        <input type="text" id="pais" name="pais" required list="paises-list"
+            value="{{ project.pais if project else '' }}"
+            placeholder="País de ejecución">
+    </div>
+    <div class="form-group">
+        <label for="sector">Sector *</label>
+        <input type="text" id="sector" name="sector" required list="sectores-list"
+            value="{{ project.sector if project else '' }}"
+            placeholder="Sector de intervención">
+    </div>
+</div>
+
+<div class="form-grid">
+    <div class="form-group">
+        <label for="estado">Estado *</label>
+        <select id="estado" name="estado" required>
+            {% for e in estados %}
+            <option value="{{ e.value }}" {% if project and project.estado == e %}selected{% endif %}>
+                {{ e.value|replace('_', ' ')|title }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="form-group">
+        <label for="tipo">Tipo *</label>
+        <select id="tipo" name="tipo" required>
+            {% for t in tipos %}
+            <option value="{{ t.value }}" {% if project and project.tipo == t %}selected{% endif %}>
+                {{ t.value|replace('_', ' ')|title }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+</div>
+
+<div class="form-group">
+    <label for="subvencion">Subvención (€) *</label>
+    <input type="number" id="subvencion" name="subvencion" required step="0.01" min="0"
+        value="{{ project.subvencion if project else '' }}"
+        placeholder="0.00">
+</div>
+
+<div class="form-grid form-grid-3">
+    <div class="form-group">
+        <label for="fecha_inicio">Fecha de Inicio *</label>
+        <input type="date" id="fecha_inicio" name="fecha_inicio" required
+            value="{{ project.fecha_inicio if project else '' }}">
+    </div>
+    <div class="form-group">
+        <label for="fecha_finalizacion">Fecha de Finalización *</label>
+        <input type="date" id="fecha_finalizacion" name="fecha_finalizacion" required
+            value="{{ project.fecha_finalizacion if project else '' }}">
+    </div>
+    <div class="form-group">
+        <label for="fecha_justificacion">Fecha de Justificación</label>
+        <input type="date" id="fecha_justificacion" name="fecha_justificacion"
+            value="{{ project.fecha_justificacion if project and project.fecha_justificacion else '' }}">
+    </div>
+</div>
+
+<div class="form-group checkbox-group">
+    <label>
+        <input type="checkbox" name="ampliado" value="true"
+            {% if project and project.ampliado %}checked{% endif %}>
+        Proyecto ampliado
+    </label>
+</div>

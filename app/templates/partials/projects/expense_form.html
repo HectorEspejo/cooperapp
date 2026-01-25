@@ -1,0 +1,265 @@
+<div class="modal-header">
+    <h3>{% if is_edit %}Editar Gasto{% else %}Nuevo Gasto{% endif %}</h3>
+    <button type="button" class="btn-close" onclick="closeExpenseModal()">&times;</button>
+</div>
+
+<form
+    class="expense-form"
+    {% if is_edit %}
+    hx-put="/projects/{{ project.id }}/expenses/{{ expense.id }}"
+    {% else %}
+    hx-post="/projects/{{ project.id }}/expenses"
+    {% endif %}
+    hx-target="#expenses-content"
+    hx-select="#expenses-content"
+    hx-swap="outerHTML"
+    hx-on::after-request="if(event.detail.successful) closeExpenseModal()"
+>
+    <div class="modal-body">
+        <!-- Balance Warning -->
+        <div id="balance-warning" class="alert alert-warning" style="display: none;"></div>
+
+        <!-- Basic Info -->
+        <div class="form-section">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="fecha_factura">Fecha Factura *</label>
+                    <input
+                        type="date"
+                        id="fecha_factura"
+                        name="fecha_factura"
+                        value="{{ expense.fecha_factura.isoformat() if expense else '' }}"
+                        required
+                    >
+                </div>
+                <div class="form-group">
+                    <label for="budget_line_id">Partida Presupuestaria *</label>
+                    <select
+                        id="budget_line_id"
+                        name="budget_line_id"
+                        required
+                        onchange="checkBudgetBalance()"
+                    >
+                        <option value="">Seleccionar partida...</option>
+                        {% for line in budget_lines %}
+                        <option
+                            value="{{ line.id }}"
+                            data-disponible-espana="{{ line.disponible_espana }}"
+                            data-disponible-terreno="{{ line.disponible_terreno }}"
+                            data-spain-only="{{ 'true' if line.is_spain_only else 'false' }}"
+                            {% if expense and expense.budget_line_id == line.id %}selected{% endif %}
+                        >
+                            {{ line.code }} - {{ line.name }}
+                            (Disp: {{ "{:,.2f}".format(line.disponible_espana) }} ESP / {{ "{:,.2f}".format(line.disponible_terreno) }} TER)
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="concepto">Concepto *</label>
+                <input
+                    type="text"
+                    id="concepto"
+                    name="concepto"
+                    value="{{ expense.concepto if expense else '' }}"
+                    maxlength="500"
+                    required
+                    placeholder="Descripcion del gasto"
+                >
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="expedidor">Expedidor *</label>
+                    <input
+                        type="text"
+                        id="expedidor"
+                        name="expedidor"
+                        value="{{ expense.expedidor if expense else '' }}"
+                        maxlength="200"
+                        required
+                        placeholder="Nombre del proveedor"
+                    >
+                </div>
+                <div class="form-group">
+                    <label for="persona">Persona</label>
+                    <input
+                        type="text"
+                        id="persona"
+                        name="persona"
+                        value="{{ expense.persona if expense else '' }}"
+                        maxlength="200"
+                        placeholder="Persona responsable (opcional)"
+                    >
+                </div>
+            </div>
+        </div>
+
+        <!-- Amounts -->
+        <div class="form-section">
+            <h4>Importes</h4>
+            <div class="form-grid form-grid-3">
+                <div class="form-group">
+                    <label for="cantidad_original">Importe Original *</label>
+                    <input
+                        type="number"
+                        id="cantidad_original"
+                        name="cantidad_original"
+                        value="{{ expense.cantidad_original if expense else '' }}"
+                        step="0.01"
+                        min="0"
+                        required
+                        onchange="updateCurrencyConversion()"
+                        onkeyup="updateCurrencyConversion()"
+                    >
+                </div>
+                <div class="form-group">
+                    <label for="moneda_original">Moneda</label>
+                    <select
+                        id="moneda_original"
+                        name="moneda_original"
+                        onchange="updateCurrencyConversion()"
+                    >
+                        <option value="EUR" {% if not expense or expense.moneda_original == 'EUR' %}selected{% endif %}>EUR</option>
+                        <option value="USD" {% if expense and expense.moneda_original == 'USD' %}selected{% endif %}>USD</option>
+                        <option value="GBP" {% if expense and expense.moneda_original == 'GBP' %}selected{% endif %}>GBP</option>
+                        <option value="MAD" {% if expense and expense.moneda_original == 'MAD' %}selected{% endif %}>MAD</option>
+                        <option value="XOF" {% if expense and expense.moneda_original == 'XOF' %}selected{% endif %}>XOF</option>
+                        <option value="XAF" {% if expense and expense.moneda_original == 'XAF' %}selected{% endif %}>XAF</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="tipo_cambio">Tipo de Cambio</label>
+                    <input
+                        type="number"
+                        id="tipo_cambio"
+                        name="tipo_cambio"
+                        value="{{ expense.tipo_cambio if expense and expense.tipo_cambio else '' }}"
+                        step="0.000001"
+                        min="0"
+                        placeholder="1.000000"
+                        onchange="updateCurrencyConversion()"
+                        onkeyup="updateCurrencyConversion()"
+                    >
+                </div>
+            </div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="cantidad_euros">Importe en EUR *</label>
+                    <input
+                        type="number"
+                        id="cantidad_euros"
+                        name="cantidad_euros"
+                        value="{{ expense.cantidad_euros if expense else '' }}"
+                        step="0.01"
+                        min="0"
+                        required
+                        onchange="updateImputeAmount(); checkBudgetBalance()"
+                        onkeyup="updateImputeAmount(); checkBudgetBalance()"
+                    >
+                </div>
+                <div class="form-group">
+                    <label for="porcentaje">% Imputacion</label>
+                    <input
+                        type="number"
+                        id="porcentaje"
+                        name="porcentaje"
+                        value="{{ expense.porcentaje if expense else '100' }}"
+                        step="0.01"
+                        min="0"
+                        max="100"
+                        onchange="updateImputeAmount(); checkBudgetBalance()"
+                        onkeyup="updateImputeAmount(); checkBudgetBalance()"
+                    >
+                </div>
+            </div>
+            <div class="imputable-display">
+                <span class="imputable-label">Importe imputable:</span>
+                <span id="cantidad_imputable_display" class="imputable-value">
+                    {{ "{:,.2f}".format(expense.cantidad_imputable) if expense else '0.00' }} EUR
+                </span>
+            </div>
+        </div>
+
+        <!-- Location & Funder -->
+        <div class="form-section">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Ubicacion *</label>
+                    <div class="radio-group">
+                        <label class="radio-label">
+                            <input
+                                type="radio"
+                                name="ubicacion"
+                                value="espana"
+                                {% if not expense or expense.ubicacion.value == 'espana' %}checked{% endif %}
+                                onchange="checkBudgetBalance()"
+                            >
+                            <span>Espana</span>
+                        </label>
+                        <label class="radio-label">
+                            <input
+                                type="radio"
+                                name="ubicacion"
+                                value="terreno"
+                                {% if expense and expense.ubicacion.value == 'terreno' %}checked{% endif %}
+                                onchange="checkBudgetBalance()"
+                            >
+                            <span>Terreno</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="financiado_por">Financiado por *</label>
+                    <input
+                        type="text"
+                        id="financiado_por"
+                        name="financiado_por"
+                        value="{{ expense.financiado_por if expense else project.financiador.value }}"
+                        maxlength="100"
+                        required
+                    >
+                </div>
+            </div>
+        </div>
+
+        <!-- Notes -->
+        <div class="form-section">
+            <div class="form-group">
+                <label for="observaciones">Observaciones</label>
+                <textarea
+                    id="observaciones"
+                    name="observaciones"
+                    rows="3"
+                    placeholder="Notas adicionales (opcional)"
+                >{{ expense.observaciones if expense else '' }}</textarea>
+            </div>
+        </div>
+
+        {% if is_edit and expense.documento_path %}
+        <div class="form-section">
+            <div class="document-info">
+                <span class="doc-icon">📎</span>
+                <span class="doc-name">{{ expense.documento_path.split('/')[-1] }}</span>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeExpenseModal()">Cancelar</button>
+        <button type="submit" class="btn btn-primary">
+            {% if is_edit %}Guardar Cambios{% else %}Crear Gasto{% endif %}
+        </button>
+    </div>
+</form>
+
+<script>
+// Initialize imputable amount display
+document.addEventListener('DOMContentLoaded', function() {
+    updateImputeAmount();
+    checkBudgetBalance();
+});
+</script>

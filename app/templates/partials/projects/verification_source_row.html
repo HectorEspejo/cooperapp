@@ -1,0 +1,60 @@
+<div class="source-card {% if source.validado %}validated{% endif %}">
+    <div class="source-header">
+        <div class="source-doc-info">
+            {% if source.document.is_image %}
+            <span class="source-doc-icon">🖼</span>
+            {% elif source.document.is_pdf %}
+            <span class="source-doc-icon">📄</span>
+            {% else %}
+            <span class="source-doc-icon">📎</span>
+            {% endif %}
+            <span class="source-doc-name" title="{{ source.document.original_filename }}">
+                {{ source.document.original_filename|truncate(30) }}
+            </span>
+        </div>
+        <div class="source-actions">
+            <a
+                href="/api/documents/{{ source.document.id }}/download"
+                class="btn btn-icon btn-sm"
+                title="Descargar"
+                download
+            >📥</a>
+            {% if not source.validado %}
+            <button
+                class="btn btn-icon btn-sm btn-success"
+                title="Validar fuente"
+                hx-post="/projects/verification-sources/{{ source.id }}/validate"
+                hx-target=".verification-modal"
+                hx-swap="outerHTML"
+            >✓</button>
+            {% endif %}
+            <button
+                class="btn btn-icon btn-sm btn-danger"
+                title="Eliminar vinculo"
+                hx-delete="/projects/verification-sources/{{ source.id }}"
+                hx-target=".verification-modal"
+                hx-swap="outerHTML"
+                hx-confirm="¿Eliminar esta fuente de verificacion?"
+            >✕</button>
+        </div>
+    </div>
+    <div class="source-body">
+        <div class="source-meta">
+            <span class="source-tipo tipo-{{ source.tipo.value }}">
+                {{ tipo_nombres[source.tipo.value] }}
+            </span>
+            {% if source.validado %}
+            <span class="source-validated-badge" title="Validado el {{ source.fecha_validacion.strftime('%d/%m/%Y') if source.fecha_validacion else '' }}">
+                ✓ Validado
+            </span>
+            {% else %}
+            <span class="source-pending-badge">
+                Pendiente
+            </span>
+            {% endif %}
+        </div>
+        {% if source.descripcion %}
+        <p class="source-description">{{ source.descripcion }}</p>
+        {% endif %}
+    </div>
+</div>

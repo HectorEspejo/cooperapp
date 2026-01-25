@@ -1,0 +1,77 @@
+{% if projects %}
+<div class="table-container">
+    <table class="projects-table">
+        <thead>
+            <tr>
+                <th>Código</th>
+                <th>Título</th>
+                <th>País</th>
+                <th>Estado</th>
+                <th>Tipo</th>
+                <th>Subvención</th>
+                <th>Fechas</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for project in projects %}
+            {% include "partials/projects/row.html" %}
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Pagination -->
+{% if total_pages > 1 %}
+<div class="pagination">
+    <span class="pagination-info">
+        Mostrando página {{ page }} de {{ total_pages }} ({{ total }} proyectos)
+    </span>
+    <div class="pagination-controls">
+        {% if page > 1 %}
+        <button
+            class="btn btn-sm"
+            hx-get="/projects/partials/list?page={{ page - 1 }}{% if filters.estado %}&estado={{ filters.estado }}{% endif %}{% if filters.tipo %}&tipo={{ filters.tipo }}{% endif %}{% if filters.pais %}&pais={{ filters.pais }}{% endif %}{% if filters.search %}&search={{ filters.search }}{% endif %}"
+            hx-target="#projects-list"
+        >
+            ← Anterior
+        </button>
+        {% endif %}
+
+        {% for p in range(1, total_pages + 1) %}
+            {% if p == page %}
+            <span class="page-current">{{ p }}</span>
+            {% elif p == 1 or p == total_pages or (p >= page - 2 and p <= page + 2) %}
+            <button
+                class="btn btn-sm btn-secondary"
+                hx-get="/projects/partials/list?page={{ p }}{% if filters.estado %}&estado={{ filters.estado }}{% endif %}{% if filters.tipo %}&tipo={{ filters.tipo }}{% endif %}{% if filters.pais %}&pais={{ filters.pais }}{% endif %}{% if filters.search %}&search={{ filters.search }}{% endif %}"
+                hx-target="#projects-list"
+            >
+                {{ p }}
+            </button>
+            {% elif p == 2 or p == total_pages - 1 %}
+            <span class="page-ellipsis">...</span>
+            {% endif %}
+        {% endfor %}
+
+        {% if page < total_pages %}
+        <button
+            class="btn btn-sm"
+            hx-get="/projects/partials/list?page={{ page + 1 }}{% if filters.estado %}&estado={{ filters.estado }}{% endif %}{% if filters.tipo %}&tipo={{ filters.tipo }}{% endif %}{% if filters.pais %}&pais={{ filters.pais }}{% endif %}{% if filters.search %}&search={{ filters.search }}{% endif %}"
+            hx-target="#projects-list"
+        >
+            Siguiente →
+        </button>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+{% else %}
+<div class="empty-state">
+    <div class="empty-icon">📋</div>
+    <h3>No hay proyectos</h3>
+    <p>No se encontraron proyectos con los filtros seleccionados.</p>
+    <a href="/projects/new" class="btn btn-primary">Crear primer proyecto</a>
+</div>
+{% endif %}
