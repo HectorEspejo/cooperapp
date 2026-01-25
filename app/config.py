@@ -6,6 +6,9 @@ class Settings(BaseSettings):
     app_name: str = "CooperApp"
     debug: bool = True
     database_url: str = "sqlite:///./cooperapp.db"
+    app_port: int = 8000
+    uploads_path: str = "uploads"
+    exports_path: str = "exports"
 
     class Config:
         env_file = ".env"
