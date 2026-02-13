@@ -1,0 +1,28 @@
+<div class="modal-content expense-upload-modal">
+    <div class="modal-header">
+        <h3>Subir Justificante</h3>
+        <button type="button" class="modal-close" onclick="closeExpenseUploadModal()">&times;</button>
+    </div>
+    <div class="upload-info">
+        <p><strong>Gasto:</strong> {{ expense.concepto }}</p>
+        <p><strong>Partida:</strong> {{ expense.budget_line.code }} - {{ expense.budget_line.name }}</p>
+        <p><strong>Importe:</strong> {{ "{:,.2f}".format(expense.cantidad_euros) }} EUR</p>
+    </div>
+    <form hx-post="/projects/{{ project.id }}/expenses/{{ expense.id }}/upload"
+          hx-encoding="multipart/form-data"
+          hx-target="#expenses-content"
+          hx-select="#expenses-content"
+          hx-swap="outerHTML"
+          hx-on::after-request="closeExpenseUploadModal()">
+        <div class="form-group">
+            <label for="expense-file">Documento justificante (factura)</label>
+            <input type="file" id="expense-file" name="file" required
+                   accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx">
+            <small class="form-hint">Formatos: PDF, imagenes, Word, Excel</small>
+        </div>
+        <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" onclick="closeExpenseUploadModal()">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Subir documento</button>
+        </div>
+    </form>
+</div>

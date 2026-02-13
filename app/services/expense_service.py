@@ -145,6 +145,9 @@ class ExpenseService:
         if expense.estado not in (EstadoGasto.borrador, EstadoGasto.pendiente_revision):
             raise ValueError("Solo se pueden validar gastos en estado borrador o pendiente de revisión")
 
+        if not expense.documento_path:
+            raise ValueError("Debe adjuntar un justificante (factura) para validar este gasto")
+
         # Update budget line executed amount
         self._update_budget_line_executed(expense, add=True)
 

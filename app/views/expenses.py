@@ -1,14 +1,18 @@
 from datetime import date
 from decimal import Decimal
+import os
 from fastapi import APIRouter, Depends, Request, Form, HTTPException, UploadFile, File, Query
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.expense import UbicacionGasto, EstadoGasto
+from app.models.document import CategoriaDocumento
 from app.services.expense_service import ExpenseService
 from app.services.project_service import ProjectService
+from app.services.document_service import DocumentService
 from app.schemas.expense import ExpenseCreate, ExpenseUpdate, ExpenseFilters
+from app.schemas.document import DocumentCreate
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
@@ -20,6 +24,10 @@ def get_expense_service(db: Session = Depends(get_db)) -> ExpenseService:
 
 def get_project_service(db: Session = Depends(get_db)) -> ProjectService:
     return ProjectService(db)
+
+
+def get_document_service(db: Session = Depends(get_db)) -> DocumentService:
+    return DocumentService(db)
 
 
 @router.get("/{project_id}/expenses", response_class=HTMLResponse)
@@ -337,7 +345,7 @@ def validate_expense(
     summary = expense_service.get_expense_summary(project_id)
     budget_lines = expense_service.get_budget_lines_with_balance(project_id)
 
-    return templates.TemplateResponse(
+    response = templates.TemplateResponse(
         "partials/projects/expenses_tab.html",
         {
             "request": request,
@@ -349,6 +357,9 @@ def validate_expense(
             "ubicaciones": UbicacionGasto,
         },
     )
+    # Trigger budget tab refresh when expense validation changes budget values
+    response.headers["HX-Trigger"] = "budgetUpdated"
+    return response
 
 
 @router.post("/{project_id}/expenses/{expense_id}/reject", response_class=HTMLResponse)
@@ -377,7 +388,7 @@ async def reject_expense(
     summary = expense_service.get_expense_summary(project_id)
     budget_lines = expense_service.get_budget_lines_with_balance(project_id)
 
-    return templates.TemplateResponse(
+    response = templates.TemplateResponse(
         "partials/projects/expenses_tab.html",
         {
             "request": request,
@@ -389,6 +400,9 @@ async def reject_expense(
             "ubicaciones": UbicacionGasto,
         },
     )
+    # Trigger budget tab refresh when expense validation changes budget values
+    response.headers["HX-Trigger"] = "budgetUpdated"
+    return response
 
 
 @router.post("/{project_id}/expenses/{expense_id}/revert", response_class=HTMLResponse)
@@ -414,6 +428,86 @@ def revert_expense(
     summary = expense_service.get_expense_summary(project_id)
     budget_lines = expense_service.get_budget_lines_with_balance(project_id)
 
+    response = templates.TemplateResponse(
+        "partials/projects/expenses_tab.html",
+        {
+            "request": request,
+            "project": project,
+            "expenses": expenses,
+            "summary": summary,
+            "budget_lines": budget_lines,
+            "estados": EstadoGasto,
+            "ubicaciones": UbicacionGasto,
+        },
+    )
+    # Trigger budget tab refresh when expense validation changes budget values
+    response.headers["HX-Trigger"] = "budgetUpdated"
+    return response
+
+
+@router.get("/{project_id}/expenses/{expense_id}/upload-modal", response_class=HTMLResponse)
+def upload_modal(
+    request: Request,
+    project_id: int,
+    expense_id: int,
+    expense_service: ExpenseService = Depends(get_expense_service),
+    project_service: ProjectService = Depends(get_project_service),
+):
+    """Render upload modal for expense document"""
+    project = project_service.get_by_id(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Proyecto no encontrado")
+
+    expense = expense_service.get_expense_by_id(expense_id)
+    if not expense or expense.project_id != project_id:
+        raise HTTPException(status_code=404, detail="Gasto no encontrado")
+
+    return templates.TemplateResponse(
+        "partials/projects/expense_upload_modal.html",
+        {"request": request, "project": project, "expense": expense},
+    )
+
+
+@router.post("/{project_id}/expenses/{expense_id}/upload", response_class=HTMLResponse)
+async def upload_document(
+    request: Request,
+    project_id: int,
+    expense_id: int,
+    file: UploadFile = File(...),
+    expense_service: ExpenseService = Depends(get_expense_service),
+    project_service: ProjectService = Depends(get_project_service),
+    document_service: DocumentService = Depends(get_document_service),
+):
+    """Upload a document for an expense"""
+    project = project_service.get_by_id(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Proyecto no encontrado")
+
+    expense = expense_service.get_expense_by_id(expense_id)
+    if not expense or expense.project_id != project_id:
+        raise HTTPException(status_code=404, detail="Gasto no encontrado")
+
+    try:
+        # Save document in expense
+        expense_service.save_document(expense_id, file)
+
+        # Also create entry in project documents with category "factura"
+        await file.seek(0)
+        budget_line = expense.budget_line
+        concepto_short = expense.concepto[:50] if len(expense.concepto) > 50 else expense.concepto
+        document_data = DocumentCreate(
+            categoria=CategoriaDocumento.factura,
+            descripcion=f"Factura - {budget_line.name} - {concepto_short}",
+        )
+        document_service.create_document(project_id, file, document_data)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    # Return updated tab content
+    expenses = expense_service.get_project_expenses(project_id)
+    summary = expense_service.get_expense_summary(project_id)
+    budget_lines = expense_service.get_budget_lines_with_balance(project_id)
+
     return templates.TemplateResponse(
         "partials/projects/expenses_tab.html",
         {
@@ -428,34 +522,29 @@ def revert_expense(
     )
 
 
-@router.post("/{project_id}/expenses/{expense_id}/upload", response_class=HTMLResponse)
-async def upload_document(
-    request: Request,
+@router.get("/{project_id}/expenses/{expense_id}/document")
+def get_expense_document(
     project_id: int,
     expense_id: int,
-    file: UploadFile = File(...),
     expense_service: ExpenseService = Depends(get_expense_service),
     project_service: ProjectService = Depends(get_project_service),
 ):
-    """Upload a document for an expense"""
+    """Serve the document file for an expense"""
     project = project_service.get_by_id(project_id)
     if not project:
         raise HTTPException(status_code=404, detail="Proyecto no encontrado")
 
-    try:
-        expense_service.save_document(expense_id, file)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
     expense = expense_service.get_expense_by_id(expense_id)
-    budget_lines = expense_service.get_budget_lines_with_balance(project_id)
+    if not expense or expense.project_id != project_id:
+        raise HTTPException(status_code=404, detail="Gasto no encontrado")
 
-    return templates.TemplateResponse(
-        "partials/projects/expense_row.html",
-        {
-            "request": request,
-            "project": project,
-            "expense": expense,
-            "budget_lines": budget_lines,
-        },
-    )
+    if not expense.documento_path:
+        raise HTTPException(status_code=404, detail="Documento no encontrado")
+
+    if not os.path.exists(expense.documento_path):
+        raise HTTPException(status_code=404, detail="Archivo no encontrado")
+
+    # Extract filename from path
+    filename = os.path.basename(expense.documento_path)
+
+    return FileResponse(expense.documento_path, filename=filename)

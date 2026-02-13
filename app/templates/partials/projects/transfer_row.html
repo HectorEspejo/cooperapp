@@ -47,6 +47,69 @@
             {{ transfer.estado.value|title }}
         </span>
     </td>
+    <td class="col-documents">
+        <div class="document-buttons">
+            {# Emission document - available from aprobada state (required before emission) #}
+            {% if transfer.estado.value in ['aprobada', 'emitida', 'recibida', 'cerrada'] %}
+                {% if transfer.documento_emision_filename %}
+                <a
+                    href="/projects/{{ project.id }}/transfers/{{ transfer.id }}/document/emision"
+                    class="doc-badge doc-attached"
+                    title="Descargar: {{ transfer.documento_emision_filename }}"
+                    target="_blank"
+                >
+                    <span class="doc-icon">E</span>
+                </a>
+                {% else %}
+                <button
+                    type="button"
+                    class="doc-badge doc-missing"
+                    title="Subir documento de emision (requerido para emitir)"
+                    hx-get="/projects/{{ project.id }}/transfers/{{ transfer.id }}/upload-modal?doc_type=emision"
+                    hx-target="#transfer-upload-modal-content"
+                    hx-trigger="click"
+                    onclick="openTransferUploadModal()"
+                >
+                    <span class="doc-icon">E</span>
+                </button>
+                {% endif %}
+            {% else %}
+                <span class="doc-badge doc-disabled" title="Disponible tras aprobacion">
+                    <span class="doc-icon">E</span>
+                </span>
+            {% endif %}
+
+            {# Reception document - available from emitida state (required before reception) #}
+            {% if transfer.estado.value in ['emitida', 'recibida', 'cerrada'] %}
+                {% if transfer.documento_recepcion_filename %}
+                <a
+                    href="/projects/{{ project.id }}/transfers/{{ transfer.id }}/document/recepcion"
+                    class="doc-badge doc-attached"
+                    title="Descargar: {{ transfer.documento_recepcion_filename }}"
+                    target="_blank"
+                >
+                    <span class="doc-icon">R</span>
+                </a>
+                {% else %}
+                <button
+                    type="button"
+                    class="doc-badge doc-missing"
+                    title="Subir documento de recepcion (requerido para confirmar recepcion)"
+                    hx-get="/projects/{{ project.id }}/transfers/{{ transfer.id }}/upload-modal?doc_type=recepcion"
+                    hx-target="#transfer-upload-modal-content"
+                    hx-trigger="click"
+                    onclick="openTransferUploadModal()"
+                >
+                    <span class="doc-icon">R</span>
+                </button>
+                {% endif %}
+            {% else %}
+                <span class="doc-badge doc-disabled" title="Disponible tras emision">
+                    <span class="doc-icon">R</span>
+                </span>
+            {% endif %}
+        </div>
+    </td>
     <td class="col-actions">
         <div class="action-buttons">
             {% if transfer.estado.value == 'solicitada' %}

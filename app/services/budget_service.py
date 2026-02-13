@@ -206,6 +206,17 @@ class BudgetService:
         if funder_min_audit is not None and project_subvencion is not None:
             audit_required = project_subvencion >= funder_min_audit
 
+        # Check if total approved exceeds subvencion
+        if project_subvencion is not None and total_aprobado > project_subvencion:
+            exceso = total_aprobado - project_subvencion
+            validation_alerts.append(BudgetValidationAlert(
+                line_id=None,
+                line_code=None,
+                message=f"El total aprobado ({total_aprobado:,.2f} EUR) supera la subvencion "
+                        f"({project_subvencion:,.2f} EUR) en {exceso:,.2f} EUR",
+                alert_type="error",
+            ))
+
         # Check personnel percentage validation (AYTO: max 50%)
         if funder_max_personnel is not None and total_aprobado > 0:
             personnel_percentage = (total_personnel_aprobado / total_aprobado) * Decimal("100")

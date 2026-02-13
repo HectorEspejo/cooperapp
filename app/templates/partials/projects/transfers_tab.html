@@ -75,6 +75,15 @@
     </div>
 </div>
 
+<!-- Upload Modal Container -->
+<div id="transfer-upload-modal" class="modal-overlay" style="display: none;" onclick="closeTransferUploadModal(event)">
+    <div class="upload-modal" onclick="event.stopPropagation()">
+        <div id="transfer-upload-modal-content">
+            <!-- Upload modal content loaded via htmx -->
+        </div>
+    </div>
+</div>
+
 <script>
 function openTransferModal() {
     document.getElementById('transfer-modal').style.display = 'flex';
@@ -90,8 +99,20 @@ function closeTransferModal(event) {
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
         closeTransferModal();
+        closeTransferUploadModal();
     }
 });
+
+// Upload modal functions
+function openTransferUploadModal() {
+    document.getElementById('transfer-upload-modal').style.display = 'flex';
+}
+
+function closeTransferUploadModal(event) {
+    if (!event || event.target.id === 'transfer-upload-modal') {
+        document.getElementById('transfer-upload-modal').style.display = 'none';
+    }
+}
 
 // Toggle intermediate currency section
 function toggleIntermediateCurrency() {

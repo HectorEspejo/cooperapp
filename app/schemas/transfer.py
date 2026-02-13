@@ -115,6 +115,12 @@ class TransferResponse(BaseModel):
     # Notes
     observaciones: str | None
 
+    # Documents by phase
+    documento_emision_path: str | None
+    documento_emision_filename: str | None
+    documento_recepcion_path: str | None
+    documento_recepcion_filename: str | None
+
     # Timestamps
     created_at: datetime
     updated_at: datetime

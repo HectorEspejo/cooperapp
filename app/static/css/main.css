@@ -227,6 +227,23 @@ a:hover {
     color: var(--color-danger);
 }
 
+.btn-icon.btn-success {
+    background: transparent;
+    color: var(--color-success);
+}
+
+.btn-icon.btn-success:hover {
+    background-color: rgba(39, 174, 96, 0.1);
+    color: var(--color-success);
+}
+
+.btn-icon.btn-disabled,
+.btn-disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
 /* Stats Grid */
 .stats-grid {
     display: grid;
@@ -1254,6 +1271,70 @@ a:hover {
     border-radius: var(--radius-md);
 }
 
+/* Budget Summary */
+.budget-summary {
+    background-color: var(--color-white);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+}
+
+.budget-summary .summary-stats {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.budget-summary .summary-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    flex: 1;
+    min-width: 120px;
+}
+
+.budget-summary .stat-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    font-family: monospace;
+}
+
+.budget-summary .stat-label {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.budget-summary .stat-success .stat-value { color: var(--color-success); }
+.budget-summary .stat-warning .stat-value { color: var(--color-warning); }
+.budget-summary .stat-danger .stat-value { color: var(--color-danger); }
+.budget-summary .stat-info .stat-value { color: var(--color-info); }
+
+.budget-progress-bar {
+    height: 8px;
+    background-color: #e9ecef;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.budget-progress-bar .progress-fill {
+    height: 100%;
+    background-color: var(--color-primary);
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.budget-progress-bar .progress-full {
+    background-color: var(--color-success);
+}
+
+.budget-progress-bar .progress-over {
+    background-color: var(--color-danger);
+}
+
 .budget-table-wrapper {
     overflow-x: auto;
     margin-bottom: 1rem;
@@ -1790,6 +1871,15 @@ a:hover {
     min-width: 180px;
 }
 
+.expenses-table .col-document {
+    width: 50px;
+    text-align: center;
+}
+
+.doc-none {
+    color: var(--color-text-muted);
+}
+
 .expenses-table .col-expedidor {
     min-width: 120px;
 }
@@ -2273,6 +2363,136 @@ a:hover {
 
 .transfers-table .col-actions {
     width: 120px;
+}
+
+.transfers-table .col-documents {
+    width: 70px;
+    text-align: center;
+}
+
+/* Document Badges */
+.document-buttons {
+    display: flex;
+    gap: 0.375rem;
+    justify-content: center;
+}
+
+.doc-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: var(--radius-sm);
+    font-size: 0.625rem;
+    font-weight: 600;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.doc-badge .doc-icon {
+    line-height: 1;
+}
+
+.doc-attached {
+    background-color: var(--color-success);
+    color: white;
+}
+
+.doc-attached:hover {
+    background-color: #219a52;
+    color: white;
+}
+
+.doc-missing {
+    background-color: var(--color-warning);
+    color: white;
+}
+
+.doc-missing:hover {
+    background-color: #d68910;
+}
+
+.doc-disabled {
+    background-color: var(--color-border);
+    color: var(--color-text-muted);
+    cursor: not-allowed;
+}
+
+/* Upload Modal */
+.upload-modal {
+    background-color: var(--color-white);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    width: 100%;
+    max-width: 500px;
+}
+
+.transfer-upload-modal .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.transfer-upload-modal .modal-header h3 {
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.transfer-upload-modal .modal-body {
+    padding: 1.25rem;
+}
+
+.transfer-upload-modal .upload-info {
+    background-color: var(--color-bg);
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-md);
+    margin-bottom: 1rem;
+    font-size: 0.875rem;
+}
+
+.transfer-upload-modal .upload-info p {
+    margin: 0.25rem 0;
+}
+
+.transfer-upload-modal .file-input {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px dashed var(--color-border);
+    border-radius: var(--radius-md);
+    background-color: var(--color-bg);
+}
+
+.transfer-upload-modal .checkbox-group {
+    margin-top: 1rem;
+}
+
+.transfer-upload-modal .checkbox-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    cursor: pointer;
+}
+
+.transfer-upload-modal .checkbox-label input {
+    margin-top: 0.25rem;
+}
+
+.transfer-upload-modal .checkbox-text {
+    font-size: 0.875rem;
+}
+
+.transfer-upload-modal .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    border-top: 1px solid var(--color-border);
+    margin-top: 1rem;
 }
 
 /* Transfer Number Badge */
