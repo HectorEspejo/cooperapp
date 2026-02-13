@@ -105,6 +105,15 @@
     </div>
 </div>
 
+<!-- Upload Modal Container -->
+<div id="expense-upload-modal" class="modal-overlay" style="display: none;" onclick="closeExpenseUploadModal(event)">
+    <div class="upload-modal" onclick="event.stopPropagation()">
+        <div id="expense-upload-modal-content">
+            <!-- Upload modal content loaded via htmx -->
+        </div>
+    </div>
+</div>
+
 <script>
 function openExpenseModal() {
     document.getElementById('expense-modal').style.display = 'flex';
@@ -126,8 +135,24 @@ function closeExpenseModal(event) {
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
         closeExpenseModal();
+        closeExpenseUploadModal();
     }
 });
+
+// Upload modal functions
+function openExpenseUploadModal() {
+    document.getElementById('expense-upload-modal').style.display = 'flex';
+}
+
+function closeExpenseUploadModal(event) {
+    if (event && event.target && event.target.id !== 'expense-upload-modal' && event.type === 'click') {
+        return;
+    }
+    var modal = document.getElementById('expense-upload-modal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
 
 // Currency conversion helper
 function updateCurrencyConversion() {

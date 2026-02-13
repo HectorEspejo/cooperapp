@@ -1,3 +1,8 @@
+<div id="budget-content"
+     hx-get="/projects/{{ project.id }}/budget"
+     hx-trigger="budgetUpdated from:body"
+     hx-target="#tab-presupuesto"
+     hx-swap="innerHTML">
 {% if budget.has_budget %}
     {% include "partials/projects/budget_table.html" %}
 {% else %}
@@ -35,3 +40,4 @@
     </form>
 </div>
 {% endif %}
+</div>

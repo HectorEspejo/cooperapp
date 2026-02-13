@@ -5,6 +5,7 @@
             <tr>
                 <th class="col-date">Fecha</th>
                 <th class="col-concept">Concepto</th>
+                <th class="col-document">Doc</th>
                 <th class="col-expedidor">Expedidor</th>
                 <th class="col-partida">Partida</th>
                 <th class="col-amount">Importe</th>
@@ -22,8 +23,23 @@
                     <span class="concept-text" title="{{ expense.concepto }}">
                         {{ expense.concepto[:50] }}{% if expense.concepto|length > 50 %}...{% endif %}
                     </span>
+                </td>
+                <td class="col-document">
                     {% if expense.documento_path %}
-                    <span class="doc-indicator" title="Documento adjunto">📎</span>
+                    <a href="/projects/{{ project.id }}/expenses/{{ expense.id }}/document"
+                       class="doc-badge doc-attached" title="Ver documento" target="_blank">
+                        <span class="doc-icon">📎</span>
+                    </a>
+                    {% elif expense.estado.value in ['borrador', 'pendiente_revision'] %}
+                    <button class="doc-badge doc-missing" title="Subir factura (requerido para validar)"
+                            hx-get="/projects/{{ project.id }}/expenses/{{ expense.id }}/upload-modal"
+                            hx-target="#expense-upload-modal-content"
+                            hx-trigger="click"
+                            onclick="openExpenseUploadModal()">
+                        <span class="doc-icon">📎</span>
+                    </button>
+                    {% else %}
+                    <span class="doc-badge doc-none" title="Sin documento">-</span>
                     {% endif %}
                 </td>
                 <td class="col-expedidor">{{ expense.expedidor }}</td>
@@ -68,6 +84,7 @@
                             hx-trigger="click"
                             onclick="openExpenseModal()"
                         >✏️</button>
+                        {% if expense.documento_path %}
                         <button
                             class="btn-icon btn-success"
                             title="Validar"
@@ -77,6 +94,9 @@
                             hx-swap="outerHTML"
                             hx-confirm="¿Validar este gasto? Se actualizara el presupuesto ejecutado."
                         >✓</button>
+                        {% else %}
+                        <span class="btn-icon btn-disabled" title="Debe adjuntar factura para validar">✓</span>
+                        {% endif %}
                         <button
                             class="btn-icon btn-danger"
                             title="Eliminar"
@@ -87,6 +107,7 @@
                             hx-confirm="¿Eliminar este gasto?"
                         >🗑️</button>
                         {% elif expense.estado.value == 'pendiente_revision' %}
+                        {% if expense.documento_path %}
                         <button
                             class="btn-icon btn-success"
                             title="Validar"
@@ -96,6 +117,9 @@
                             hx-swap="outerHTML"
                             hx-confirm="¿Validar este gasto?"
                         >✓</button>
+                        {% else %}
+                        <span class="btn-icon btn-disabled" title="Debe adjuntar factura para validar">✓</span>
+                        {% endif %}
                         <button
                             class="btn-icon btn-warning"
                             title="Rechazar"

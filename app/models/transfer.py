@@ -98,6 +98,12 @@ class Transfer(Base):
     # Notes
     observaciones: Mapped[str | None] = mapped_column(Text, nullable=True)
 
+    # Documents by phase
+    documento_emision_path: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    documento_emision_filename: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    documento_recepcion_path: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    documento_recepcion_filename: Mapped[str | None] = mapped_column(String(255), nullable=True)
+
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(

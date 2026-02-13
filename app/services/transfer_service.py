@@ -1,7 +1,10 @@
-from datetime import date
+import os
+import shutil
+from datetime import date, datetime
 from decimal import Decimal
 from sqlalchemy import select, func
 from sqlalchemy.orm import Session
+from fastapi import UploadFile
 
 from app.models.transfer import Transfer, EstadoTransferencia, get_moneda_for_pais
 from app.models.project import Project
@@ -156,6 +159,12 @@ class TransferService:
         if transfer.estado != EstadoTransferencia.aprobada:
             raise ValueError("Solo se pueden emitir transferencias en estado aprobada")
 
+        # Require emission document before transitioning
+        if not transfer.documento_emision_path:
+            raise ValueError(
+                "Debe adjuntar un justificante de emision para marcar la transferencia como emitida"
+            )
+
         transfer.estado = EstadoTransferencia.emitida
         transfer.fecha_emision = fecha_emision or date.today()
         self.db.commit()
@@ -172,6 +181,12 @@ class TransferService:
 
         if transfer.estado != EstadoTransferencia.emitida:
             raise ValueError("Solo se pueden confirmar recepciones de transferencias emitidas")
+
+        # Require reception document before transitioning
+        if not transfer.documento_recepcion_path:
+            raise ValueError(
+                "Debe adjuntar un justificante de recepcion para marcar la transferencia como recibida"
+            )
 
         transfer.estado = EstadoTransferencia.recibida
 
@@ -294,3 +309,128 @@ class TransferService:
             if currency:
                 return currency.value
         return None
+
+    # Document Management
+
+    def _get_transfer_upload_dir(self, project_id: int, transfer_id: int) -> str:
+        """Get the upload directory for a transfer."""
+        return f"uploads/{project_id}/transfers/{transfer_id}"
+
+    def save_emission_document(
+        self, transfer_id: int, file: UploadFile
+    ) -> Transfer | None:
+        """Save emission document for a transfer."""
+        transfer = self.get_transfer_by_id(transfer_id)
+        if not transfer:
+            return None
+
+        # Allow upload when in aprobada state (before emission) or later
+        if transfer.estado not in (
+            EstadoTransferencia.aprobada,
+            EstadoTransferencia.emitida,
+            EstadoTransferencia.recibida,
+            EstadoTransferencia.cerrada,
+        ):
+            raise ValueError(
+                "Solo se pueden adjuntar documentos de emision a transferencias aprobadas o posteriores"
+            )
+
+        # Create directory
+        upload_dir = self._get_transfer_upload_dir(transfer.project_id, transfer_id)
+        os.makedirs(upload_dir, exist_ok=True)
+
+        # Generate filename
+        timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S")
+        original_filename = file.filename or "document"
+        safe_filename = original_filename.replace(" ", "_").replace("/", "_")
+        filename = f"emision_{timestamp}_{safe_filename}"
+        filepath = os.path.join(upload_dir, filename)
+
+        # Delete old file if exists
+        if transfer.documento_emision_path and os.path.exists(transfer.documento_emision_path):
+            os.remove(transfer.documento_emision_path)
+
+        # Save new file
+        with open(filepath, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+
+        # Update transfer
+        transfer.documento_emision_path = filepath
+        transfer.documento_emision_filename = original_filename
+        self.db.commit()
+        self.db.refresh(transfer)
+        return transfer
+
+    def save_reception_document(
+        self, transfer_id: int, file: UploadFile
+    ) -> Transfer | None:
+        """Save reception document for a transfer."""
+        transfer = self.get_transfer_by_id(transfer_id)
+        if not transfer:
+            return None
+
+        # Allow upload when in emitida state (before reception) or later
+        if transfer.estado not in (
+            EstadoTransferencia.emitida,
+            EstadoTransferencia.recibida,
+            EstadoTransferencia.cerrada,
+        ):
+            raise ValueError(
+                "Solo se pueden adjuntar documentos de recepcion a transferencias emitidas o posteriores"
+            )
+
+        # Create directory
+        upload_dir = self._get_transfer_upload_dir(transfer.project_id, transfer_id)
+        os.makedirs(upload_dir, exist_ok=True)
+
+        # Generate filename
+        timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S")
+        original_filename = file.filename or "document"
+        safe_filename = original_filename.replace(" ", "_").replace("/", "_")
+        filename = f"recepcion_{timestamp}_{safe_filename}"
+        filepath = os.path.join(upload_dir, filename)
+
+        # Delete old file if exists
+        if transfer.documento_recepcion_path and os.path.exists(transfer.documento_recepcion_path):
+            os.remove(transfer.documento_recepcion_path)
+
+        # Save new file
+        with open(filepath, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+
+        # Update transfer
+        transfer.documento_recepcion_path = filepath
+        transfer.documento_recepcion_filename = original_filename
+        self.db.commit()
+        self.db.refresh(transfer)
+        return transfer
+
+    def delete_emission_document(self, transfer_id: int) -> Transfer | None:
+        """Delete emission document from a transfer."""
+        transfer = self.get_transfer_by_id(transfer_id)
+        if not transfer:
+            return None
+
+        if transfer.documento_emision_path and os.path.exists(transfer.documento_emision_path):
+            os.remove(transfer.documento_emision_path)
+
+        transfer.documento_emision_path = None
+        transfer.documento_emision_filename = None
+        self.db.commit()
+        self.db.refresh(transfer)
+        return transfer
+
+    def delete_reception_document(self, transfer_id: int) -> Transfer | None:
+        """Delete reception document from a transfer."""
+        transfer = self.get_transfer_by_id(transfer_id)
+        if not transfer:
+            return None
+
+        if transfer.documento_recepcion_path and os.path.exists(transfer.documento_recepcion_path):
+            os.remove(transfer.documento_recepcion_path)
+
+        transfer.documento_recepcion_path = None
+        transfer.documento_recepcion_filename = None
+        self.db.commit()
+        self.db.refresh(transfer)
+        return transfer

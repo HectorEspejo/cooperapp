@@ -1,0 +1,78 @@
+<div class="modal-content transfer-upload-modal">
+    <div class="modal-header">
+        <h3>
+            {% if doc_type == 'emision' %}
+            Subir documento de emision
+            {% else %}
+            Subir documento de recepcion
+            {% endif %}
+        </h3>
+        <button type="button" class="btn-close" onclick="closeTransferUploadModal()">&times;</button>
+    </div>
+
+    <form
+        hx-post="/projects/{{ project.id }}/transfers/{{ transfer.id }}/upload-{{ doc_type }}"
+        hx-target="#transfers-content"
+        hx-swap="outerHTML"
+        hx-encoding="multipart/form-data"
+        class="modal-body"
+    >
+        <div class="upload-info">
+            <p><strong>Transferencia:</strong> {{ transfer.numero_display }}</p>
+            <p><strong>Importe:</strong> {{ "{:,.2f}".format(transfer.importe_euros) }} EUR</p>
+            {% if doc_type == 'emision' and transfer.fecha_emision %}
+            <p><strong>Fecha emision:</strong> {{ transfer.fecha_emision.strftime('%d/%m/%Y') }}</p>
+            {% elif doc_type == 'recepcion' and transfer.fecha_recepcion %}
+            <p><strong>Fecha recepcion:</strong> {{ transfer.fecha_recepcion.strftime('%d/%m/%Y') }}</p>
+            {% endif %}
+        </div>
+
+        <div class="form-group">
+            <label for="file">Documento</label>
+            <input
+                type="file"
+                id="file"
+                name="file"
+                required
+                accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                class="file-input"
+            >
+            <small class="help-text">Formatos aceptados: PDF, imagenes, Word</small>
+        </div>
+
+        <div class="form-group checkbox-group">
+            <label class="checkbox-label">
+                <input type="checkbox" name="copy_to_project" value="true">
+                <span class="checkbox-text">Guardar tambien en documentos del proyecto como factura</span>
+            </label>
+            <small class="help-text">
+                Se creara una copia en la pestana de documentos con categoria "Factura"
+            </small>
+        </div>
+
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeTransferUploadModal()">
+                Cancelar
+            </button>
+            <button type="submit" class="btn btn-primary">
+                Subir documento
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+function closeTransferUploadModal() {
+    const modal = document.getElementById('transfer-upload-modal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+// Close modal on successful upload (handled by htmx swap)
+document.body.addEventListener('htmx:afterSwap', function(evt) {
+    if (evt.detail.target.id === 'transfers-content') {
+        closeTransferUploadModal();
+    }
+});
+</script>

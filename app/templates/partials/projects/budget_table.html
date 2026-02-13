@@ -6,6 +6,36 @@
         {% endif %}
     </div>
 
+    <!-- Budget Summary vs Subvencion -->
+    {% if budget.project_subvencion is not none %}
+    {% set disponible = budget.project_subvencion - budget.totals.total_aprobado %}
+    {% set porcentaje_asignado = (budget.totals.total_aprobado / budget.project_subvencion * 100) if budget.project_subvencion > 0 else 0 %}
+    <div class="budget-summary">
+        <div class="summary-stats">
+            <div class="summary-stat">
+                <span class="stat-value">{{ "{:,.2f}".format(budget.project_subvencion) }}</span>
+                <span class="stat-label">Subvencion (EUR)</span>
+            </div>
+            <div class="summary-stat {% if budget.totals.total_aprobado > budget.project_subvencion %}stat-danger{% else %}stat-success{% endif %}">
+                <span class="stat-value">{{ "{:,.2f}".format(budget.totals.total_aprobado) }}</span>
+                <span class="stat-label">Total Aprobado</span>
+            </div>
+            <div class="summary-stat {% if disponible < 0 %}stat-danger{% elif disponible == 0 %}stat-success{% else %}stat-warning{% endif %}">
+                <span class="stat-value">{{ "{:,.2f}".format(disponible) }}</span>
+                <span class="stat-label">Disponible</span>
+            </div>
+            <div class="summary-stat stat-info">
+                <span class="stat-value">{{ "{:.1f}".format(porcentaje_asignado) }}%</span>
+                <span class="stat-label">Asignado</span>
+            </div>
+        </div>
+        <div class="budget-progress-bar">
+            <div class="progress-fill {% if porcentaje_asignado > 100 %}progress-over{% elif porcentaje_asignado == 100 %}progress-full{% endif %}"
+                 style="width: {{ [porcentaje_asignado, 100] | min }}%"></div>
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Funder-specific info -->
     {% if budget.funder_code == 'AYTO' %}
     <div class="budget-funder-info">

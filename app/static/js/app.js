@@ -55,12 +55,21 @@ document.body.addEventListener('htmx:responseError', (event) => {
     const status = event.detail.xhr.status;
     let message = 'Ha ocurrido un error';
 
-    if (status === 404) {
-        message = 'Recurso no encontrado';
-    } else if (status === 400) {
-        message = 'Datos inválidos';
-    } else if (status === 500) {
-        message = 'Error del servidor';
+    // Try to get the error message from the response
+    try {
+        const response = JSON.parse(event.detail.xhr.responseText);
+        if (response.detail) {
+            message = response.detail;
+        }
+    } catch (e) {
+        // If parsing fails, use default messages
+        if (status === 404) {
+            message = 'Recurso no encontrado';
+        } else if (status === 400) {
+            message = 'Datos invalidos';
+        } else if (status === 500) {
+            message = 'Error del servidor';
+        }
     }
 
     notifications.error(message);

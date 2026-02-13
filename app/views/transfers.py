@@ -1,14 +1,17 @@
 from datetime import date
 from decimal import Decimal
-from fastapi import APIRouter, Depends, Request, HTTPException, Query
-from fastapi.responses import HTMLResponse
+from fastapi import APIRouter, Depends, Request, HTTPException, Query, UploadFile, File, Form
+from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.transfer import EstadoTransferencia, EntidadBancaria, MonedaLocal
+from app.models.document import CategoriaDocumento
 from app.services.transfer_service import TransferService
 from app.services.project_service import ProjectService
+from app.services.document_service import DocumentService
 from app.schemas.transfer import TransferCreate, TransferUpdate, ConfirmReceptionData
+from app.schemas.document import DocumentCreate
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
@@ -20,6 +23,10 @@ def get_transfer_service(db: Session = Depends(get_db)) -> TransferService:
 
 def get_project_service(db: Session = Depends(get_db)) -> ProjectService:
     return ProjectService(db)
+
+
+def get_document_service(db: Session = Depends(get_db)) -> DocumentService:
+    return DocumentService(db)
 
 
 @router.get("/{project_id}/transfers", response_class=HTMLResponse)
@@ -470,3 +477,195 @@ def _render_transfers_tab(request: Request, project, transfer_service: TransferS
             "monedas": MonedaLocal,
         },
     )
+
+
+# Document upload endpoints
+
+@router.get("/{project_id}/transfers/{transfer_id}/upload-modal", response_class=HTMLResponse)
+def upload_modal(
+    request: Request,
+    project_id: int,
+    transfer_id: int,
+    doc_type: str = Query(...),
+    transfer_service: TransferService = Depends(get_transfer_service),
+    project_service: ProjectService = Depends(get_project_service),
+):
+    """Render the document upload modal."""
+    project = project_service.get_by_id(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Proyecto no encontrado")
+
+    transfer = transfer_service.get_transfer_by_id(transfer_id)
+    if not transfer or transfer.project_id != project_id:
+        raise HTTPException(status_code=404, detail="Transferencia no encontrada")
+
+    return templates.TemplateResponse(
+        "partials/projects/transfer_upload_modal.html",
+        {
+            "request": request,
+            "project": project,
+            "transfer": transfer,
+            "doc_type": doc_type,
+        },
+    )
+
+
+@router.post("/{project_id}/transfers/{transfer_id}/upload-emision", response_class=HTMLResponse)
+async def upload_emission_document(
+    request: Request,
+    project_id: int,
+    transfer_id: int,
+    file: UploadFile = File(...),
+    transfer_service: TransferService = Depends(get_transfer_service),
+    project_service: ProjectService = Depends(get_project_service),
+    document_service: DocumentService = Depends(get_document_service),
+):
+    """Upload emission document for a transfer."""
+    project = project_service.get_by_id(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Proyecto no encontrado")
+
+    transfer = transfer_service.get_transfer_by_id(transfer_id)
+    if not transfer or transfer.project_id != project_id:
+        raise HTTPException(status_code=404, detail="Transferencia no encontrada")
+
+    # Get checkbox value from form
+    form_data = await request.form()
+    copy_to_project = form_data.get("copy_to_project") == "true"
+
+    try:
+        transfer_service.save_emission_document(transfer_id, file)
+
+        # If checkbox marked, also create document in project documents
+        if copy_to_project:
+            await file.seek(0)
+            document_data = DocumentCreate(
+                categoria=CategoriaDocumento.factura,
+                descripcion=f"Justificante emision - Transferencia {transfer.numero_display}"
+            )
+            document_service.create_document(project_id, file, document_data)
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    return _render_transfers_tab(request, project, transfer_service)
+
+
+@router.post("/{project_id}/transfers/{transfer_id}/upload-recepcion", response_class=HTMLResponse)
+async def upload_reception_document(
+    request: Request,
+    project_id: int,
+    transfer_id: int,
+    file: UploadFile = File(...),
+    transfer_service: TransferService = Depends(get_transfer_service),
+    project_service: ProjectService = Depends(get_project_service),
+    document_service: DocumentService = Depends(get_document_service),
+):
+    """Upload reception document for a transfer."""
+    project = project_service.get_by_id(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Proyecto no encontrado")
+
+    transfer = transfer_service.get_transfer_by_id(transfer_id)
+    if not transfer or transfer.project_id != project_id:
+        raise HTTPException(status_code=404, detail="Transferencia no encontrada")
+
+    # Get checkbox value from form
+    form_data = await request.form()
+    copy_to_project = form_data.get("copy_to_project") == "true"
+
+    try:
+        transfer_service.save_reception_document(transfer_id, file)
+
+        # If checkbox marked, also create document in project documents
+        if copy_to_project:
+            await file.seek(0)
+            document_data = DocumentCreate(
+                categoria=CategoriaDocumento.factura,
+                descripcion=f"Justificante recepcion - Transferencia {transfer.numero_display}"
+            )
+            document_service.create_document(project_id, file, document_data)
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    return _render_transfers_tab(request, project, transfer_service)
+
+
+@router.delete("/{project_id}/transfers/{transfer_id}/document-emision", response_class=HTMLResponse)
+def delete_emission_document(
+    request: Request,
+    project_id: int,
+    transfer_id: int,
+    transfer_service: TransferService = Depends(get_transfer_service),
+    project_service: ProjectService = Depends(get_project_service),
+):
+    """Delete emission document from a transfer."""
+    project = project_service.get_by_id(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Proyecto no encontrado")
+
+    transfer = transfer_service.get_transfer_by_id(transfer_id)
+    if not transfer or transfer.project_id != project_id:
+        raise HTTPException(status_code=404, detail="Transferencia no encontrada")
+
+    transfer_service.delete_emission_document(transfer_id)
+
+    return _render_transfers_tab(request, project, transfer_service)
+
+
+@router.delete("/{project_id}/transfers/{transfer_id}/document-recepcion", response_class=HTMLResponse)
+def delete_reception_document(
+    request: Request,
+    project_id: int,
+    transfer_id: int,
+    transfer_service: TransferService = Depends(get_transfer_service),
+    project_service: ProjectService = Depends(get_project_service),
+):
+    """Delete reception document from a transfer."""
+    project = project_service.get_by_id(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Proyecto no encontrado")
+
+    transfer = transfer_service.get_transfer_by_id(transfer_id)
+    if not transfer or transfer.project_id != project_id:
+        raise HTTPException(status_code=404, detail="Transferencia no encontrada")
+
+    transfer_service.delete_reception_document(transfer_id)
+
+    return _render_transfers_tab(request, project, transfer_service)
+
+
+@router.get("/{project_id}/transfers/{transfer_id}/document/{doc_type}")
+def download_document(
+    project_id: int,
+    transfer_id: int,
+    doc_type: str,
+    transfer_service: TransferService = Depends(get_transfer_service),
+    project_service: ProjectService = Depends(get_project_service),
+):
+    """Download a transfer document."""
+    project = project_service.get_by_id(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Proyecto no encontrado")
+
+    transfer = transfer_service.get_transfer_by_id(transfer_id)
+    if not transfer or transfer.project_id != project_id:
+        raise HTTPException(status_code=404, detail="Transferencia no encontrada")
+
+    if doc_type == "emision":
+        if not transfer.documento_emision_path:
+            raise HTTPException(status_code=404, detail="Documento no encontrado")
+        return FileResponse(
+            transfer.documento_emision_path,
+            filename=transfer.documento_emision_filename,
+        )
+    elif doc_type == "recepcion":
+        if not transfer.documento_recepcion_path:
+            raise HTTPException(status_code=404, detail="Documento no encontrado")
+        return FileResponse(
+            transfer.documento_recepcion_path,
+            filename=transfer.documento_recepcion_filename,
+        )
+    else:
+        raise HTTPException(status_code=400, detail="Tipo de documento invalido")
