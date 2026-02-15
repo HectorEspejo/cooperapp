@@ -1,0 +1,33 @@
+<tr id="user-row-{{ u.id }}">
+    <td>
+        <div class="user-cell">
+            <span class="user-avatar-sm">{{ u.nombre[0] }}{{ u.apellidos[0] }}</span>
+            <span>{{ u.nombre_completo }}</span>
+        </div>
+    </td>
+    <td>{{ u.email }}</td>
+    <td>
+        {% if u.rol %}
+        <span class="badge badge-rol badge-{{ u.rol.value }}">{{ u.rol_display }}</span>
+        {% else %}
+        <span class="badge badge-pending">Sin rol</span>
+        {% endif %}
+    </td>
+    <td>
+        {% if u.activo %}
+        <span class="badge badge-success">Activo</span>
+        {% else %}
+        <span class="badge badge-danger">Inactivo</span>
+        {% endif %}
+    </td>
+    <td>
+        {% if u.ultimo_acceso %}
+        {{ u.ultimo_acceso.strftime('%d/%m/%Y %H:%M') }}
+        {% else %}
+        -
+        {% endif %}
+    </td>
+    <td>
+        <a href="/usuarios/{{ u.id }}" class="btn btn-sm btn-secondary">Gestionar</a>
+    </td>
+</tr>

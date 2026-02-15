@@ -84,6 +84,7 @@
                             hx-trigger="click"
                             onclick="openExpenseModal()"
                         >✏️</button>
+                        {% if user and user.rol and user.rol.value in ['director', 'coordinador'] %}
                         {% if expense.documento_path %}
                         <button
                             class="btn-icon btn-success"
@@ -97,6 +98,7 @@
                         {% else %}
                         <span class="btn-icon btn-disabled" title="Debe adjuntar factura para validar">✓</span>
                         {% endif %}
+                        {% endif %}
                         <button
                             class="btn-icon btn-danger"
                             title="Eliminar"
@@ -107,6 +109,7 @@
                             hx-confirm="¿Eliminar este gasto?"
                         >🗑️</button>
                         {% elif expense.estado.value == 'pendiente_revision' %}
+                        {% if user and user.rol and user.rol.value in ['director', 'coordinador'] %}
                         {% if expense.documento_path %}
                         <button
                             class="btn-icon btn-success"
@@ -129,6 +132,7 @@
                             hx-swap="outerHTML"
                             hx-confirm="¿Rechazar este gasto?"
                         >✗</button>
+                        {% endif %}
                         <button
                             class="btn-icon"
                             title="Volver a borrador"
@@ -138,6 +142,7 @@
                             hx-swap="outerHTML"
                         >↩️</button>
                         {% elif expense.estado.value == 'validado' %}
+                        {% if user and user.rol and user.rol.value in ['director', 'coordinador'] %}
                         <button
                             class="btn-icon"
                             title="Volver a borrador"
@@ -147,6 +152,7 @@
                             hx-swap="outerHTML"
                             hx-confirm="¿Revertir a borrador? Se restara el importe del presupuesto ejecutado."
                         >↩️</button>
+                        {% endif %}
                         {% elif expense.estado.value == 'rechazado' %}
                         <button
                             class="btn-icon"

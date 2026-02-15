@@ -7,8 +7,13 @@ from datetime import date, datetime
 from typing import List
 from app.database import get_db
 from app.models.project import EstadoProyecto, TipoProyecto, Financiador
+from app.models.user import User, Rol
 from app.schemas.project import ProjectCreate, ProjectUpdate, PlazoCreate
 from app.services.project_service import ProjectService
+from app.auth.dependencies import get_current_user, require_permission, check_project_access
+from app.auth.permissions import Permiso, user_has_permission
+from app.services.audit_service import AuditService
+from app.models.audit_log import ActorType, AccionAuditoria
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
@@ -40,6 +45,7 @@ def projects_index(
     tipo: str | None = None,
     pais: str | None = None,
     search: str | None = None,
+    user: User = Depends(require_permission(Permiso.proyecto_ver)),
     service: ProjectService = Depends(get_service),
 ):
     estado_enum = EstadoProyecto(estado) if estado else None
@@ -53,6 +59,13 @@ def projects_index(
         pais=pais,
         search=search,
     )
+
+    # Gestor pais: filter only assigned projects
+    if user.rol == Rol.gestor_pais:
+        assigned_ids = {p.id for p in user.assigned_projects}
+        projects = [p for p in projects if p.id in assigned_ids]
+        total = len(projects)
+
     total_pages = (total + 19) // 20
     stats = service.get_stats()
 
@@ -65,6 +78,7 @@ def projects_index(
             "page": page,
             "total_pages": total_pages,
             "total": total,
+            "user": user,
             "filters": {
                 "estado": estado,
                 "tipo": tipo,
@@ -79,12 +93,14 @@ def projects_index(
 @router.get("/new", response_class=HTMLResponse)
 def projects_new(
     request: Request,
+    user: User = Depends(require_permission(Permiso.proyecto_crear)),
     service: ProjectService = Depends(get_service),
 ):
     return templates.TemplateResponse(
         "pages/projects/create.html",
         {
             "request": request,
+            "user": user,
             **get_common_context(service),
         },
     )
@@ -93,6 +109,7 @@ def projects_new(
 @router.post("/new", response_class=HTMLResponse)
 async def projects_create(
     request: Request,
+    user: User = Depends(require_permission(Permiso.proyecto_crear)),
     service: ProjectService = Depends(get_service),
 ):
     form_data = await request.form()
@@ -160,6 +177,21 @@ async def projects_create(
         ods_ids=ods_ids,
     )
     project = service.create(data)
+
+    audit = AuditService(service.db)
+    audit.log(
+        actor_type=ActorType.internal,
+        actor_id=user.id,
+        actor_email=user.email,
+        actor_label=user.nombre_completo,
+        accion=AccionAuditoria.create,
+        recurso="project",
+        recurso_id=str(project.id),
+        detalle={"titulo": project.titulo, "codigo": project.codigo_contable},
+        ip_address=request.client.host if request.client else None,
+        project_id=project.id,
+    )
+
     return RedirectResponse(url=f"/projects/{project.id}", status_code=303)
 
 
@@ -167,6 +199,8 @@ async def projects_create(
 def projects_detail(
     request: Request,
     project_id: int,
+    user: User = Depends(require_permission(Permiso.proyecto_ver)),
+    _access: User = Depends(check_project_access),
     service: ProjectService = Depends(get_service),
 ):
     project = service.get_by_id(project_id)
@@ -202,6 +236,7 @@ def projects_detail(
         {
             "request": request,
             "project": project,
+            "user": user,
             "justification_alert": justification_alert,
             **get_common_context(service),
         },
@@ -212,6 +247,8 @@ def projects_detail(
 def projects_edit(
     request: Request,
     project_id: int,
+    user: User = Depends(require_permission(Permiso.proyecto_editar)),
+    _access: User = Depends(check_project_access),
     service: ProjectService = Depends(get_service),
 ):
     project = service.get_by_id(project_id)
@@ -232,6 +269,7 @@ def projects_edit(
 async def projects_update(
     request: Request,
     project_id: int,
+    user: User = Depends(require_permission(Permiso.proyecto_editar)),
     service: ProjectService = Depends(get_service),
 ):
     form_data = await request.form()
@@ -287,16 +325,49 @@ async def projects_update(
         ods_ids=ods_ids,
     )
     service.update(project_id, data)
+
+    audit = AuditService(service.db)
+    audit.log(
+        actor_type=ActorType.internal,
+        actor_id=user.id,
+        actor_email=user.email,
+        actor_label=user.nombre_completo,
+        accion=AccionAuditoria.update,
+        recurso="project",
+        recurso_id=str(project_id),
+        detalle={"titulo": titulo},
+        ip_address=request.client.host if request.client else None,
+        project_id=project_id,
+    )
+
     return RedirectResponse(url=f"/projects/{project_id}", status_code=303)
 
 
 @router.delete("/{project_id}", response_class=HTMLResponse)
 def projects_delete(
+    request: Request,
     project_id: int,
+    user: User = Depends(require_permission(Permiso.proyecto_eliminar)),
     service: ProjectService = Depends(get_service),
 ):
+    project = service.get_by_id(project_id)
     if not service.delete(project_id):
         raise HTTPException(status_code=404, detail="Proyecto no encontrado")
+
+    audit = AuditService(service.db)
+    audit.log(
+        actor_type=ActorType.internal,
+        actor_id=user.id,
+        actor_email=user.email,
+        actor_label=user.nombre_completo,
+        accion=AccionAuditoria.delete,
+        recurso="project",
+        recurso_id=str(project_id),
+        detalle={"titulo": project.titulo if project else None},
+        ip_address=request.client.host if request.client else None,
+        project_id=project_id,
+    )
+
     return HTMLResponse(content="", status_code=200)
 
 

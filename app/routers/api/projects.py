@@ -2,6 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.project import EstadoProyecto, TipoProyecto
+from app.models.user import User
+from app.auth.dependencies import get_current_user, require_permission
+from app.auth.permissions import Permiso
 from app.schemas.project import (
     ProjectCreate,
     ProjectUpdate,
@@ -26,6 +29,7 @@ def list_projects(
     tipo: TipoProyecto | None = None,
     pais: str | None = None,
     search: str | None = None,
+    user: User = Depends(require_permission(Permiso.proyecto_ver)),
     service: ProjectService = Depends(get_service),
 ):
     projects, total = service.get_all(
@@ -47,13 +51,17 @@ def list_projects(
 
 
 @router.get("/stats", response_model=ProjectStats)
-def get_stats(service: ProjectService = Depends(get_service)):
+def get_stats(
+    user: User = Depends(require_permission(Permiso.proyecto_ver)),
+    service: ProjectService = Depends(get_service),
+):
     return service.get_stats()
 
 
 @router.get("/{project_id}", response_model=ProjectResponse)
 def get_project(
     project_id: int,
+    user: User = Depends(require_permission(Permiso.proyecto_ver)),
     service: ProjectService = Depends(get_service),
 ):
     project = service.get_by_id(project_id)
@@ -65,6 +73,7 @@ def get_project(
 @router.post("", response_model=ProjectResponse, status_code=201)
 def create_project(
     data: ProjectCreate,
+    user: User = Depends(require_permission(Permiso.proyecto_crear)),
     service: ProjectService = Depends(get_service),
 ):
     existing = service.get_by_codigo_contable(data.codigo_contable)
@@ -80,6 +89,7 @@ def create_project(
 def update_project(
     project_id: int,
     data: ProjectUpdate,
+    user: User = Depends(require_permission(Permiso.proyecto_editar)),
     service: ProjectService = Depends(get_service),
 ):
     # Check if updating codigo_contable to existing one
@@ -100,6 +110,7 @@ def update_project(
 @router.delete("/{project_id}", status_code=204)
 def delete_project(
     project_id: int,
+    user: User = Depends(require_permission(Permiso.proyecto_eliminar)),
     service: ProjectService = Depends(get_service),
 ):
     if not service.delete(project_id):

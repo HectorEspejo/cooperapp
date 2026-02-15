@@ -123,6 +123,7 @@
                 hx-trigger="click"
                 onclick="openTransferModal()"
             >✏️</button>
+            {% if user and user.rol and user.rol.value in ['director', 'coordinador'] %}
             <button
                 type="button"
                 class="btn-icon btn-success"
@@ -132,6 +133,7 @@
                 hx-swap="outerHTML"
                 hx-confirm="¿Aprobar esta transferencia?"
             >✓</button>
+            {% endif %}
             <button
                 type="button"
                 class="btn-icon btn-danger"
@@ -152,6 +154,7 @@
                 hx-trigger="click"
                 onclick="openTransferModal()"
             >✏️</button>
+            {% if user and user.rol and user.rol.value in ['director', 'coordinador'] %}
             <button
                 type="button"
                 class="btn-icon btn-success"
@@ -161,6 +164,7 @@
                 hx-swap="outerHTML"
                 hx-confirm="¿Confirmar emision de esta transferencia?"
             >📤</button>
+            {% endif %}
             <button
                 type="button"
                 class="btn-icon btn-warning"
@@ -171,6 +175,7 @@
             >↩️</button>
             {% elif transfer.estado.value == 'emitida' %}
             <!-- Can confirm reception or revert -->
+            {% if user and user.rol and user.rol.value in ['director', 'coordinador'] %}
             <button
                 type="button"
                 class="btn-icon btn-success"
@@ -180,6 +185,7 @@
                 hx-swap="outerHTML"
                 hx-confirm="¿Confirmar recepcion de esta transferencia?"
             >📥</button>
+            {% endif %}
             <button
                 type="button"
                 class="btn-icon btn-warning"
@@ -190,6 +196,7 @@
             >↩️</button>
             {% elif transfer.estado.value == 'recibida' %}
             <!-- Can close or revert -->
+            {% if user and user.rol and user.rol.value in ['director', 'coordinador'] %}
             <button
                 type="button"
                 class="btn-icon btn-success"
@@ -199,6 +206,7 @@
                 hx-swap="outerHTML"
                 hx-confirm="¿Cerrar esta transferencia?"
             >🔒</button>
+            {% endif %}
             <button
                 type="button"
                 class="btn-icon btn-warning"

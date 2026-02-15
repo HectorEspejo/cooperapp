@@ -6,7 +6,10 @@
 <div class="page-header">
     <a href="/projects" class="btn btn-secondary">← Volver</a>
     <div class="header-actions">
+        {% if user and user.rol and user.rol.value in ['director', 'coordinador', 'tecnico_sede'] %}
         <a href="/projects/{{ project.id }}/edit" class="btn btn-primary">Editar</a>
+        {% endif %}
+        {% if user and user.rol and user.rol.value in ['director', 'coordinador'] %}
         <button
             class="btn btn-danger"
             hx-delete="/projects/{{ project.id }}"
@@ -17,6 +20,7 @@
         >
             Eliminar
         </button>
+        {% endif %}
     </div>
 </div>
 

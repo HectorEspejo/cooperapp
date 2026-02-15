@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acceso Contraparte - CooperApp</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+</head>
+<body class="auth-body">
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-logo">
+                <span class="logo">🌍</span>
+                <h1>CooperApp</h1>
+                <p class="auth-subtitle">Portal de Contraparte</p>
+            </div>
+
+            {% if error == 'empty' %}
+            <div class="alert alert-danger">Introduce un codigo de proyecto.</div>
+            {% elif error == 'invalid' %}
+            <div class="alert alert-danger">Codigo de proyecto no valido o el proyecto no esta en ejecucion.</div>
+            {% endif %}
+
+            <form method="post" action="/contraparte/login" class="auth-form">
+                <div class="form-group">
+                    <label for="code">Codigo de Proyecto</label>
+                    <input type="text" id="code" name="code" placeholder="Ej: PRY-2024-001" required
+                           class="form-control" autofocus>
+                    <small class="form-help">Introduce el codigo contable del proyecto para acceder.</small>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Acceder al Portal</button>
+            </form>
+
+            <div class="auth-divider">
+                <span>o</span>
+            </div>
+
+            <a href="/login" class="btn btn-outline">
+                Acceso interno (Microsoft)
+            </a>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block title %}{{ target_user.nombre_completo }} - Usuarios - CooperApp{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <a href="/usuarios" class="btn btn-sm btn-secondary">&larr; Volver a usuarios</a>
+        <h1>{{ target_user.nombre_completo }}</h1>
+        <p class="text-muted">{{ target_user.email }}</p>
+    </div>
+</div>
+
+<div class="detail-grid">
+    <div class="card">
+        <h3>Informacion</h3>
+        <div class="detail-row">
+            <span class="detail-label">Nombre:</span>
+            <span>{{ target_user.nombre }} {{ target_user.apellidos }}</span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">Email:</span>
+            <span>{{ target_user.email }}</span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">Estado:</span>
+            {% if target_user.activo %}
+            <span class="badge badge-success">Activo</span>
+            {% else %}
+            <span class="badge badge-danger">Inactivo</span>
+            {% endif %}
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">Ultimo acceso:</span>
+            <span>{{ target_user.ultimo_acceso.strftime('%d/%m/%Y %H:%M') if target_user.ultimo_acceso else 'Nunca' }}</span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">Creado:</span>
+            <span>{{ target_user.created_at.strftime('%d/%m/%Y %H:%M') }}</span>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>Rol</h3>
+        <form hx-put="/api/users/{{ target_user.id }}/role"
+              hx-target="#user-role-result"
+              hx-swap="innerHTML"
+              hx-headers='{"Content-Type": "application/json"}'
+              hx-ext="json-enc">
+            <div class="form-group">
+                <label>Rol actual: <strong>{{ target_user.rol_display }}</strong></label>
+                <select name="rol" class="form-select">
+                    <option value="">Sin rol (pendiente)</option>
+                    {% for r in roles %}
+                    <option value="{{ r.value }}" {% if target_user.rol == r %}selected{% endif %}>
+                        {{ r.value|replace('_', ' ')|title }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">Cambiar rol</button>
+        </form>
+        <div id="user-role-result"></div>
+
+        <div class="detail-divider"></div>
+
+        <h3>Activar / Desactivar</h3>
+        <button hx-put="/api/users/{{ target_user.id }}/toggle-active"
+                hx-headers='{"Content-Type": "application/json"}'
+                hx-swap="none"
+                onclick="location.reload()"
+                class="btn btn-sm {% if target_user.activo %}btn-danger{% else %}btn-primary{% endif %}">
+            {% if target_user.activo %}Desactivar cuenta{% else %}Activar cuenta{% endif %}
+        </button>
+    </div>
+
+    <div class="card card-full-width">
+        <h3>Proyectos Asignados</h3>
+        <p class="text-muted">Solo relevante para rol Gestor de Pais. Determina que proyectos puede ver.</p>
+
+        <div class="assigned-projects">
+            {% for p in target_user.assigned_projects %}
+            <div class="assigned-project-item">
+                <span>{{ p.codigo_contable }} - {{ p.titulo }}</span>
+                <button hx-delete="/api/users/{{ target_user.id }}/projects/{{ p.id }}"
+                        hx-swap="none"
+                        onclick="this.closest('.assigned-project-item').remove()"
+                        class="btn btn-sm btn-danger">Desasignar</button>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="detail-divider"></div>
+
+        <h4>Asignar proyecto</h4>
+        <div class="assign-form">
+            <select id="assign-project-select" class="form-select">
+                <option value="">Seleccionar proyecto...</option>
+                {% for p in all_projects %}
+                {% if p.id not in assigned_ids %}
+                <option value="{{ p.id }}">{{ p.codigo_contable }} - {{ p.titulo }}</option>
+                {% endif %}
+                {% endfor %}
+            </select>
+            <button onclick="assignProject('{{ target_user.id }}')" class="btn btn-sm btn-primary">Asignar</button>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function assignProject(userId) {
+    const select = document.getElementById('assign-project-select');
+    const projectId = select.value;
+    if (!projectId) return;
+
+    fetch('/api/users/' + userId + '/projects', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({project_ids: [parseInt(projectId)]})
+    }).then(() => location.reload());
+}
+</script>
+{% endblock %}

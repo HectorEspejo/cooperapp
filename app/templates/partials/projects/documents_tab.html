@@ -32,6 +32,7 @@
     </div>
 
     <!-- Upload Zone -->
+    {% if user and user.rol and user.rol.value in ['director', 'coordinador', 'tecnico_sede', 'gestor_pais'] %}
     <div class="documents-upload-section">
         <form
             id="document-upload-form"
@@ -74,6 +75,7 @@
             </div>
         </form>
     </div>
+    {% endif %}
 
     <!-- Filters Bar -->
     <div class="documents-filters">

@@ -3,6 +3,9 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.expense import UbicacionGasto, EstadoGasto
+from app.models.user import User
+from app.auth.dependencies import get_current_user, require_permission
+from app.auth.permissions import Permiso
 from app.services.expense_service import ExpenseService
 from app.schemas.expense import (
     ExpenseCreate,
@@ -62,6 +65,7 @@ def list_project_expenses(
     ubicacion: UbicacionGasto | None = Query(None),
     fecha_desde: date | None = Query(None),
     fecha_hasta: date | None = Query(None),
+    user: User = Depends(require_permission(Permiso.gasto_ver)),
     service: ExpenseService = Depends(get_service),
 ):
     """List all expenses for a project with optional filters"""
@@ -80,6 +84,7 @@ def list_project_expenses(
 def create_expense(
     project_id: int,
     data: ExpenseCreate,
+    user: User = Depends(require_permission(Permiso.gasto_crear)),
     service: ExpenseService = Depends(get_service),
 ):
     """Create a new expense for a project"""
@@ -93,6 +98,7 @@ def create_expense(
 @router.get("/expenses/{expense_id}", response_model=ExpenseResponse)
 def get_expense(
     expense_id: int,
+    user: User = Depends(require_permission(Permiso.gasto_ver)),
     service: ExpenseService = Depends(get_service),
 ):
     """Get a specific expense"""
@@ -106,6 +112,7 @@ def get_expense(
 def update_expense(
     expense_id: int,
     data: ExpenseUpdate,
+    user: User = Depends(require_permission(Permiso.gasto_crear)),
     service: ExpenseService = Depends(get_service),
 ):
     """Update an expense"""
@@ -121,6 +128,7 @@ def update_expense(
 @router.delete("/expenses/{expense_id}")
 def delete_expense(
     expense_id: int,
+    user: User = Depends(require_permission(Permiso.gasto_crear)),
     service: ExpenseService = Depends(get_service),
 ):
     """Delete an expense"""
@@ -132,6 +140,7 @@ def delete_expense(
 @router.post("/expenses/{expense_id}/submit", response_model=ExpenseResponse)
 def submit_expense(
     expense_id: int,
+    user: User = Depends(require_permission(Permiso.gasto_crear)),
     service: ExpenseService = Depends(get_service),
 ):
     """Submit expense for review"""
@@ -147,6 +156,7 @@ def submit_expense(
 @router.post("/expenses/{expense_id}/validate", response_model=ExpenseResponse)
 def validate_expense(
     expense_id: int,
+    user: User = Depends(require_permission(Permiso.gasto_validar)),
     service: ExpenseService = Depends(get_service),
 ):
     """Validate an expense"""
@@ -163,6 +173,7 @@ def validate_expense(
 def reject_expense(
     expense_id: int,
     reason: str | None = None,
+    user: User = Depends(require_permission(Permiso.gasto_validar)),
     service: ExpenseService = Depends(get_service),
 ):
     """Reject an expense"""
@@ -178,6 +189,7 @@ def reject_expense(
 @router.post("/expenses/{expense_id}/justify", response_model=ExpenseResponse)
 def justify_expense(
     expense_id: int,
+    user: User = Depends(require_permission(Permiso.gasto_justificar)),
     service: ExpenseService = Depends(get_service),
 ):
     """Mark expense as justified"""
@@ -193,6 +205,7 @@ def justify_expense(
 @router.post("/expenses/{expense_id}/revert", response_model=ExpenseResponse)
 def revert_expense(
     expense_id: int,
+    user: User = Depends(require_permission(Permiso.gasto_validar)),
     service: ExpenseService = Depends(get_service),
 ):
     """Revert expense to draft state"""
@@ -209,6 +222,7 @@ def revert_expense(
 def upload_document(
     expense_id: int,
     file: UploadFile = File(...),
+    user: User = Depends(require_permission(Permiso.gasto_justificar)),
     service: ExpenseService = Depends(get_service),
 ):
     """Upload a document for an expense"""
@@ -222,6 +236,7 @@ def upload_document(
 @router.delete("/expenses/{expense_id}/document")
 def delete_document(
     expense_id: int,
+    user: User = Depends(require_permission(Permiso.gasto_crear)),
     service: ExpenseService = Depends(get_service),
 ):
     """Delete the document for an expense"""
@@ -233,6 +248,7 @@ def delete_document(
 @router.get("/projects/{project_id}/expenses/summary", response_model=ExpenseSummary)
 def get_expense_summary(
     project_id: int,
+    user: User = Depends(require_permission(Permiso.gasto_ver)),
     service: ExpenseService = Depends(get_service),
 ):
     """Get expense summary for a project"""
@@ -242,6 +258,7 @@ def get_expense_summary(
 @router.get("/projects/{project_id}/budget-lines/balance", response_model=list[BudgetLineBalance])
 def get_budget_lines_balance(
     project_id: int,
+    user: User = Depends(require_permission(Permiso.gasto_ver)),
     service: ExpenseService = Depends(get_service),
 ):
     """Get budget lines with available balance"""

@@ -4,6 +4,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from datetime import date
 from app.database import get_db
+from app.models.user import User
 from app.services.logical_framework_service import LogicalFrameworkService
 from app.services.project_service import ProjectService
 from app.models.logical_framework import EstadoActividad
@@ -14,6 +15,10 @@ from app.schemas.logical_framework import (
     ActivityCreate, ActivityUpdate,
     IndicatorCreate, IndicatorUpdate, IndicatorUpdateCreate
 )
+from app.auth.dependencies import get_current_user, require_permission
+from app.auth.permissions import Permiso
+from app.services.audit_service import AuditService
+from app.models.audit_log import ActorType, AccionAuditoria
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
@@ -33,6 +38,7 @@ def get_project_service(db: Session = Depends(get_db)) -> ProjectService:
 def marco_logico_tab(
     request: Request,
     project_id: int,
+    user: User = Depends(require_permission(Permiso.marco_ver)),
     service: LogicalFrameworkService = Depends(get_service),
     project_service: ProjectService = Depends(get_project_service)
 ):
@@ -62,6 +68,7 @@ def marco_logico_tab(
 def update_objetivo_general(
     request: Request,
     project_id: int,
+    user: User = Depends(require_permission(Permiso.marco_editar)),
     objetivo_general: str = Form(""),
     service: LogicalFrameworkService = Depends(get_service),
     project_service: ProjectService = Depends(get_project_service)
@@ -73,6 +80,21 @@ def update_objetivo_general(
 
     data = LogicalFrameworkUpdate(objetivo_general=objetivo_general or None)
     service.create_or_update_framework(project_id, data)
+
+    # Audit log
+    audit = AuditService(service.db)
+    audit.log(
+        actor_type=ActorType.internal,
+        actor_id=str(user.id),
+        actor_email=user.email,
+        actor_label=user.nombre_completo,
+        accion=AccionAuditoria.update,
+        recurso="logical_framework",
+        recurso_id=str(project_id),
+        detalle={"campo": "objetivo_general"},
+        ip_address=request.client.host if request.client else None,
+        project_id=project_id,
+    )
 
     framework = service.get_framework_by_project(project_id)
     summary = service.get_framework_summary(project_id)
@@ -93,6 +115,7 @@ def update_objetivo_general(
 def get_summary(
     request: Request,
     project_id: int,
+    user: User = Depends(require_permission(Permiso.marco_ver)),
     service: LogicalFrameworkService = Depends(get_service)
 ):
     """Get summary stats partial"""
@@ -111,6 +134,7 @@ def get_summary(
 def get_tree(
     request: Request,
     project_id: int,
+    user: User = Depends(require_permission(Permiso.marco_ver)),
     service: LogicalFrameworkService = Depends(get_service)
 ):
     """Get the hierarchical tree partial"""
@@ -132,6 +156,7 @@ def get_tree(
 def get_objective_form(
     request: Request,
     project_id: int,
+    user: User = Depends(require_permission(Permiso.marco_ver)),
     objective_id: int | None = None,
     service: LogicalFrameworkService = Depends(get_service)
 ):
@@ -164,6 +189,7 @@ def get_objective_form(
 def add_objective(
     request: Request,
     project_id: int,
+    user: User = Depends(require_permission(Permiso.marco_editar)),
     numero: int = Form(...),
     descripcion: str = Form(...),
     service: LogicalFrameworkService = Depends(get_service),
@@ -176,6 +202,21 @@ def add_objective(
 
     data = SpecificObjectiveCreate(numero=numero, descripcion=descripcion)
     service.add_objective(project_id, data)
+
+    # Audit log
+    audit = AuditService(service.db)
+    audit.log(
+        actor_type=ActorType.internal,
+        actor_id=str(user.id),
+        actor_email=user.email,
+        actor_label=user.nombre_completo,
+        accion=AccionAuditoria.create,
+        recurso="specific_objective",
+        recurso_id=None,
+        detalle={"descripcion": descripcion[:100]},
+        ip_address=request.client.host if request.client else None,
+        project_id=project_id,
+    )
 
     framework = service.get_framework_by_project(project_id)
     summary = service.get_framework_summary(project_id)
@@ -196,6 +237,7 @@ def add_objective(
 async def update_objective(
     request: Request,
     objective_id: int,
+    user: User = Depends(require_permission(Permiso.marco_editar)),
     service: LogicalFrameworkService = Depends(get_service),
     project_service: ProjectService = Depends(get_project_service)
 ):
@@ -216,6 +258,20 @@ async def update_objective(
         data.descripcion = descripcion
 
     service.update_objective(objective_id, data)
+
+    # Audit log
+    audit = AuditService(service.db)
+    audit.log(
+        actor_type=ActorType.internal,
+        actor_id=str(user.id),
+        actor_email=user.email,
+        actor_label=user.nombre_completo,
+        accion=AccionAuditoria.update,
+        recurso="specific_objective",
+        recurso_id=str(objective_id),
+        detalle=None,
+        ip_address=request.client.host if request.client else None,
+    )
 
     # Get project_id from objective's framework
     objective = service.get_objective(objective_id)
@@ -239,6 +295,7 @@ async def update_objective(
 def delete_objective(
     request: Request,
     objective_id: int,
+    user: User = Depends(require_permission(Permiso.marco_editar)),
     service: LogicalFrameworkService = Depends(get_service),
     project_service: ProjectService = Depends(get_project_service)
 ):
@@ -249,6 +306,21 @@ def delete_objective(
 
     project_id = objective.framework.project_id
     service.delete_objective(objective_id)
+
+    # Audit log
+    audit = AuditService(service.db)
+    audit.log(
+        actor_type=ActorType.internal,
+        actor_id=str(user.id),
+        actor_email=user.email,
+        actor_label=user.nombre_completo,
+        accion=AccionAuditoria.delete,
+        recurso="specific_objective",
+        recurso_id=str(objective_id),
+        detalle=None,
+        ip_address=request.client.host if request.client else None,
+        project_id=project_id,
+    )
 
     framework = service.get_framework_by_project(project_id)
     project = project_service.get_by_id(project_id)
@@ -272,6 +344,7 @@ def delete_objective(
 def get_result_form(
     request: Request,
     project_id: int,
+    user: User = Depends(require_permission(Permiso.marco_ver)),
     objective_id: int | None = None,
     result_id: int | None = None,
     service: LogicalFrameworkService = Depends(get_service)
@@ -309,6 +382,7 @@ def get_result_form(
 def add_result(
     request: Request,
     objective_id: int,
+    user: User = Depends(require_permission(Permiso.marco_editar)),
     numero: str = Form(...),
     descripcion: str = Form(...),
     service: LogicalFrameworkService = Depends(get_service),
@@ -323,6 +397,21 @@ def add_result(
     service.add_result(objective_id, data)
 
     project_id = objective.framework.project_id
+
+    # Audit log
+    audit = AuditService(service.db)
+    audit.log(
+        actor_type=ActorType.internal,
+        actor_id=str(user.id),
+        actor_email=user.email,
+        actor_label=user.nombre_completo,
+        accion=AccionAuditoria.create,
+        recurso="result",
+        recurso_id=None,
+        detalle={"descripcion": descripcion[:100]},
+        ip_address=request.client.host if request.client else None,
+        project_id=project_id,
+    )
     framework = service.get_framework_by_project(project_id)
     project = project_service.get_by_id(project_id)
     summary = service.get_framework_summary(project_id)
@@ -343,6 +432,7 @@ def add_result(
 async def update_result(
     request: Request,
     result_id: int,
+    user: User = Depends(require_permission(Permiso.marco_editar)),
     service: LogicalFrameworkService = Depends(get_service),
     project_service: ProjectService = Depends(get_project_service)
 ):
@@ -360,6 +450,20 @@ async def update_result(
         data.descripcion = form_data.get("descripcion")
 
     service.update_result(result_id, data)
+
+    # Audit log
+    audit = AuditService(service.db)
+    audit.log(
+        actor_type=ActorType.internal,
+        actor_id=str(user.id),
+        actor_email=user.email,
+        actor_label=user.nombre_completo,
+        accion=AccionAuditoria.update,
+        recurso="result",
+        recurso_id=str(result_id),
+        detalle=None,
+        ip_address=request.client.host if request.client else None,
+    )
 
     result = service.get_result(result_id)
     project_id = result.objective.framework.project_id
@@ -383,6 +487,7 @@ async def update_result(
 def delete_result(
     request: Request,
     result_id: int,
+    user: User = Depends(require_permission(Permiso.marco_editar)),
     service: LogicalFrameworkService = Depends(get_service),
     project_service: ProjectService = Depends(get_project_service)
 ):
@@ -393,6 +498,21 @@ def delete_result(
 
     project_id = result.objective.framework.project_id
     service.delete_result(result_id)
+
+    # Audit log
+    audit = AuditService(service.db)
+    audit.log(
+        actor_type=ActorType.internal,
+        actor_id=str(user.id),
+        actor_email=user.email,
+        actor_label=user.nombre_completo,
+        accion=AccionAuditoria.delete,
+        recurso="result",
+        recurso_id=str(result_id),
+        detalle=None,
+        ip_address=request.client.host if request.client else None,
+        project_id=project_id,
+    )
 
     framework = service.get_framework_by_project(project_id)
     project = project_service.get_by_id(project_id)
@@ -416,6 +536,7 @@ def delete_result(
 def get_activity_form(
     request: Request,
     project_id: int,
+    user: User = Depends(require_permission(Permiso.marco_ver)),
     result_id: int | None = None,
     activity_id: int | None = None,
     service: LogicalFrameworkService = Depends(get_service)
@@ -453,6 +574,7 @@ def get_activity_form(
 def add_activity(
     request: Request,
     result_id: int,
+    user: User = Depends(require_permission(Permiso.marco_editar)),
     numero: str = Form(...),
     descripcion: str = Form(...),
     fecha_inicio_prevista: date | None = Form(None),
@@ -474,6 +596,21 @@ def add_activity(
     service.add_activity(result_id, data)
 
     project_id = result.objective.framework.project_id
+
+    # Audit log
+    audit = AuditService(service.db)
+    audit.log(
+        actor_type=ActorType.internal,
+        actor_id=str(user.id),
+        actor_email=user.email,
+        actor_label=user.nombre_completo,
+        accion=AccionAuditoria.create,
+        recurso="activity",
+        recurso_id=None,
+        detalle={"descripcion": descripcion[:100]},
+        ip_address=request.client.host if request.client else None,
+        project_id=project_id,
+    )
     framework = service.get_framework_by_project(project_id)
     project = project_service.get_by_id(project_id)
     summary = service.get_framework_summary(project_id)
@@ -494,6 +631,7 @@ def add_activity(
 async def update_activity(
     request: Request,
     activity_id: int,
+    user: User = Depends(require_permission(Permiso.marco_editar)),
     service: LogicalFrameworkService = Depends(get_service),
     project_service: ProjectService = Depends(get_project_service)
 ):
@@ -524,6 +662,22 @@ async def update_activity(
 
     activity = service.get_activity(activity_id)
     project_id = activity.result.objective.framework.project_id
+
+    # Audit log
+    audit = AuditService(service.db)
+    audit.log(
+        actor_type=ActorType.internal,
+        actor_id=str(user.id),
+        actor_email=user.email,
+        actor_label=user.nombre_completo,
+        accion=AccionAuditoria.update,
+        recurso="activity",
+        recurso_id=str(activity_id),
+        detalle=None,
+        ip_address=request.client.host if request.client else None,
+        project_id=project_id,
+    )
+
     framework = service.get_framework_by_project(project_id)
     project = project_service.get_by_id(project_id)
     summary = service.get_framework_summary(project_id)
@@ -544,6 +698,7 @@ async def update_activity(
 def update_activity_status(
     request: Request,
     activity_id: int,
+    user: User = Depends(require_permission(Permiso.marco_editar)),
     estado: EstadoActividad = Form(...),
     service: LogicalFrameworkService = Depends(get_service),
     project_service: ProjectService = Depends(get_project_service)
@@ -558,6 +713,21 @@ def update_activity_status(
 
     activity = service.get_activity(activity_id)
     project_id = activity.result.objective.framework.project_id
+
+    # Audit log
+    audit = AuditService(service.db)
+    audit.log(
+        actor_type=ActorType.internal,
+        actor_id=str(user.id),
+        actor_email=user.email,
+        actor_label=user.nombre_completo,
+        accion=AccionAuditoria.status_change,
+        recurso="activity",
+        recurso_id=str(activity_id),
+        detalle={"estado": estado.value},
+        ip_address=request.client.host if request.client else None,
+        project_id=project_id,
+    )
     framework = service.get_framework_by_project(project_id)
     project = project_service.get_by_id(project_id)
     summary = service.get_framework_summary(project_id)
@@ -578,6 +748,7 @@ def update_activity_status(
 def delete_activity(
     request: Request,
     activity_id: int,
+    user: User = Depends(require_permission(Permiso.marco_editar)),
     service: LogicalFrameworkService = Depends(get_service),
     project_service: ProjectService = Depends(get_project_service)
 ):
@@ -588,6 +759,21 @@ def delete_activity(
 
     project_id = activity.result.objective.framework.project_id
     service.delete_activity(activity_id)
+
+    # Audit log
+    audit = AuditService(service.db)
+    audit.log(
+        actor_type=ActorType.internal,
+        actor_id=str(user.id),
+        actor_email=user.email,
+        actor_label=user.nombre_completo,
+        accion=AccionAuditoria.delete,
+        recurso="activity",
+        recurso_id=str(activity_id),
+        detalle=None,
+        ip_address=request.client.host if request.client else None,
+        project_id=project_id,
+    )
 
     framework = service.get_framework_by_project(project_id)
     project = project_service.get_by_id(project_id)
@@ -611,6 +797,7 @@ def delete_activity(
 def get_indicator_form(
     request: Request,
     project_id: int,
+    user: User = Depends(require_permission(Permiso.marco_ver)),
     framework_id: int | None = None,
     objective_id: int | None = None,
     result_id: int | None = None,
@@ -641,6 +828,7 @@ def get_indicator_form(
 async def create_indicator(
     request: Request,
     project_id: int,
+    user: User = Depends(require_permission(Permiso.marco_editar)),
     service: LogicalFrameworkService = Depends(get_service),
     project_service: ProjectService = Depends(get_project_service)
 ):
@@ -672,6 +860,21 @@ async def create_indicator(
     )
     service.create_indicator(data)
 
+    # Audit log
+    audit = AuditService(service.db)
+    audit.log(
+        actor_type=ActorType.internal,
+        actor_id=str(user.id),
+        actor_email=user.email,
+        actor_label=user.nombre_completo,
+        accion=AccionAuditoria.create,
+        recurso="indicator",
+        recurso_id=None,
+        detalle={"codigo": data.codigo},
+        ip_address=request.client.host if request.client else None,
+        project_id=project_id,
+    )
+
     framework = service.get_framework_by_project(project_id)
     project = project_service.get_by_id(project_id)
     summary = service.get_framework_summary(project_id)
@@ -692,6 +895,7 @@ async def create_indicator(
 def get_indicator_edit_form(
     request: Request,
     indicator_id: int,
+    user: User = Depends(require_permission(Permiso.marco_ver)),
     service: LogicalFrameworkService = Depends(get_service)
 ):
     """Get the indicator edit form"""
@@ -718,6 +922,7 @@ def get_indicator_edit_form(
 async def update_indicator(
     request: Request,
     indicator_id: int,
+    user: User = Depends(require_permission(Permiso.marco_editar)),
     service: LogicalFrameworkService = Depends(get_service),
     project_service: ProjectService = Depends(get_project_service)
 ):
@@ -739,6 +944,21 @@ async def update_indicator(
     service.update_indicator(indicator_id, data)
 
     project_id = indicator.framework.project_id
+
+    # Audit log
+    audit = AuditService(service.db)
+    audit.log(
+        actor_type=ActorType.internal,
+        actor_id=str(user.id),
+        actor_email=user.email,
+        actor_label=user.nombre_completo,
+        accion=AccionAuditoria.update,
+        recurso="indicator",
+        recurso_id=str(indicator_id),
+        detalle=None,
+        ip_address=request.client.host if request.client else None,
+        project_id=project_id,
+    )
     framework = service.get_framework_by_project(project_id)
     project = project_service.get_by_id(project_id)
     summary = service.get_framework_summary(project_id)
@@ -759,6 +979,7 @@ async def update_indicator(
 def get_indicator_update_form(
     request: Request,
     indicator_id: int,
+    user: User = Depends(require_permission(Permiso.marco_ver)),
     service: LogicalFrameworkService = Depends(get_service)
 ):
     """Get the form to update indicator value"""
@@ -779,6 +1000,7 @@ def get_indicator_update_form(
 def update_indicator_value(
     request: Request,
     indicator_id: int,
+    user: User = Depends(require_permission(Permiso.marco_editar)),
     valor_nuevo: str = Form(...),
     observaciones: str = Form(""),
     updated_by: str = Form(""),
@@ -798,6 +1020,21 @@ def update_indicator_value(
     service.update_indicator_value(indicator_id, data)
 
     project_id = indicator.framework.project_id
+
+    # Audit log
+    audit = AuditService(service.db)
+    audit.log(
+        actor_type=ActorType.internal,
+        actor_id=str(user.id),
+        actor_email=user.email,
+        actor_label=user.nombre_completo,
+        accion=AccionAuditoria.update,
+        recurso="indicator",
+        recurso_id=str(indicator_id),
+        detalle={"valor_nuevo": valor_nuevo},
+        ip_address=request.client.host if request.client else None,
+        project_id=project_id,
+    )
     framework = service.get_framework_by_project(project_id)
     project = project_service.get_by_id(project_id)
     summary = service.get_framework_summary(project_id)
@@ -818,6 +1055,7 @@ def update_indicator_value(
 def get_indicator_history(
     request: Request,
     indicator_id: int,
+    user: User = Depends(require_permission(Permiso.marco_ver)),
     service: LogicalFrameworkService = Depends(get_service)
 ):
     """Get the history modal for an indicator"""
@@ -841,6 +1079,7 @@ def get_indicator_history(
 def delete_indicator(
     request: Request,
     indicator_id: int,
+    user: User = Depends(require_permission(Permiso.marco_editar)),
     service: LogicalFrameworkService = Depends(get_service),
     project_service: ProjectService = Depends(get_project_service)
 ):
@@ -851,6 +1090,21 @@ def delete_indicator(
 
     project_id = indicator.framework.project_id
     service.delete_indicator(indicator_id)
+
+    # Audit log
+    audit = AuditService(service.db)
+    audit.log(
+        actor_type=ActorType.internal,
+        actor_id=str(user.id),
+        actor_email=user.email,
+        actor_label=user.nombre_completo,
+        accion=AccionAuditoria.delete,
+        recurso="indicator",
+        recurso_id=str(indicator_id),
+        detalle=None,
+        ip_address=request.client.host if request.client else None,
+        project_id=project_id,
+    )
 
     framework = service.get_framework_by_project(project_id)
     project = project_service.get_by_id(project_id)

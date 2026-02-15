@@ -12,6 +12,9 @@ from app.models.document import (
     CATEGORIA_NOMBRES, TIPO_FUENTE_NOMBRES
 )
 from app.models.report import Report, TipoInforme, TIPO_INFORME_NOMBRES
+from app.models.user import User, Rol, user_project
+from app.models.counterpart_session import CounterpartSession
+from app.models.audit_log import AuditLog, ActorType, AccionAuditoria
 
 __all__ = [
     "Project", "Plazo", "ODSObjetivo", "EstadoProyecto", "TipoProyecto", "Financiador", "ODS", "ODS_NOMBRES",
@@ -24,4 +27,7 @@ __all__ = [
     "CategoriaDocumento", "TipoFuenteVerificacion",
     "CATEGORIA_NOMBRES", "TIPO_FUENTE_NOMBRES",
     "Report", "TipoInforme", "TIPO_INFORME_NOMBRES",
+    "User", "Rol", "user_project",
+    "CounterpartSession",
+    "AuditLog", "ActorType", "AccionAuditoria",
 ]

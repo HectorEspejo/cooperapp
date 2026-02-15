@@ -2,6 +2,9 @@ from datetime import date
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from app.database import get_db
+from app.models.user import User
+from app.auth.dependencies import get_current_user, require_permission
+from app.auth.permissions import Permiso
 from app.services.transfer_service import TransferService
 from app.schemas.transfer import (
     TransferCreate,
@@ -53,6 +56,7 @@ def transfer_to_response(transfer) -> TransferResponse:
 @router.get("/projects/{project_id}/transfers", response_model=list[TransferResponse])
 def list_project_transfers(
     project_id: int,
+    user: User = Depends(require_permission(Permiso.transferencia_ver)),
     service: TransferService = Depends(get_service),
 ):
     """List all transfers for a project."""
@@ -64,6 +68,7 @@ def list_project_transfers(
 def create_transfer(
     project_id: int,
     data: TransferCreate,
+    user: User = Depends(require_permission(Permiso.transferencia_gestionar)),
     service: TransferService = Depends(get_service),
 ):
     """Create a new transfer for a project."""
@@ -77,6 +82,7 @@ def create_transfer(
 @router.get("/projects/{project_id}/transfers/summary", response_model=TransferSummary)
 def get_transfer_summary(
     project_id: int,
+    user: User = Depends(require_permission(Permiso.transferencia_ver)),
     service: TransferService = Depends(get_service),
 ):
     """Get transfer summary for a project."""
@@ -86,6 +92,7 @@ def get_transfer_summary(
 @router.get("/transfers/{transfer_id}", response_model=TransferResponse)
 def get_transfer(
     transfer_id: int,
+    user: User = Depends(require_permission(Permiso.transferencia_ver)),
     service: TransferService = Depends(get_service),
 ):
     """Get a specific transfer."""
@@ -99,6 +106,7 @@ def get_transfer(
 def update_transfer(
     transfer_id: int,
     data: TransferUpdate,
+    user: User = Depends(require_permission(Permiso.transferencia_gestionar)),
     service: TransferService = Depends(get_service),
 ):
     """Update a transfer."""
@@ -114,6 +122,7 @@ def update_transfer(
 @router.delete("/transfers/{transfer_id}")
 def delete_transfer(
     transfer_id: int,
+    user: User = Depends(require_permission(Permiso.transferencia_gestionar)),
     service: TransferService = Depends(get_service),
 ):
     """Delete a transfer."""
@@ -128,6 +137,7 @@ def delete_transfer(
 @router.post("/transfers/{transfer_id}/approve", response_model=TransferResponse)
 def approve_transfer(
     transfer_id: int,
+    user: User = Depends(require_permission(Permiso.transferencia_gestionar)),
     service: TransferService = Depends(get_service),
 ):
     """Approve a transfer."""
@@ -144,6 +154,7 @@ def approve_transfer(
 def confirm_emission(
     transfer_id: int,
     fecha_emision: date | None = Query(None),
+    user: User = Depends(require_permission(Permiso.transferencia_gestionar)),
     service: TransferService = Depends(get_service),
 ):
     """Confirm transfer emission."""
@@ -160,6 +171,7 @@ def confirm_emission(
 def confirm_reception(
     transfer_id: int,
     data: ConfirmReceptionData | None = None,
+    user: User = Depends(require_permission(Permiso.transferencia_gestionar)),
     service: TransferService = Depends(get_service),
 ):
     """Confirm transfer reception."""
@@ -175,6 +187,7 @@ def confirm_reception(
 @router.post("/transfers/{transfer_id}/close", response_model=TransferResponse)
 def close_transfer(
     transfer_id: int,
+    user: User = Depends(require_permission(Permiso.transferencia_gestionar)),
     service: TransferService = Depends(get_service),
 ):
     """Close a transfer."""
@@ -190,6 +203,7 @@ def close_transfer(
 @router.post("/transfers/{transfer_id}/revert", response_model=TransferResponse)
 def revert_transfer(
     transfer_id: int,
+    user: User = Depends(require_permission(Permiso.transferencia_gestionar)),
     service: TransferService = Depends(get_service),
 ):
     """Revert a transfer to previous state."""

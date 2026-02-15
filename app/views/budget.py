@@ -4,9 +4,14 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from app.database import get_db
+from app.models.user import User
 from app.services.budget_service import BudgetService
 from app.services.project_service import ProjectService
 from app.schemas.budget import ProjectBudgetLineUpdate
+from app.auth.dependencies import require_permission
+from app.auth.permissions import Permiso
+from app.services.audit_service import AuditService
+from app.models.audit_log import ActorType, AccionAuditoria
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
@@ -24,6 +29,7 @@ def get_project_service(db: Session = Depends(get_db)) -> ProjectService:
 def budget_tab(
     request: Request,
     project_id: int,
+    user: User = Depends(require_permission(Permiso.presupuesto_ver)),
     budget_service: BudgetService = Depends(get_budget_service),
     project_service: ProjectService = Depends(get_project_service),
 ):
@@ -42,6 +48,7 @@ def budget_tab(
             "project": project,
             "budget": budget_summary,
             "funders": funders,
+            "user": user,
         },
     )
 
@@ -51,6 +58,7 @@ def initialize_budget(
     request: Request,
     project_id: int,
     funder_id: int = Form(...),
+    user: User = Depends(require_permission(Permiso.presupuesto_editar)),
     budget_service: BudgetService = Depends(get_budget_service),
     project_service: ProjectService = Depends(get_project_service),
 ):
@@ -60,6 +68,22 @@ def initialize_budget(
         raise HTTPException(status_code=404, detail="Proyecto no encontrado")
 
     budget_service.initialize_project_budget(project_id, funder_id)
+
+    # Audit log
+    audit = AuditService(budget_service.db)
+    audit.log(
+        actor_type=ActorType.internal,
+        actor_id=str(user.id),
+        actor_email=user.email,
+        actor_label=user.nombre_completo,
+        accion=AccionAuditoria.create,
+        recurso="budget",
+        recurso_id=str(project_id),
+        detalle={"funder_id": funder_id},
+        ip_address=request.client.host if request.client else None,
+        project_id=project_id,
+    )
+
     budget_summary = budget_service.get_project_budget_summary(project_id)
 
     return templates.TemplateResponse(
@@ -68,6 +92,7 @@ def initialize_budget(
             "request": request,
             "project": project,
             "budget": budget_summary,
+            "user": user,
         },
     )
 
@@ -77,6 +102,7 @@ async def update_budget_line(
     request: Request,
     project_id: int,
     line_id: int,
+    user: User = Depends(require_permission(Permiso.presupuesto_editar)),
     budget_service: BudgetService = Depends(get_budget_service),
     project_service: ProjectService = Depends(get_project_service),
 ):
@@ -101,6 +127,21 @@ async def update_budget_line(
 
     budget_service.update_budget_line(line_id, update_data)
 
+    # Audit log
+    audit = AuditService(budget_service.db)
+    audit.log(
+        actor_type=ActorType.internal,
+        actor_id=str(user.id),
+        actor_email=user.email,
+        actor_label=user.nombre_completo,
+        accion=AccionAuditoria.update,
+        recurso="budget_line",
+        recurso_id=str(line_id),
+        detalle={"line_name": line.name if line else None},
+        ip_address=request.client.host if request.client else None,
+        project_id=project_id,
+    )
+
     # Return the entire budget table to update totals
     project = project_service.get_by_id(project_id)
     budget_summary = budget_service.get_project_budget_summary(project_id)
@@ -111,5 +152,6 @@ async def update_budget_line(
             "request": request,
             "project": project,
             "budget": budget_summary,
+            "user": user,
         },
     )

@@ -93,6 +93,7 @@
                             {% endif %}
                         </td>
                         <td class="col-amount">
+                            {% if user and user.rol and user.rol.value in ['director', 'coordinador'] %}
                             <input
                                 type="text"
                                 class="budget-input {% if line.has_max_percentage_alert %}input-error{% endif %}"
@@ -104,8 +105,12 @@
                                 hx-trigger="change"
                                 hx-include="closest tr"
                             >
+                            {% else %}
+                            <span class="budget-readonly">{{ '{:,.2f}'.format(line.aprobado) }}</span>
+                            {% endif %}
                         </td>
                         <td class="col-amount">
+                            {% if user and user.rol and user.rol.value in ['director', 'coordinador'] %}
                             <input
                                 type="text"
                                 class="budget-input"
@@ -117,9 +122,13 @@
                                 hx-trigger="change"
                                 hx-include="closest tr"
                             >
+                            {% else %}
+                            <span class="budget-readonly">{{ '{:,.2f}'.format(line.ejecutado_espana) }}</span>
+                            {% endif %}
                         </td>
                         <td class="col-amount">
                             {% if not line.is_spain_only %}
+                            {% if user and user.rol and user.rol.value in ['director', 'coordinador'] %}
                             <input
                                 type="text"
                                 class="budget-input"
@@ -131,6 +140,9 @@
                                 hx-trigger="change"
                                 hx-include="closest tr"
                             >
+                            {% else %}
+                            <span class="budget-readonly">{{ '{:,.2f}'.format(line.ejecutado_terreno) }}</span>
+                            {% endif %}
                             {% else %}
                             <span class="budget-readonly">-</span>
                             {% endif %}
@@ -181,6 +193,7 @@
                             {% endif %}
                         </td>
                         <td class="col-amount">
+                            {% if user and user.rol and user.rol.value in ['director', 'coordinador'] %}
                             <input
                                 type="text"
                                 class="budget-input {% if line.has_max_percentage_alert %}input-error{% endif %}"
@@ -192,8 +205,12 @@
                                 hx-trigger="change"
                                 hx-include="closest tr"
                             >
+                            {% else %}
+                            <span class="budget-readonly">{{ '{:,.2f}'.format(line.aprobado) }}</span>
+                            {% endif %}
                         </td>
                         <td class="col-amount">
+                            {% if user and user.rol and user.rol.value in ['director', 'coordinador'] %}
                             <input
                                 type="text"
                                 class="budget-input"
@@ -205,9 +222,13 @@
                                 hx-trigger="change"
                                 hx-include="closest tr"
                             >
+                            {% else %}
+                            <span class="budget-readonly">{{ '{:,.2f}'.format(line.ejecutado_espana) }}</span>
+                            {% endif %}
                         </td>
                         <td class="col-amount">
                             {% if not line.is_spain_only %}
+                            {% if user and user.rol and user.rol.value in ['director', 'coordinador'] %}
                             <input
                                 type="text"
                                 class="budget-input"
@@ -219,6 +240,9 @@
                                 hx-trigger="change"
                                 hx-include="closest tr"
                             >
+                            {% else %}
+                            <span class="budget-readonly">{{ '{:,.2f}'.format(line.ejecutado_terreno) }}</span>
+                            {% endif %}
                             {% else %}
                             <span class="budget-readonly">-</span>
                             {% endif %}
