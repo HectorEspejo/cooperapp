@@ -5,8 +5,11 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models.report import TIPO_INFORME_NOMBRES
+from app.models.user import User
 from app.services.report_service import ReportService
 from app.services.project_service import ProjectService
+from app.auth.dependencies import require_permission
+from app.auth.permissions import Permiso
 
 
 router = APIRouter()
@@ -25,6 +28,7 @@ def get_project_service(db: Session = Depends(get_db)) -> ProjectService:
 def reports_tab(
     request: Request,
     project_id: int,
+    user: User = Depends(require_permission(Permiso.informe_generar)),
     report_service: ReportService = Depends(get_report_service),
     project_service: ProjectService = Depends(get_project_service),
 ):

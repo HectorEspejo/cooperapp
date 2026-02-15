@@ -5,10 +5,15 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.document import TipoFuenteVerificacion, TIPO_FUENTE_NOMBRES
 from app.models.logical_framework import Indicator, Activity
+from app.models.user import User
 from app.services.verification_source_service import VerificationSourceService
 from app.services.document_service import DocumentService
 from app.services.project_service import ProjectService
 from app.schemas.document import VerificationSourceCreate
+from app.auth.dependencies import get_current_user, require_permission
+from app.auth.permissions import Permiso
+from app.services.audit_service import AuditService
+from app.models.audit_log import ActorType, AccionAuditoria
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
@@ -30,6 +35,7 @@ def get_project_service(db: Session = Depends(get_db)) -> ProjectService:
 def indicator_sources_modal(
     request: Request,
     indicator_id: int,
+    user: User = Depends(require_permission(Permiso.documento_ver)),
     verification_service: VerificationSourceService = Depends(get_verification_service),
     document_service: DocumentService = Depends(get_document_service),
     db: Session = Depends(get_db),
@@ -67,6 +73,7 @@ def indicator_sources_modal(
 def activity_sources_modal(
     request: Request,
     activity_id: int,
+    user: User = Depends(require_permission(Permiso.documento_ver)),
     verification_service: VerificationSourceService = Depends(get_verification_service),
     document_service: DocumentService = Depends(get_document_service),
     db: Session = Depends(get_db),
@@ -104,6 +111,7 @@ def activity_sources_modal(
 async def add_indicator_source(
     request: Request,
     indicator_id: int,
+    user: User = Depends(require_permission(Permiso.documento_sellar)),
     document_id: int = Form(...),
     tipo: TipoFuenteVerificacion = Form(...),
     descripcion: str | None = Form(None),
@@ -125,6 +133,21 @@ async def add_indicator_source(
             descripcion=descripcion,
         )
         verification_service.create_source(data)
+
+        # Audit log
+        audit = AuditService(db)
+        audit.log(
+            actor_type=ActorType.internal,
+            actor_id=str(user.id),
+            actor_email=user.email,
+            actor_label=user.nombre_completo,
+            accion=AccionAuditoria.create,
+            recurso="verification_source",
+            recurso_id=None,
+            detalle={"indicator_id": indicator_id, "document_id": document_id},
+            ip_address=request.client.host if request.client else None,
+            project_id=project_id,
+        )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -154,6 +177,7 @@ async def add_indicator_source(
 async def add_activity_source(
     request: Request,
     activity_id: int,
+    user: User = Depends(require_permission(Permiso.documento_sellar)),
     document_id: int = Form(...),
     tipo: TipoFuenteVerificacion = Form(...),
     descripcion: str | None = Form(None),
@@ -175,6 +199,21 @@ async def add_activity_source(
             descripcion=descripcion,
         )
         verification_service.create_source(data)
+
+        # Audit log
+        audit = AuditService(db)
+        audit.log(
+            actor_type=ActorType.internal,
+            actor_id=str(user.id),
+            actor_email=user.email,
+            actor_label=user.nombre_completo,
+            accion=AccionAuditoria.create,
+            recurso="verification_source",
+            recurso_id=None,
+            detalle={"activity_id": activity_id, "document_id": document_id},
+            ip_address=request.client.host if request.client else None,
+            project_id=project_id,
+        )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -204,6 +243,7 @@ async def add_activity_source(
 def delete_source(
     request: Request,
     source_id: int,
+    user: User = Depends(require_permission(Permiso.documento_sellar)),
     verification_service: VerificationSourceService = Depends(get_verification_service),
     db: Session = Depends(get_db),
 ):
@@ -225,6 +265,21 @@ def delete_source(
         target = activity
 
     verification_service.delete_source(source_id)
+
+    # Audit log
+    audit = AuditService(db)
+    audit.log(
+        actor_type=ActorType.internal,
+        actor_id=str(user.id),
+        actor_email=user.email,
+        actor_label=user.nombre_completo,
+        accion=AccionAuditoria.delete,
+        recurso="verification_source",
+        recurso_id=str(source_id),
+        detalle=None,
+        ip_address=request.client.host if request.client else None,
+        project_id=project_id,
+    )
 
     # Return updated modal content
     if target_type == "indicator":
@@ -257,6 +312,7 @@ def delete_source(
 def validate_source(
     request: Request,
     source_id: int,
+    user: User = Depends(require_permission(Permiso.documento_sellar)),
     verification_service: VerificationSourceService = Depends(get_verification_service),
     db: Session = Depends(get_db),
 ):
@@ -270,6 +326,20 @@ def validate_source(
 
     try:
         verification_service.validate_source(source_id)
+
+        # Audit log
+        audit = AuditService(db)
+        audit.log(
+            actor_type=ActorType.internal,
+            actor_id=str(user.id),
+            actor_email=user.email,
+            actor_label=user.nombre_completo,
+            accion=AccionAuditoria.status_change,
+            recurso="verification_source",
+            recurso_id=str(source_id),
+            detalle={"accion": "validar"},
+            ip_address=request.client.host if request.client else None,
+        )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 

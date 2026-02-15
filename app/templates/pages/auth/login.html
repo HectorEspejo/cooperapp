@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciar Sesion - CooperApp</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+</head>
+<body class="auth-body">
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-logo">
+                <span class="logo">🌍</span>
+                <h1>CooperApp</h1>
+                <p class="auth-subtitle">Gestion de Proyectos de Cooperacion</p>
+            </div>
+
+            {% if request.query_params.get('error') == 'auth_failed' %}
+            <div class="alert alert-danger">Error en la autenticacion. Intentalo de nuevo.</div>
+            {% elif request.query_params.get('error') == 'no_email' %}
+            <div class="alert alert-danger">No se pudo obtener el email de la cuenta.</div>
+            {% endif %}
+
+            {% if has_entra %}
+            <a href="/auth/login-entra" class="btn btn-microsoft">
+                <svg width="20" height="20" viewBox="0 0 21 21" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="1" y="1" width="9" height="9" fill="#f25022"/>
+                    <rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
+                    <rect x="1" y="11" width="9" height="9" fill="#00a4ef"/>
+                    <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
+                </svg>
+                Iniciar sesion con Microsoft
+            </a>
+            {% endif %}
+
+            {% if debug %}
+            <a href="/dev-login" class="btn btn-secondary btn-dev-login">
+                Acceso desarrollo (Director)
+            </a>
+            {% endif %}
+
+            <div class="auth-divider">
+                <span>o</span>
+            </div>
+
+            <a href="/contraparte/login" class="btn btn-outline">
+                Acceso como contraparte
+            </a>
+        </div>
+    </div>
+</body>
+</html>

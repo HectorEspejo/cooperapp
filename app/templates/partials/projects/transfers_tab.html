@@ -48,6 +48,7 @@
             <span class="moneda-info">Moneda destino: <strong>{{ default_moneda }}</strong> ({{ project.pais }})</span>
             {% endif %}
         </div>
+        {% if user and user.rol and user.rol.value in ['director', 'coordinador', 'tecnico_sede'] %}
         <button
             type="button"
             class="btn btn-primary"
@@ -58,6 +59,7 @@
         >
             + Nueva Transferencia
         </button>
+        {% endif %}
     </div>
 
     <!-- Transfers Table -->

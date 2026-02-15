@@ -2,6 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.models.user import User
+from app.auth.dependencies import get_current_user, require_permission
+from app.auth.permissions import Permiso
 from app.schemas.document import (
     VerificationSourceResponse,
     VerificationSourceCreate,
@@ -19,6 +22,7 @@ router = APIRouter()
 )
 def list_indicator_sources(
     indicator_id: int,
+    user: User = Depends(require_permission(Permiso.documento_ver)),
     db: Session = Depends(get_db),
 ):
     """List verification sources for an indicator"""
@@ -32,6 +36,7 @@ def list_indicator_sources(
 )
 def get_indicator_sources_summary(
     indicator_id: int,
+    user: User = Depends(require_permission(Permiso.documento_ver)),
     db: Session = Depends(get_db),
 ):
     """Get verification source summary for an indicator"""
@@ -45,6 +50,7 @@ def get_indicator_sources_summary(
 )
 def list_activity_sources(
     activity_id: int,
+    user: User = Depends(require_permission(Permiso.documento_ver)),
     db: Session = Depends(get_db),
 ):
     """List verification sources for an activity"""
@@ -58,6 +64,7 @@ def list_activity_sources(
 )
 def get_activity_sources_summary(
     activity_id: int,
+    user: User = Depends(require_permission(Permiso.documento_ver)),
     db: Session = Depends(get_db),
 ):
     """Get verification source summary for an activity"""
@@ -68,6 +75,7 @@ def get_activity_sources_summary(
 @router.post("/verification-sources", response_model=VerificationSourceResponse)
 def create_verification_source(
     data: VerificationSourceCreate,
+    user: User = Depends(require_permission(Permiso.documento_sellar)),
     db: Session = Depends(get_db),
 ):
     """Create a new verification source link"""
@@ -81,6 +89,7 @@ def create_verification_source(
 @router.get("/verification-sources/{source_id}", response_model=VerificationSourceResponse)
 def get_verification_source(
     source_id: int,
+    user: User = Depends(require_permission(Permiso.documento_ver)),
     db: Session = Depends(get_db),
 ):
     """Get a single verification source by ID"""
@@ -95,6 +104,7 @@ def get_verification_source(
 def update_verification_source(
     source_id: int,
     data: VerificationSourceUpdate,
+    user: User = Depends(require_permission(Permiso.documento_sellar)),
     db: Session = Depends(get_db),
 ):
     """Update verification source metadata"""
@@ -108,6 +118,7 @@ def update_verification_source(
 @router.delete("/verification-sources/{source_id}")
 def delete_verification_source(
     source_id: int,
+    user: User = Depends(require_permission(Permiso.documento_sellar)),
     db: Session = Depends(get_db),
 ):
     """Delete a verification source link"""
@@ -120,6 +131,7 @@ def delete_verification_source(
 @router.post("/verification-sources/{source_id}/validate", response_model=VerificationSourceResponse)
 def validate_verification_source(
     source_id: int,
+    user: User = Depends(require_permission(Permiso.documento_sellar)),
     db: Session = Depends(get_db),
 ):
     """Validate a verification source"""
@@ -136,6 +148,7 @@ def validate_verification_source(
 @router.post("/verification-sources/{source_id}/unvalidate", response_model=VerificationSourceResponse)
 def unvalidate_verification_source(
     source_id: int,
+    user: User = Depends(require_permission(Permiso.documento_sellar)),
     db: Session = Depends(get_db),
 ):
     """Remove validation from a verification source"""
@@ -149,6 +162,7 @@ def unvalidate_verification_source(
 @router.get("/projects/{project_id}/missing-sources/indicators")
 def get_indicators_without_sources(
     project_id: int,
+    user: User = Depends(require_permission(Permiso.documento_ver)),
     db: Session = Depends(get_db),
 ):
     """Get indicators that have no verification sources"""
@@ -160,6 +174,7 @@ def get_indicators_without_sources(
 @router.get("/projects/{project_id}/missing-sources/activities")
 def get_activities_without_sources(
     project_id: int,
+    user: User = Depends(require_permission(Permiso.documento_ver)),
     db: Session = Depends(get_db),
 ):
     """Get completed activities that have no verification sources"""

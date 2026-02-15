@@ -7,11 +7,16 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.transfer import EstadoTransferencia, EntidadBancaria, MonedaLocal
 from app.models.document import CategoriaDocumento
+from app.models.user import User
 from app.services.transfer_service import TransferService
 from app.services.project_service import ProjectService
 from app.services.document_service import DocumentService
 from app.schemas.transfer import TransferCreate, TransferUpdate, ConfirmReceptionData
 from app.schemas.document import DocumentCreate
+from app.auth.dependencies import get_current_user, require_permission
+from app.auth.permissions import Permiso
+from app.services.audit_service import AuditService
+from app.models.audit_log import ActorType, AccionAuditoria
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
@@ -33,6 +38,7 @@ def get_document_service(db: Session = Depends(get_db)) -> DocumentService:
 def transfers_tab(
     request: Request,
     project_id: int,
+    user: User = Depends(require_permission(Permiso.transferencia_ver)),
     transfer_service: TransferService = Depends(get_transfer_service),
     project_service: ProjectService = Depends(get_project_service),
 ):
@@ -49,6 +55,7 @@ def transfers_tab(
         "partials/projects/transfers_tab.html",
         {
             "request": request,
+            "user": user,
             "project": project,
             "transfers": transfers,
             "summary": summary,
@@ -64,6 +71,7 @@ def transfers_tab(
 def transfers_table(
     request: Request,
     project_id: int,
+    user: User = Depends(require_permission(Permiso.transferencia_ver)),
     transfer_service: TransferService = Depends(get_transfer_service),
     project_service: ProjectService = Depends(get_project_service),
 ):
@@ -78,6 +86,7 @@ def transfers_table(
         "partials/projects/transfers_table.html",
         {
             "request": request,
+            "user": user,
             "project": project,
             "transfers": transfers,
         },
@@ -88,6 +97,7 @@ def transfers_table(
 def new_transfer_form(
     request: Request,
     project_id: int,
+    user: User = Depends(require_permission(Permiso.transferencia_ver)),
     transfer_service: TransferService = Depends(get_transfer_service),
     project_service: ProjectService = Depends(get_project_service),
 ):
@@ -122,6 +132,7 @@ def edit_transfer_form(
     request: Request,
     project_id: int,
     transfer_id: int,
+    user: User = Depends(require_permission(Permiso.transferencia_ver)),
     transfer_service: TransferService = Depends(get_transfer_service),
     project_service: ProjectService = Depends(get_project_service),
 ):
@@ -159,6 +170,7 @@ def edit_transfer_form(
 async def create_transfer(
     request: Request,
     project_id: int,
+    user: User = Depends(require_permission(Permiso.transferencia_gestionar)),
     transfer_service: TransferService = Depends(get_transfer_service),
     project_service: ProjectService = Depends(get_project_service),
 ):
@@ -190,7 +202,22 @@ async def create_transfer(
             observaciones=form_data.get("observaciones") or None,
         )
 
-        transfer_service.create_transfer(project_id, data)
+        transfer = transfer_service.create_transfer(project_id, data)
+
+        # Audit log
+        audit = AuditService(transfer_service.db)
+        audit.log(
+            actor_type=ActorType.internal,
+            actor_id=str(user.id),
+            actor_email=user.email,
+            actor_label=user.nombre_completo,
+            accion=AccionAuditoria.create,
+            recurso="transfer",
+            recurso_id=str(transfer.id),
+            detalle={"importe_euros": str(data.importe_euros)},
+            ip_address=request.client.host if request.client else None,
+            project_id=project_id,
+        )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -203,6 +230,7 @@ async def create_transfer(
         "partials/projects/transfers_tab.html",
         {
             "request": request,
+            "user": user,
             "project": project,
             "transfers": transfers,
             "summary": summary,
@@ -219,6 +247,7 @@ async def update_transfer(
     request: Request,
     project_id: int,
     transfer_id: int,
+    user: User = Depends(require_permission(Permiso.transferencia_gestionar)),
     transfer_service: TransferService = Depends(get_transfer_service),
     project_service: ProjectService = Depends(get_project_service),
 ):
@@ -278,6 +307,21 @@ async def update_transfer(
 
         data = TransferUpdate(**update_data)
         transfer_service.update_transfer(transfer_id, data)
+
+        # Audit log
+        audit = AuditService(transfer_service.db)
+        audit.log(
+            actor_type=ActorType.internal,
+            actor_id=str(user.id),
+            actor_email=user.email,
+            actor_label=user.nombre_completo,
+            accion=AccionAuditoria.update,
+            recurso="transfer",
+            recurso_id=str(transfer_id),
+            detalle={"campos": list(update_data.keys())},
+            ip_address=request.client.host if request.client else None,
+            project_id=project_id,
+        )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -290,6 +334,7 @@ async def update_transfer(
         "partials/projects/transfers_tab.html",
         {
             "request": request,
+            "user": user,
             "project": project,
             "transfers": transfers,
             "summary": summary,
@@ -306,6 +351,7 @@ def delete_transfer(
     request: Request,
     project_id: int,
     transfer_id: int,
+    user: User = Depends(require_permission(Permiso.transferencia_gestionar)),
     transfer_service: TransferService = Depends(get_transfer_service),
     project_service: ProjectService = Depends(get_project_service),
 ):
@@ -317,6 +363,21 @@ def delete_transfer(
     try:
         if not transfer_service.delete_transfer(transfer_id):
             raise HTTPException(status_code=404, detail="Transferencia no encontrada")
+
+        # Audit log
+        audit = AuditService(transfer_service.db)
+        audit.log(
+            actor_type=ActorType.internal,
+            actor_id=str(user.id),
+            actor_email=user.email,
+            actor_label=user.nombre_completo,
+            accion=AccionAuditoria.delete,
+            recurso="transfer",
+            recurso_id=str(transfer_id),
+            detalle=None,
+            ip_address=request.client.host if request.client else None,
+            project_id=project_id,
+        )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -329,6 +390,7 @@ def delete_transfer(
         "partials/projects/transfers_tab.html",
         {
             "request": request,
+            "user": user,
             "project": project,
             "transfers": transfers,
             "summary": summary,
@@ -347,6 +409,7 @@ def approve_transfer(
     request: Request,
     project_id: int,
     transfer_id: int,
+    user: User = Depends(require_permission(Permiso.transferencia_gestionar)),
     transfer_service: TransferService = Depends(get_transfer_service),
     project_service: ProjectService = Depends(get_project_service),
 ):
@@ -357,10 +420,25 @@ def approve_transfer(
 
     try:
         transfer_service.approve_transfer(transfer_id)
+
+        # Audit log
+        audit = AuditService(transfer_service.db)
+        audit.log(
+            actor_type=ActorType.internal,
+            actor_id=str(user.id),
+            actor_email=user.email,
+            actor_label=user.nombre_completo,
+            accion=AccionAuditoria.status_change,
+            recurso="transfer",
+            recurso_id=str(transfer_id),
+            detalle={"estado": "aprobada"},
+            ip_address=request.client.host if request.client else None,
+            project_id=project_id,
+        )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-    return _render_transfers_tab(request, project, transfer_service)
+    return _render_transfers_tab(request, project, transfer_service, user)
 
 
 @router.post("/{project_id}/transfers/{transfer_id}/confirm-emission", response_class=HTMLResponse)
@@ -368,6 +446,7 @@ async def confirm_emission(
     request: Request,
     project_id: int,
     transfer_id: int,
+    user: User = Depends(require_permission(Permiso.transferencia_gestionar)),
     transfer_service: TransferService = Depends(get_transfer_service),
     project_service: ProjectService = Depends(get_project_service),
 ):
@@ -381,10 +460,25 @@ async def confirm_emission(
 
     try:
         transfer_service.confirm_emission(transfer_id, fecha_emision)
+
+        # Audit log
+        audit = AuditService(transfer_service.db)
+        audit.log(
+            actor_type=ActorType.internal,
+            actor_id=str(user.id),
+            actor_email=user.email,
+            actor_label=user.nombre_completo,
+            accion=AccionAuditoria.status_change,
+            recurso="transfer",
+            recurso_id=str(transfer_id),
+            detalle={"estado": "emitida"},
+            ip_address=request.client.host if request.client else None,
+            project_id=project_id,
+        )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-    return _render_transfers_tab(request, project, transfer_service)
+    return _render_transfers_tab(request, project, transfer_service, user)
 
 
 @router.post("/{project_id}/transfers/{transfer_id}/confirm-reception", response_class=HTMLResponse)
@@ -392,6 +486,7 @@ async def confirm_reception(
     request: Request,
     project_id: int,
     transfer_id: int,
+    user: User = Depends(require_permission(Permiso.transferencia_gestionar)),
     transfer_service: TransferService = Depends(get_transfer_service),
     project_service: ProjectService = Depends(get_project_service),
 ):
@@ -410,10 +505,25 @@ async def confirm_reception(
 
     try:
         transfer_service.confirm_reception(transfer_id, data)
+
+        # Audit log
+        audit = AuditService(transfer_service.db)
+        audit.log(
+            actor_type=ActorType.internal,
+            actor_id=str(user.id),
+            actor_email=user.email,
+            actor_label=user.nombre_completo,
+            accion=AccionAuditoria.status_change,
+            recurso="transfer",
+            recurso_id=str(transfer_id),
+            detalle={"estado": "recibida"},
+            ip_address=request.client.host if request.client else None,
+            project_id=project_id,
+        )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-    return _render_transfers_tab(request, project, transfer_service)
+    return _render_transfers_tab(request, project, transfer_service, user)
 
 
 @router.post("/{project_id}/transfers/{transfer_id}/close", response_class=HTMLResponse)
@@ -421,6 +531,7 @@ def close_transfer(
     request: Request,
     project_id: int,
     transfer_id: int,
+    user: User = Depends(require_permission(Permiso.transferencia_gestionar)),
     transfer_service: TransferService = Depends(get_transfer_service),
     project_service: ProjectService = Depends(get_project_service),
 ):
@@ -431,10 +542,25 @@ def close_transfer(
 
     try:
         transfer_service.close_transfer(transfer_id)
+
+        # Audit log
+        audit = AuditService(transfer_service.db)
+        audit.log(
+            actor_type=ActorType.internal,
+            actor_id=str(user.id),
+            actor_email=user.email,
+            actor_label=user.nombre_completo,
+            accion=AccionAuditoria.status_change,
+            recurso="transfer",
+            recurso_id=str(transfer_id),
+            detalle={"estado": "cerrada"},
+            ip_address=request.client.host if request.client else None,
+            project_id=project_id,
+        )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-    return _render_transfers_tab(request, project, transfer_service)
+    return _render_transfers_tab(request, project, transfer_service, user)
 
 
 @router.post("/{project_id}/transfers/{transfer_id}/revert", response_class=HTMLResponse)
@@ -442,6 +568,7 @@ def revert_transfer(
     request: Request,
     project_id: int,
     transfer_id: int,
+    user: User = Depends(require_permission(Permiso.transferencia_gestionar)),
     transfer_service: TransferService = Depends(get_transfer_service),
     project_service: ProjectService = Depends(get_project_service),
 ):
@@ -452,13 +579,28 @@ def revert_transfer(
 
     try:
         transfer_service.revert_to_previous_state(transfer_id)
+
+        # Audit log
+        audit = AuditService(transfer_service.db)
+        audit.log(
+            actor_type=ActorType.internal,
+            actor_id=str(user.id),
+            actor_email=user.email,
+            actor_label=user.nombre_completo,
+            accion=AccionAuditoria.status_change,
+            recurso="transfer",
+            recurso_id=str(transfer_id),
+            detalle={"accion": "revertir"},
+            ip_address=request.client.host if request.client else None,
+            project_id=project_id,
+        )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-    return _render_transfers_tab(request, project, transfer_service)
+    return _render_transfers_tab(request, project, transfer_service, user)
 
 
-def _render_transfers_tab(request: Request, project, transfer_service: TransferService):
+def _render_transfers_tab(request: Request, project, transfer_service: TransferService, user: User):
     """Helper to render the transfers tab."""
     transfers = transfer_service.get_project_transfers(project.id)
     summary = transfer_service.get_transfer_summary(project.id)
@@ -468,6 +610,7 @@ def _render_transfers_tab(request: Request, project, transfer_service: TransferS
         "partials/projects/transfers_tab.html",
         {
             "request": request,
+            "user": user,
             "project": project,
             "transfers": transfers,
             "summary": summary,
@@ -486,6 +629,7 @@ def upload_modal(
     request: Request,
     project_id: int,
     transfer_id: int,
+    user: User = Depends(require_permission(Permiso.transferencia_ver)),
     doc_type: str = Query(...),
     transfer_service: TransferService = Depends(get_transfer_service),
     project_service: ProjectService = Depends(get_project_service),
@@ -515,6 +659,7 @@ async def upload_emission_document(
     request: Request,
     project_id: int,
     transfer_id: int,
+    user: User = Depends(require_permission(Permiso.transferencia_gestionar)),
     file: UploadFile = File(...),
     transfer_service: TransferService = Depends(get_transfer_service),
     project_service: ProjectService = Depends(get_project_service),
@@ -536,6 +681,21 @@ async def upload_emission_document(
     try:
         transfer_service.save_emission_document(transfer_id, file)
 
+        # Audit log
+        audit = AuditService(transfer_service.db)
+        audit.log(
+            actor_type=ActorType.internal,
+            actor_id=str(user.id),
+            actor_email=user.email,
+            actor_label=user.nombre_completo,
+            accion=AccionAuditoria.upload,
+            recurso="transfer_emission_doc",
+            recurso_id=str(transfer_id),
+            detalle={"filename": file.filename},
+            ip_address=request.client.host if request.client else None,
+            project_id=project_id,
+        )
+
         # If checkbox marked, also create document in project documents
         if copy_to_project:
             await file.seek(0)
@@ -548,7 +708,7 @@ async def upload_emission_document(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-    return _render_transfers_tab(request, project, transfer_service)
+    return _render_transfers_tab(request, project, transfer_service, user)
 
 
 @router.post("/{project_id}/transfers/{transfer_id}/upload-recepcion", response_class=HTMLResponse)
@@ -556,6 +716,7 @@ async def upload_reception_document(
     request: Request,
     project_id: int,
     transfer_id: int,
+    user: User = Depends(require_permission(Permiso.transferencia_gestionar)),
     file: UploadFile = File(...),
     transfer_service: TransferService = Depends(get_transfer_service),
     project_service: ProjectService = Depends(get_project_service),
@@ -577,6 +738,21 @@ async def upload_reception_document(
     try:
         transfer_service.save_reception_document(transfer_id, file)
 
+        # Audit log
+        audit = AuditService(transfer_service.db)
+        audit.log(
+            actor_type=ActorType.internal,
+            actor_id=str(user.id),
+            actor_email=user.email,
+            actor_label=user.nombre_completo,
+            accion=AccionAuditoria.upload,
+            recurso="transfer_reception_doc",
+            recurso_id=str(transfer_id),
+            detalle={"filename": file.filename},
+            ip_address=request.client.host if request.client else None,
+            project_id=project_id,
+        )
+
         # If checkbox marked, also create document in project documents
         if copy_to_project:
             await file.seek(0)
@@ -589,7 +765,7 @@ async def upload_reception_document(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-    return _render_transfers_tab(request, project, transfer_service)
+    return _render_transfers_tab(request, project, transfer_service, user)
 
 
 @router.delete("/{project_id}/transfers/{transfer_id}/document-emision", response_class=HTMLResponse)
@@ -597,6 +773,7 @@ def delete_emission_document(
     request: Request,
     project_id: int,
     transfer_id: int,
+    user: User = Depends(require_permission(Permiso.transferencia_gestionar)),
     transfer_service: TransferService = Depends(get_transfer_service),
     project_service: ProjectService = Depends(get_project_service),
 ):
@@ -611,7 +788,22 @@ def delete_emission_document(
 
     transfer_service.delete_emission_document(transfer_id)
 
-    return _render_transfers_tab(request, project, transfer_service)
+    # Audit log
+    audit = AuditService(transfer_service.db)
+    audit.log(
+        actor_type=ActorType.internal,
+        actor_id=str(user.id),
+        actor_email=user.email,
+        actor_label=user.nombre_completo,
+        accion=AccionAuditoria.delete,
+        recurso="transfer_emission_doc",
+        recurso_id=str(transfer_id),
+        detalle=None,
+        ip_address=request.client.host if request.client else None,
+        project_id=project_id,
+    )
+
+    return _render_transfers_tab(request, project, transfer_service, user)
 
 
 @router.delete("/{project_id}/transfers/{transfer_id}/document-recepcion", response_class=HTMLResponse)
@@ -619,6 +811,7 @@ def delete_reception_document(
     request: Request,
     project_id: int,
     transfer_id: int,
+    user: User = Depends(require_permission(Permiso.transferencia_gestionar)),
     transfer_service: TransferService = Depends(get_transfer_service),
     project_service: ProjectService = Depends(get_project_service),
 ):
@@ -633,14 +826,31 @@ def delete_reception_document(
 
     transfer_service.delete_reception_document(transfer_id)
 
-    return _render_transfers_tab(request, project, transfer_service)
+    # Audit log
+    audit = AuditService(transfer_service.db)
+    audit.log(
+        actor_type=ActorType.internal,
+        actor_id=str(user.id),
+        actor_email=user.email,
+        actor_label=user.nombre_completo,
+        accion=AccionAuditoria.delete,
+        recurso="transfer_reception_doc",
+        recurso_id=str(transfer_id),
+        detalle=None,
+        ip_address=request.client.host if request.client else None,
+        project_id=project_id,
+    )
+
+    return _render_transfers_tab(request, project, transfer_service, user)
 
 
 @router.get("/{project_id}/transfers/{transfer_id}/document/{doc_type}")
 def download_document(
+    request: Request,
     project_id: int,
     transfer_id: int,
     doc_type: str,
+    user: User = Depends(require_permission(Permiso.transferencia_ver)),
     transfer_service: TransferService = Depends(get_transfer_service),
     project_service: ProjectService = Depends(get_project_service),
 ):
@@ -652,6 +862,21 @@ def download_document(
     transfer = transfer_service.get_transfer_by_id(transfer_id)
     if not transfer or transfer.project_id != project_id:
         raise HTTPException(status_code=404, detail="Transferencia no encontrada")
+
+    # Audit log
+    audit = AuditService(transfer_service.db)
+    audit.log(
+        actor_type=ActorType.internal,
+        actor_id=str(user.id),
+        actor_email=user.email,
+        actor_label=user.nombre_completo,
+        accion=AccionAuditoria.download,
+        recurso=f"transfer_{doc_type}_doc",
+        recurso_id=str(transfer_id),
+        detalle={"tipo": doc_type},
+        ip_address=request.client.host if request.client else None,
+        project_id=project_id,
+    )
 
     if doc_type == "emision":
         if not transfer.documento_emision_path:

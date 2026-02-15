@@ -1,6 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.database import get_db
+from app.models.user import User
+from app.auth.dependencies import get_current_user, require_permission
+from app.auth.permissions import Permiso
 from app.services.budget_service import BudgetService
 from app.schemas.budget import (
     FunderResponse,
@@ -18,13 +21,20 @@ def get_service(db: Session = Depends(get_db)) -> BudgetService:
 
 
 @router.get("/funders", response_model=list[FunderResponse])
-def list_funders(service: BudgetService = Depends(get_service)):
+def list_funders(
+    user: User = Depends(require_permission(Permiso.presupuesto_ver)),
+    service: BudgetService = Depends(get_service),
+):
     """List all available funders"""
     return service.get_all_funders()
 
 
 @router.get("/funders/{funder_id}", response_model=FunderResponse)
-def get_funder(funder_id: int, service: BudgetService = Depends(get_service)):
+def get_funder(
+    funder_id: int,
+    user: User = Depends(require_permission(Permiso.presupuesto_ver)),
+    service: BudgetService = Depends(get_service),
+):
     """Get a specific funder by ID"""
     funder = service.get_funder_by_id(funder_id)
     if not funder:
@@ -33,7 +43,11 @@ def get_funder(funder_id: int, service: BudgetService = Depends(get_service)):
 
 
 @router.get("/funders/{funder_id}/budget-lines", response_model=list[BudgetLineTemplateResponse])
-def list_funder_templates(funder_id: int, service: BudgetService = Depends(get_service)):
+def list_funder_templates(
+    funder_id: int,
+    user: User = Depends(require_permission(Permiso.presupuesto_ver)),
+    service: BudgetService = Depends(get_service),
+):
     """List budget line templates for a funder"""
     funder = service.get_funder_by_id(funder_id)
     if not funder:
@@ -42,7 +56,11 @@ def list_funder_templates(funder_id: int, service: BudgetService = Depends(get_s
 
 
 @router.get("/projects/{project_id}/budget", response_model=BudgetSummary)
-def get_project_budget(project_id: int, service: BudgetService = Depends(get_service)):
+def get_project_budget(
+    project_id: int,
+    user: User = Depends(require_permission(Permiso.presupuesto_ver)),
+    service: BudgetService = Depends(get_service),
+):
     """Get budget summary for a project"""
     return service.get_project_budget_summary(project_id)
 
@@ -51,6 +69,7 @@ def get_project_budget(project_id: int, service: BudgetService = Depends(get_ser
 def initialize_project_budget(
     project_id: int,
     funder_id: int,
+    user: User = Depends(require_permission(Permiso.presupuesto_editar)),
     service: BudgetService = Depends(get_service),
 ):
     """Initialize project budget from funder templates"""
@@ -91,6 +110,7 @@ def update_budget_line(
     project_id: int,
     line_id: int,
     data: ProjectBudgetLineUpdate,
+    user: User = Depends(require_permission(Permiso.presupuesto_editar)),
     service: BudgetService = Depends(get_service),
 ):
     """Update a budget line"""

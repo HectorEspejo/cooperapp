@@ -9,6 +9,11 @@ class Settings(BaseSettings):
     app_port: int = 8000
     uploads_path: str = "uploads"
     exports_path: str = "exports"
+    entra_tenant_id: str = ""
+    entra_client_id: str = ""
+    entra_client_secret: str = ""
+    app_url: str = "http://localhost:8000"
+    session_secret_key: str = "change-me-in-production"
 
     class Config:
         env_file = ".env"

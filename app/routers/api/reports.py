@@ -1,11 +1,16 @@
 import os
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models.report import TipoInforme
+from app.models.user import User
+from app.auth.dependencies import get_current_user, require_permission
+from app.auth.permissions import Permiso
 from app.services.report_service import ReportService
+from app.services.audit_service import AuditService
+from app.models.audit_log import ActorType, AccionAuditoria
 from app.schemas.report import (
     ReportResponse,
     ReportListResponse,
@@ -25,6 +30,7 @@ def get_service(db: Session = Depends(get_db)) -> ReportService:
 @router.get("/projects/{project_id}/reports", response_model=ReportListResponse)
 def list_project_reports(
     project_id: int,
+    user: User = Depends(require_permission(Permiso.informe_generar)),
     service: ReportService = Depends(get_service),
 ):
     """List all reports for a project."""
@@ -35,6 +41,7 @@ def list_project_reports(
 @router.get("/projects/{project_id}/reports/validate", response_model=ReportValidationResult)
 def validate_report_generation(
     project_id: int,
+    user: User = Depends(require_permission(Permiso.informe_generar)),
     service: ReportService = Depends(get_service),
 ):
     """Validate project data before generating reports."""
@@ -46,8 +53,10 @@ def validate_report_generation(
 
 @router.post("/projects/{project_id}/reports/generate", response_model=ReportResponse, status_code=201)
 def generate_report(
+    request: Request,
     project_id: int,
     data: ReportGenerateRequest,
+    user: User = Depends(require_permission(Permiso.informe_generar)),
     service: ReportService = Depends(get_service),
 ):
     """Generate a single report."""
@@ -58,6 +67,22 @@ def generate_report(
             periodo=data.periodo,
             generado_por=data.generado_por,
         )
+
+        # Audit log
+        audit = AuditService(service.db)
+        audit.log(
+            actor_type=ActorType.internal,
+            actor_id=str(user.id),
+            actor_email=user.email,
+            actor_label=user.nombre_completo,
+            accion=AccionAuditoria.export,
+            recurso="report",
+            recurso_id=str(report.id),
+            detalle={"tipo": data.tipo.value, "periodo": data.periodo},
+            ip_address=request.client.host if request.client else None,
+            project_id=project_id,
+        )
+
         return report
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -67,8 +92,10 @@ def generate_report(
 
 @router.post("/projects/{project_id}/reports/pack", response_model=ReportResponse, status_code=201)
 def generate_pack(
+    request: Request,
     project_id: int,
     data: PackGenerateRequest | None = None,
+    user: User = Depends(require_permission(Permiso.informe_generar)),
     service: ReportService = Depends(get_service),
 ):
     """Generate a ZIP pack with multiple reports."""
@@ -80,6 +107,22 @@ def generate_pack(
             tipos=tipos,
             generado_por=generado_por,
         )
+
+        # Audit log
+        audit = AuditService(service.db)
+        audit.log(
+            actor_type=ActorType.internal,
+            actor_id=str(user.id),
+            actor_email=user.email,
+            actor_label=user.nombre_completo,
+            accion=AccionAuditoria.export,
+            recurso="report_pack",
+            recurso_id=str(report.id),
+            detalle={"tipos": [t.value for t in tipos] if tipos else "all"},
+            ip_address=request.client.host if request.client else None,
+            project_id=project_id,
+        )
+
         return report
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -89,7 +132,9 @@ def generate_pack(
 
 @router.get("/reports/{report_id}/download")
 def download_report(
+    request: Request,
     report_id: int,
+    user: User = Depends(require_permission(Permiso.informe_descargar)),
     service: ReportService = Depends(get_service),
 ):
     """Download a report file."""
@@ -99,6 +144,21 @@ def download_report(
 
     if not os.path.exists(report.ruta):
         raise HTTPException(status_code=404, detail="Archivo no encontrado")
+
+    # Audit log
+    audit = AuditService(service.db)
+    audit.log(
+        actor_type=ActorType.internal,
+        actor_id=str(user.id),
+        actor_email=user.email,
+        actor_label=user.nombre_completo,
+        accion=AccionAuditoria.download,
+        recurso="report",
+        recurso_id=str(report_id),
+        detalle={"nombre": report.nombre_archivo},
+        ip_address=request.client.host if request.client else None,
+        project_id=report.project_id,
+    )
 
     # Determine media type
     if report.nombre_archivo.endswith(".xlsx"):
@@ -117,9 +177,27 @@ def download_report(
 
 @router.delete("/reports/{report_id}", status_code=204)
 def delete_report(
+    request: Request,
     report_id: int,
+    user: User = Depends(require_permission(Permiso.informe_generar)),
     service: ReportService = Depends(get_service),
 ):
     """Delete a report."""
+    report = service.get_report_by_id(report_id)
     if not service.delete_report(report_id):
         raise HTTPException(status_code=404, detail="Informe no encontrado")
+
+    # Audit log
+    audit = AuditService(service.db)
+    audit.log(
+        actor_type=ActorType.internal,
+        actor_id=str(user.id),
+        actor_email=user.email,
+        actor_label=user.nombre_completo,
+        accion=AccionAuditoria.delete,
+        recurso="report",
+        recurso_id=str(report_id),
+        detalle=None,
+        ip_address=request.client.host if request.client else None,
+        project_id=report.project_id if report else None,
+    )

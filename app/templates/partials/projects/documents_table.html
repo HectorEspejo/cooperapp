@@ -90,6 +90,7 @@
                         >👁</button>
                         {% endif %}
                         {% if not doc.sellado %}
+                        {% if user and user.rol and user.rol.value in ['director', 'coordinador'] %}
                         <button
                             class="btn btn-icon btn-sm btn-success"
                             title="Sellar documento"
@@ -98,6 +99,8 @@
                             hx-swap="innerHTML"
                             hx-confirm="¿Sellar este documento? Esta accion no se puede deshacer."
                         >🔒</button>
+                        {% endif %}
+                        {% if user and user.rol and user.rol.value in ['director', 'coordinador', 'tecnico_sede', 'gestor_pais'] %}
                         <button
                             class="btn btn-icon btn-sm btn-danger"
                             title="Eliminar"
@@ -106,6 +109,7 @@
                             hx-swap="innerHTML"
                             hx-confirm="¿Eliminar este documento?"
                         >✕</button>
+                        {% endif %}
                         {% endif %}
                     </div>
                 </td>

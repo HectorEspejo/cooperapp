@@ -8,11 +8,16 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.expense import UbicacionGasto, EstadoGasto
 from app.models.document import CategoriaDocumento
+from app.models.user import User
 from app.services.expense_service import ExpenseService
 from app.services.project_service import ProjectService
 from app.services.document_service import DocumentService
 from app.schemas.expense import ExpenseCreate, ExpenseUpdate, ExpenseFilters
 from app.schemas.document import DocumentCreate
+from app.auth.dependencies import get_current_user, require_permission
+from app.auth.permissions import Permiso
+from app.services.audit_service import AuditService
+from app.models.audit_log import ActorType, AccionAuditoria
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
@@ -34,6 +39,7 @@ def get_document_service(db: Session = Depends(get_db)) -> DocumentService:
 def expenses_tab(
     request: Request,
     project_id: int,
+    user: User = Depends(require_permission(Permiso.gasto_ver)),
     expense_service: ExpenseService = Depends(get_expense_service),
     project_service: ProjectService = Depends(get_project_service),
 ):
@@ -50,6 +56,7 @@ def expenses_tab(
         "partials/projects/expenses_tab.html",
         {
             "request": request,
+            "user": user,
             "project": project,
             "expenses": expenses,
             "summary": summary,
@@ -64,6 +71,7 @@ def expenses_tab(
 def expenses_table(
     request: Request,
     project_id: int,
+    user: User = Depends(require_permission(Permiso.gasto_ver)),
     budget_line_id: int | None = Query(None),
     estado: str | None = Query(None),
     ubicacion: str | None = Query(None),
@@ -92,6 +100,7 @@ def expenses_table(
         "partials/projects/expenses_table.html",
         {
             "request": request,
+            "user": user,
             "project": project,
             "expenses": expenses,
             "budget_lines": budget_lines,
@@ -103,6 +112,7 @@ def expenses_table(
 def new_expense_form(
     request: Request,
     project_id: int,
+    user: User = Depends(require_permission(Permiso.gasto_crear)),
     expense_service: ExpenseService = Depends(get_expense_service),
     project_service: ProjectService = Depends(get_project_service),
 ):
@@ -131,6 +141,7 @@ def edit_expense_form(
     request: Request,
     project_id: int,
     expense_id: int,
+    user: User = Depends(require_permission(Permiso.gasto_crear)),
     expense_service: ExpenseService = Depends(get_expense_service),
     project_service: ProjectService = Depends(get_project_service),
 ):
@@ -162,6 +173,7 @@ def edit_expense_form(
 async def create_expense(
     request: Request,
     project_id: int,
+    user: User = Depends(require_permission(Permiso.gasto_crear)),
     expense_service: ExpenseService = Depends(get_expense_service),
     project_service: ProjectService = Depends(get_project_service),
 ):
@@ -190,7 +202,22 @@ async def create_expense(
             observaciones=form_data.get("observaciones") or None,
         )
 
-        expense_service.create_expense(project_id, data)
+        expense = expense_service.create_expense(project_id, data)
+
+        # Audit log
+        audit = AuditService(expense_service.db)
+        audit.log(
+            actor_type=ActorType.internal,
+            actor_id=str(user.id),
+            actor_email=user.email,
+            actor_label=user.nombre_completo,
+            accion=AccionAuditoria.create,
+            recurso="expense",
+            recurso_id=str(expense.id),
+            detalle={"concepto": data.concepto, "cantidad_euros": str(data.cantidad_euros)},
+            ip_address=request.client.host if request.client else None,
+            project_id=project_id,
+        )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -203,6 +230,7 @@ async def create_expense(
         "partials/projects/expenses_tab.html",
         {
             "request": request,
+            "user": user,
             "project": project,
             "expenses": expenses,
             "summary": summary,
@@ -218,6 +246,7 @@ async def update_expense(
     request: Request,
     project_id: int,
     expense_id: int,
+    user: User = Depends(require_permission(Permiso.gasto_crear)),
     expense_service: ExpenseService = Depends(get_expense_service),
     project_service: ProjectService = Depends(get_project_service),
 ):
@@ -265,6 +294,21 @@ async def update_expense(
 
         data = ExpenseUpdate(**update_data)
         expense_service.update_expense(expense_id, data)
+
+        # Audit log
+        audit = AuditService(expense_service.db)
+        audit.log(
+            actor_type=ActorType.internal,
+            actor_id=str(user.id),
+            actor_email=user.email,
+            actor_label=user.nombre_completo,
+            accion=AccionAuditoria.update,
+            recurso="expense",
+            recurso_id=str(expense_id),
+            detalle={"campos": list(update_data.keys())},
+            ip_address=request.client.host if request.client else None,
+            project_id=project_id,
+        )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -277,6 +321,7 @@ async def update_expense(
         "partials/projects/expenses_tab.html",
         {
             "request": request,
+            "user": user,
             "project": project,
             "expenses": expenses,
             "summary": summary,
@@ -292,6 +337,7 @@ def delete_expense(
     request: Request,
     project_id: int,
     expense_id: int,
+    user: User = Depends(require_permission(Permiso.gasto_crear)),
     expense_service: ExpenseService = Depends(get_expense_service),
     project_service: ProjectService = Depends(get_project_service),
 ):
@@ -303,6 +349,21 @@ def delete_expense(
     if not expense_service.delete_expense(expense_id):
         raise HTTPException(status_code=404, detail="Gasto no encontrado")
 
+    # Audit log
+    audit = AuditService(expense_service.db)
+    audit.log(
+        actor_type=ActorType.internal,
+        actor_id=str(user.id),
+        actor_email=user.email,
+        actor_label=user.nombre_completo,
+        accion=AccionAuditoria.delete,
+        recurso="expense",
+        recurso_id=str(expense_id),
+        detalle=None,
+        ip_address=request.client.host if request.client else None,
+        project_id=project_id,
+    )
+
     # Return updated tab content
     expenses = expense_service.get_project_expenses(project_id)
     summary = expense_service.get_expense_summary(project_id)
@@ -312,6 +373,7 @@ def delete_expense(
         "partials/projects/expenses_tab.html",
         {
             "request": request,
+            "user": user,
             "project": project,
             "expenses": expenses,
             "summary": summary,
@@ -327,6 +389,7 @@ def validate_expense(
     request: Request,
     project_id: int,
     expense_id: int,
+    user: User = Depends(require_permission(Permiso.gasto_validar)),
     expense_service: ExpenseService = Depends(get_expense_service),
     project_service: ProjectService = Depends(get_project_service),
 ):
@@ -337,6 +400,21 @@ def validate_expense(
 
     try:
         expense_service.validate_expense(expense_id)
+
+        # Audit log
+        audit = AuditService(expense_service.db)
+        audit.log(
+            actor_type=ActorType.internal,
+            actor_id=str(user.id),
+            actor_email=user.email,
+            actor_label=user.nombre_completo,
+            accion=AccionAuditoria.status_change,
+            recurso="expense",
+            recurso_id=str(expense_id),
+            detalle={"estado": "validado"},
+            ip_address=request.client.host if request.client else None,
+            project_id=project_id,
+        )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -349,6 +427,7 @@ def validate_expense(
         "partials/projects/expenses_tab.html",
         {
             "request": request,
+            "user": user,
             "project": project,
             "expenses": expenses,
             "summary": summary,
@@ -367,6 +446,7 @@ async def reject_expense(
     request: Request,
     project_id: int,
     expense_id: int,
+    user: User = Depends(require_permission(Permiso.gasto_validar)),
     expense_service: ExpenseService = Depends(get_expense_service),
     project_service: ProjectService = Depends(get_project_service),
 ):
@@ -380,6 +460,21 @@ async def reject_expense(
 
     try:
         expense_service.reject_expense(expense_id, reason)
+
+        # Audit log
+        audit = AuditService(expense_service.db)
+        audit.log(
+            actor_type=ActorType.internal,
+            actor_id=str(user.id),
+            actor_email=user.email,
+            actor_label=user.nombre_completo,
+            accion=AccionAuditoria.status_change,
+            recurso="expense",
+            recurso_id=str(expense_id),
+            detalle={"estado": "rechazado", "motivo": reason},
+            ip_address=request.client.host if request.client else None,
+            project_id=project_id,
+        )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -392,6 +487,7 @@ async def reject_expense(
         "partials/projects/expenses_tab.html",
         {
             "request": request,
+            "user": user,
             "project": project,
             "expenses": expenses,
             "summary": summary,
@@ -410,6 +506,7 @@ def revert_expense(
     request: Request,
     project_id: int,
     expense_id: int,
+    user: User = Depends(require_permission(Permiso.gasto_validar)),
     expense_service: ExpenseService = Depends(get_expense_service),
     project_service: ProjectService = Depends(get_project_service),
 ):
@@ -420,6 +517,21 @@ def revert_expense(
 
     try:
         expense_service.revert_to_draft(expense_id)
+
+        # Audit log
+        audit = AuditService(expense_service.db)
+        audit.log(
+            actor_type=ActorType.internal,
+            actor_id=str(user.id),
+            actor_email=user.email,
+            actor_label=user.nombre_completo,
+            accion=AccionAuditoria.status_change,
+            recurso="expense",
+            recurso_id=str(expense_id),
+            detalle={"estado": "borrador"},
+            ip_address=request.client.host if request.client else None,
+            project_id=project_id,
+        )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -432,6 +544,7 @@ def revert_expense(
         "partials/projects/expenses_tab.html",
         {
             "request": request,
+            "user": user,
             "project": project,
             "expenses": expenses,
             "summary": summary,
@@ -450,6 +563,7 @@ def upload_modal(
     request: Request,
     project_id: int,
     expense_id: int,
+    user: User = Depends(require_permission(Permiso.gasto_ver)),
     expense_service: ExpenseService = Depends(get_expense_service),
     project_service: ProjectService = Depends(get_project_service),
 ):
@@ -473,6 +587,7 @@ async def upload_document(
     request: Request,
     project_id: int,
     expense_id: int,
+    user: User = Depends(require_permission(Permiso.gasto_justificar)),
     file: UploadFile = File(...),
     expense_service: ExpenseService = Depends(get_expense_service),
     project_service: ProjectService = Depends(get_project_service),
@@ -490,6 +605,21 @@ async def upload_document(
     try:
         # Save document in expense
         expense_service.save_document(expense_id, file)
+
+        # Audit log
+        audit = AuditService(expense_service.db)
+        audit.log(
+            actor_type=ActorType.internal,
+            actor_id=str(user.id),
+            actor_email=user.email,
+            actor_label=user.nombre_completo,
+            accion=AccionAuditoria.upload,
+            recurso="expense_document",
+            recurso_id=str(expense_id),
+            detalle={"filename": file.filename},
+            ip_address=request.client.host if request.client else None,
+            project_id=project_id,
+        )
 
         # Also create entry in project documents with category "factura"
         await file.seek(0)
@@ -512,6 +642,7 @@ async def upload_document(
         "partials/projects/expenses_tab.html",
         {
             "request": request,
+            "user": user,
             "project": project,
             "expenses": expenses,
             "summary": summary,
@@ -526,6 +657,7 @@ async def upload_document(
 def get_expense_document(
     project_id: int,
     expense_id: int,
+    user: User = Depends(require_permission(Permiso.gasto_ver)),
     expense_service: ExpenseService = Depends(get_expense_service),
     project_service: ProjectService = Depends(get_project_service),
 ):

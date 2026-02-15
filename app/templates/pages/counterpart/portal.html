@@ -1,0 +1,34 @@
+{% extends "base_counterpart.html" %}
+
+{% block title %}Portal Contraparte - {{ project.titulo }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>{{ project.titulo }}</h1>
+        <p class="text-muted">{{ project.codigo_contable }} &middot; {{ project.pais }}</p>
+    </div>
+</div>
+
+<div class="tabs counterpart-tabs">
+    <button class="tab active"
+            hx-get="/contraparte/{{ project.id }}/marco-logico"
+            hx-target="#counterpart-content"
+            hx-swap="innerHTML">
+        Marco Logico
+    </button>
+    <button class="tab"
+            hx-get="/contraparte/{{ project.id }}/documentos"
+            hx-target="#counterpart-content"
+            hx-swap="innerHTML">
+        Documentos
+    </button>
+</div>
+
+<div id="counterpart-content"
+     hx-get="/contraparte/{{ project.id }}/marco-logico"
+     hx-trigger="load"
+     hx-swap="innerHTML">
+    <div class="loading">Cargando...</div>
+</div>
+{% endblock %}

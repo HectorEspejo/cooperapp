@@ -8,6 +8,31 @@
             <a href="/projects" class="nav-link {% if request.url.path == '/projects' %}active{% endif %}">
                 Proyectos
             </a>
+            {% if request.state.user is defined and request.state.user %}
+            <div class="user-menu">
+                <button class="user-menu-btn" onclick="this.parentElement.classList.toggle('open')">
+                    <span class="user-avatar">{{ request.state.user.nombre[0] }}{{ request.state.user.apellidos[0] }}</span>
+                    <span class="user-name">{{ request.state.user.nombre }}</span>
+                    <span class="user-chevron">&#9662;</span>
+                </button>
+                <div class="user-dropdown">
+                    <div class="user-dropdown-header">
+                        <strong>{{ request.state.user.nombre_completo }}</strong>
+                        <small>{{ request.state.user.email }}</small>
+                        <span class="badge badge-rol">{{ request.state.user.rol_display }}</span>
+                    </div>
+                    <div class="user-dropdown-divider"></div>
+                    {% if request.state.user.rol and request.state.user.rol.value == 'director' %}
+                    <a href="/usuarios" class="user-dropdown-item">Usuarios</a>
+                    <a href="/auditoria" class="user-dropdown-item">Auditoria</a>
+                    <div class="user-dropdown-divider"></div>
+                    {% endif %}
+                    <form method="post" action="/auth/logout">
+                        <button type="submit" class="user-dropdown-item user-dropdown-logout">Cerrar sesion</button>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
         </div>
     </div>
 </nav>

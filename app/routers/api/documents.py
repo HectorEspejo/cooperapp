@@ -4,6 +4,9 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models.document import CategoriaDocumento
+from app.models.user import User
+from app.auth.dependencies import get_current_user, require_permission
+from app.auth.permissions import Permiso
 from app.schemas.document import (
     DocumentResponse,
     DocumentCreate,
@@ -21,6 +24,7 @@ def upload_document(
     file: UploadFile = File(...),
     categoria: CategoriaDocumento = Form(...),
     descripcion: str | None = Form(None),
+    user: User = Depends(require_permission(Permiso.documento_subir)),
     db: Session = Depends(get_db),
 ):
     """Upload a document to a project"""
@@ -38,6 +42,7 @@ def list_documents(
     categoria: CategoriaDocumento | None = None,
     sellado: bool | None = None,
     vinculado: bool | None = None,
+    user: User = Depends(require_permission(Permiso.documento_ver)),
     db: Session = Depends(get_db),
 ):
     """List documents for a project with optional filters"""
@@ -51,6 +56,7 @@ def list_documents(
 @router.get("/projects/{project_id}/documents/summary", response_model=DocumentSummary)
 def get_documents_summary(
     project_id: int,
+    user: User = Depends(require_permission(Permiso.documento_ver)),
     db: Session = Depends(get_db),
 ):
     """Get document statistics for a project"""
@@ -61,6 +67,7 @@ def get_documents_summary(
 @router.get("/documents/{document_id}", response_model=DocumentResponse)
 def get_document(
     document_id: int,
+    user: User = Depends(require_permission(Permiso.documento_ver)),
     db: Session = Depends(get_db),
 ):
     """Get a single document by ID"""
@@ -75,6 +82,7 @@ def get_document(
 def update_document(
     document_id: int,
     data: DocumentUpdate,
+    user: User = Depends(require_permission(Permiso.documento_subir)),
     db: Session = Depends(get_db),
 ):
     """Update document metadata"""
@@ -88,6 +96,7 @@ def update_document(
 @router.delete("/documents/{document_id}")
 def delete_document(
     document_id: int,
+    user: User = Depends(require_permission(Permiso.documento_subir)),
     db: Session = Depends(get_db),
 ):
     """Delete a document"""
@@ -100,6 +109,7 @@ def delete_document(
 @router.get("/documents/{document_id}/download")
 def download_document(
     document_id: int,
+    user: User = Depends(require_permission(Permiso.documento_ver)),
     db: Session = Depends(get_db),
 ):
     """Download a document file"""
@@ -123,6 +133,7 @@ def download_document(
 @router.post("/documents/{document_id}/seal", response_model=DocumentResponse)
 def seal_document(
     document_id: int,
+    user: User = Depends(require_permission(Permiso.documento_sellar)),
     db: Session = Depends(get_db),
 ):
     """Seal a document for justification"""
@@ -139,6 +150,7 @@ def seal_document(
 @router.post("/documents/{document_id}/unseal", response_model=DocumentResponse)
 def unseal_document(
     document_id: int,
+    user: User = Depends(require_permission(Permiso.documento_sellar)),
     db: Session = Depends(get_db),
 ):
     """Unseal a document"""
@@ -153,6 +165,7 @@ def unseal_document(
 def download_documents_zip(
     project_id: int,
     categoria: CategoriaDocumento | None = None,
+    user: User = Depends(require_permission(Permiso.documento_ver)),
     db: Session = Depends(get_db),
 ):
     """Download project documents as ZIP archive"""
@@ -173,6 +186,7 @@ def download_documents_zip(
 @router.post("/projects/{project_id}/documents/seal-all")
 def seal_all_documents(
     project_id: int,
+    user: User = Depends(require_permission(Permiso.documento_sellar)),
     db: Session = Depends(get_db),
 ):
     """Seal all unsealed documents for a project"""

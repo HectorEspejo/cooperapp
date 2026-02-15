@@ -78,6 +78,7 @@
                 <input type="date" name="fecha_hasta" placeholder="Hasta" class="filter-date">
             </div>
         </form>
+        {% if user and user.rol and user.rol.value in ['director', 'coordinador', 'tecnico_sede'] %}
         <button
             type="button"
             class="btn btn-primary"
@@ -88,6 +89,7 @@
         >
             + Nuevo Gasto
         </button>
+        {% endif %}
     </div>
 
     <!-- Expenses Table -->

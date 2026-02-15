@@ -1,6 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.database import get_db
+from app.models.user import User
+from app.auth.dependencies import get_current_user, require_permission
+from app.auth.permissions import Permiso
 from app.services.logical_framework_service import LogicalFrameworkService
 from app.schemas.logical_framework import (
     LogicalFrameworkUpdate, LogicalFrameworkDetailResponse,
@@ -24,7 +27,8 @@ def get_service(db: Session = Depends(get_db)) -> LogicalFrameworkService:
 @router.get("/projects/{project_id}/framework", response_model=LogicalFrameworkDetailResponse | None)
 def get_framework(
     project_id: int,
-    service: LogicalFrameworkService = Depends(get_service)
+    user: User = Depends(require_permission(Permiso.marco_ver)),
+    service: LogicalFrameworkService = Depends(get_service),
 ):
     """Get the full logical framework for a project"""
     return service.get_framework_by_project(project_id)
@@ -34,7 +38,8 @@ def get_framework(
 def create_or_update_framework(
     project_id: int,
     data: LogicalFrameworkUpdate,
-    service: LogicalFrameworkService = Depends(get_service)
+    user: User = Depends(require_permission(Permiso.marco_editar)),
+    service: LogicalFrameworkService = Depends(get_service),
 ):
     """Create or update the logical framework for a project"""
     framework = service.create_or_update_framework(project_id, data)
@@ -44,7 +49,8 @@ def create_or_update_framework(
 @router.get("/projects/{project_id}/framework/summary", response_model=FrameworkSummary)
 def get_framework_summary(
     project_id: int,
-    service: LogicalFrameworkService = Depends(get_service)
+    user: User = Depends(require_permission(Permiso.marco_ver)),
+    service: LogicalFrameworkService = Depends(get_service),
 ):
     """Get summary statistics for a framework"""
     return service.get_framework_summary(project_id)
@@ -56,7 +62,8 @@ def get_framework_summary(
 def add_objective(
     project_id: int,
     data: SpecificObjectiveCreate,
-    service: LogicalFrameworkService = Depends(get_service)
+    user: User = Depends(require_permission(Permiso.marco_editar)),
+    service: LogicalFrameworkService = Depends(get_service),
 ):
     """Add a specific objective to a project's framework"""
     objective = service.add_objective(project_id, data)
@@ -66,7 +73,8 @@ def add_objective(
 @router.get("/objectives/{objective_id}", response_model=SpecificObjectiveDetailResponse)
 def get_objective(
     objective_id: int,
-    service: LogicalFrameworkService = Depends(get_service)
+    user: User = Depends(require_permission(Permiso.marco_ver)),
+    service: LogicalFrameworkService = Depends(get_service),
 ):
     """Get a specific objective with its children"""
     objective = service.get_objective(objective_id)
@@ -79,7 +87,8 @@ def get_objective(
 def update_objective(
     objective_id: int,
     data: SpecificObjectiveUpdate,
-    service: LogicalFrameworkService = Depends(get_service)
+    user: User = Depends(require_permission(Permiso.marco_editar)),
+    service: LogicalFrameworkService = Depends(get_service),
 ):
     """Update a specific objective"""
     objective = service.update_objective(objective_id, data)
@@ -91,7 +100,8 @@ def update_objective(
 @router.delete("/objectives/{objective_id}")
 def delete_objective(
     objective_id: int,
-    service: LogicalFrameworkService = Depends(get_service)
+    user: User = Depends(require_permission(Permiso.marco_editar)),
+    service: LogicalFrameworkService = Depends(get_service),
 ):
     """Delete a specific objective and all its children"""
     if not service.delete_objective(objective_id):
@@ -105,7 +115,8 @@ def delete_objective(
 def add_result(
     objective_id: int,
     data: ResultCreate,
-    service: LogicalFrameworkService = Depends(get_service)
+    user: User = Depends(require_permission(Permiso.marco_editar)),
+    service: LogicalFrameworkService = Depends(get_service),
 ):
     """Add a result to a specific objective"""
     result = service.add_result(objective_id, data)
@@ -117,7 +128,8 @@ def add_result(
 @router.get("/results/{result_id}", response_model=ResultDetailResponse)
 def get_result(
     result_id: int,
-    service: LogicalFrameworkService = Depends(get_service)
+    user: User = Depends(require_permission(Permiso.marco_ver)),
+    service: LogicalFrameworkService = Depends(get_service),
 ):
     """Get a result with its children"""
     result = service.get_result(result_id)
@@ -130,7 +142,8 @@ def get_result(
 def update_result(
     result_id: int,
     data: ResultUpdate,
-    service: LogicalFrameworkService = Depends(get_service)
+    user: User = Depends(require_permission(Permiso.marco_editar)),
+    service: LogicalFrameworkService = Depends(get_service),
 ):
     """Update a result"""
     result = service.update_result(result_id, data)
@@ -142,7 +155,8 @@ def update_result(
 @router.delete("/results/{result_id}")
 def delete_result(
     result_id: int,
-    service: LogicalFrameworkService = Depends(get_service)
+    user: User = Depends(require_permission(Permiso.marco_editar)),
+    service: LogicalFrameworkService = Depends(get_service),
 ):
     """Delete a result and all its children"""
     if not service.delete_result(result_id):
@@ -156,7 +170,8 @@ def delete_result(
 def add_activity(
     result_id: int,
     data: ActivityCreate,
-    service: LogicalFrameworkService = Depends(get_service)
+    user: User = Depends(require_permission(Permiso.marco_editar)),
+    service: LogicalFrameworkService = Depends(get_service),
 ):
     """Add an activity to a result"""
     activity = service.add_activity(result_id, data)
@@ -168,7 +183,8 @@ def add_activity(
 @router.get("/activities/{activity_id}", response_model=ActivityDetailResponse)
 def get_activity(
     activity_id: int,
-    service: LogicalFrameworkService = Depends(get_service)
+    user: User = Depends(require_permission(Permiso.marco_ver)),
+    service: LogicalFrameworkService = Depends(get_service),
 ):
     """Get an activity with its indicators"""
     activity = service.get_activity(activity_id)
@@ -181,7 +197,8 @@ def get_activity(
 def update_activity(
     activity_id: int,
     data: ActivityUpdate,
-    service: LogicalFrameworkService = Depends(get_service)
+    user: User = Depends(require_permission(Permiso.marco_editar)),
+    service: LogicalFrameworkService = Depends(get_service),
 ):
     """Update an activity (auto-sets dates on status change)"""
     activity = service.update_activity(activity_id, data)
@@ -193,7 +210,8 @@ def update_activity(
 @router.delete("/activities/{activity_id}")
 def delete_activity(
     activity_id: int,
-    service: LogicalFrameworkService = Depends(get_service)
+    user: User = Depends(require_permission(Permiso.marco_editar)),
+    service: LogicalFrameworkService = Depends(get_service),
 ):
     """Delete an activity"""
     if not service.delete_activity(activity_id):
@@ -206,7 +224,8 @@ def delete_activity(
 @router.post("/indicators", response_model=IndicatorResponse)
 def create_indicator(
     data: IndicatorCreate,
-    service: LogicalFrameworkService = Depends(get_service)
+    user: User = Depends(require_permission(Permiso.marco_editar)),
+    service: LogicalFrameworkService = Depends(get_service),
 ):
     """Create an indicator at any level"""
     return service.create_indicator(data)
@@ -215,7 +234,8 @@ def create_indicator(
 @router.get("/indicators/{indicator_id}", response_model=IndicatorDetailResponse)
 def get_indicator(
     indicator_id: int,
-    service: LogicalFrameworkService = Depends(get_service)
+    user: User = Depends(require_permission(Permiso.marco_ver)),
+    service: LogicalFrameworkService = Depends(get_service),
 ):
     """Get an indicator with its history"""
     indicator = service.get_indicator(indicator_id)
@@ -228,7 +248,8 @@ def get_indicator(
 def update_indicator(
     indicator_id: int,
     data: IndicatorUpdate,
-    service: LogicalFrameworkService = Depends(get_service)
+    user: User = Depends(require_permission(Permiso.marco_editar)),
+    service: LogicalFrameworkService = Depends(get_service),
 ):
     """Update indicator metadata"""
     indicator = service.update_indicator(indicator_id, data)
@@ -240,7 +261,8 @@ def update_indicator(
 @router.delete("/indicators/{indicator_id}")
 def delete_indicator(
     indicator_id: int,
-    service: LogicalFrameworkService = Depends(get_service)
+    user: User = Depends(require_permission(Permiso.marco_editar)),
+    service: LogicalFrameworkService = Depends(get_service),
 ):
     """Delete an indicator"""
     if not service.delete_indicator(indicator_id):
@@ -252,7 +274,8 @@ def delete_indicator(
 def update_indicator_value(
     indicator_id: int,
     data: IndicatorUpdateCreate,
-    service: LogicalFrameworkService = Depends(get_service)
+    user: User = Depends(require_permission(Permiso.marco_editar)),
+    service: LogicalFrameworkService = Depends(get_service),
 ):
     """Update indicator value and create audit log"""
     indicator = service.update_indicator_value(indicator_id, data)
@@ -264,7 +287,8 @@ def update_indicator_value(
 @router.get("/indicators/{indicator_id}/history", response_model=list[IndicatorUpdateResponse])
 def get_indicator_history(
     indicator_id: int,
-    service: LogicalFrameworkService = Depends(get_service)
+    user: User = Depends(require_permission(Permiso.marco_ver)),
+    service: LogicalFrameworkService = Depends(get_service),
 ):
     """Get the update history for an indicator"""
     indicator = service.get_indicator(indicator_id)

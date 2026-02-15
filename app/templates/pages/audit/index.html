@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}Auditoria - CooperApp{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Log de Auditoria</h1>
+</div>
+
+<div class="filter-bar">
+    <div class="filter-group">
+        <select id="audit-filter-accion" class="form-select" onchange="loadAuditLogs()">
+            <option value="">Todas las acciones</option>
+            {% for a in acciones %}
+            <option value="{{ a.value }}">{{ a.value|replace('_', ' ')|title }}</option>
+            {% endfor %}
+        </select>
+        <input type="date" id="audit-filter-desde" class="form-control" onchange="loadAuditLogs()" placeholder="Desde">
+        <input type="date" id="audit-filter-hasta" class="form-control" onchange="loadAuditLogs()" placeholder="Hasta">
+    </div>
+</div>
+
+<div class="card">
+    <div id="audit-table-container"
+         hx-get="/api/audit-log"
+         hx-trigger="load"
+         hx-target="#audit-table-body"
+         hx-swap="innerHTML">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Fecha/Hora</th>
+                    <th>Actor</th>
+                    <th>Accion</th>
+                    <th>Recurso</th>
+                    <th>Detalle</th>
+                    <th>IP</th>
+                </tr>
+            </thead>
+            <tbody id="audit-table-body">
+                <tr><td colspan="6" class="text-center">Cargando...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function loadAuditLogs() {
+    const accion = document.getElementById('audit-filter-accion').value;
+    const desde = document.getElementById('audit-filter-desde').value;
+    const hasta = document.getElementById('audit-filter-hasta').value;
+
+    let url = '/api/audit-log?';
+    if (accion) url += 'accion=' + accion + '&';
+    if (desde) url += 'desde=' + desde + 'T00:00:00&';
+    if (hasta) url += 'hasta=' + hasta + 'T23:59:59&';
+
+    fetch(url)
+        .then(r => r.json())
+        .then(data => {
+            const tbody = document.getElementById('audit-table-body');
+            if (!data.items || data.items.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center">No hay registros.</td></tr>';
+                return;
+            }
+            tbody.innerHTML = data.items.map(log => `
+                <tr>
+                    <td>${new Date(log.timestamp).toLocaleString('es-ES')}</td>
+                    <td>
+                        <span class="badge badge-${log.actor_type}">${log.actor_type}</span>
+                        ${log.actor_label}
+                    </td>
+                    <td><span class="badge badge-accion">${log.accion_display}</span></td>
+                    <td>${log.recurso || ''} ${log.recurso_id ? '#' + log.recurso_id : ''}</td>
+                    <td class="audit-detail">${log.detalle ? JSON.stringify(log.detalle).substring(0, 80) : '-'}</td>
+                    <td>${log.ip_address || '-'}</td>
+                </tr>
+            `).join('');
+        });
+}
+
+document.addEventListener('DOMContentLoaded', loadAuditLogs);
+</script>
+{% endblock %}

@@ -16,6 +16,7 @@
         </p>
     </div>
 
+    {% if user and user.rol and user.rol.value in ['director', 'coordinador'] %}
     <form
         class="init-budget-form"
         hx-post="/projects/{{ project.id }}/budget/initialize"
@@ -38,6 +39,7 @@
         </div>
         <button type="submit" class="btn btn-primary">Inicializar Presupuesto</button>
     </form>
+    {% endif %}
 </div>
 {% endif %}
 </div>

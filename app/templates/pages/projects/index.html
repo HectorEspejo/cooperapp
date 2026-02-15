@@ -5,9 +5,11 @@
 {% block content %}
 <div class="page-header">
     <h1>Proyectos de Cooperación</h1>
+    {% if user and user.rol and user.rol.value in ['director', 'coordinador'] %}
     <a href="/projects/new" class="btn btn-primary">
         + Nuevo Proyecto
     </a>
+    {% endif %}
 </div>
 
 <!-- Stats Cards -->
