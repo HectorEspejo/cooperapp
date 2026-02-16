@@ -34,7 +34,9 @@ def login_page(request: Request):
 async def auth_callback(request: Request, db: Session = Depends(get_db)):
     try:
         token = await oauth.entra.authorize_access_token(request)
-    except Exception:
+    except Exception as e:
+        import logging
+        logging.getLogger("cooperapp.auth").error(f"OAuth callback failed: {type(e).__name__}: {e}")
         return RedirectResponse(url="/login?error=auth_failed", status_code=302)
 
     userinfo = token.get("userinfo", {})

@@ -7,7 +7,7 @@ from app.models.counterpart_session import CounterpartSession
 
 
 class AuthMiddleware(BaseHTTPMiddleware):
-    RUTAS_PUBLICAS = {"/login", "/auth/callback", "/contraparte/login", "/health", "/dev-login", "/pendiente", "/unauthorized"}
+    RUTAS_PUBLICAS = {"/login", "/auth/login-entra", "/auth/callback", "/contraparte/login", "/health", "/dev-login", "/pendiente", "/unauthorized"}
     PREFIJOS_PUBLICOS = ["/static", "/docs", "/openapi.json", "/redoc"]
 
     async def dispatch(self, request: Request, call_next):

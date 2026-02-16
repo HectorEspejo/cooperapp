@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     entra_client_secret: str = ""
     app_url: str = "http://localhost:8000"
     session_secret_key: str = "change-me-in-production"
+    acme_email: str = ""
 
     class Config:
         env_file = ".env"
