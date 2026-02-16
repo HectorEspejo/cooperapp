@@ -4,55 +4,80 @@
 
 {% block content %}
 <div class="page-header">
-    <h1>Log de Auditoria</h1>
-</div>
-
-<div class="filter-bar">
-    <div class="filter-group">
-        <select id="audit-filter-accion" class="form-select" onchange="loadAuditLogs()">
-            <option value="">Todas las acciones</option>
-            {% for a in acciones %}
-            <option value="{{ a.value }}">{{ a.value|replace('_', ' ')|title }}</option>
-            {% endfor %}
-        </select>
-        <input type="date" id="audit-filter-desde" class="form-control" onchange="loadAuditLogs()" placeholder="Desde">
-        <input type="date" id="audit-filter-hasta" class="form-control" onchange="loadAuditLogs()" placeholder="Hasta">
+    <div>
+        <h1>Log de Auditoria</h1>
+        <p class="text-muted">Registro de actividad del sistema</p>
     </div>
 </div>
 
-<div class="card">
-    <div id="audit-table-container"
-         hx-get="/api/audit-log"
-         hx-trigger="load"
-         hx-target="#audit-table-body"
-         hx-swap="innerHTML">
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Fecha/Hora</th>
-                    <th>Actor</th>
-                    <th>Accion</th>
-                    <th>Recurso</th>
-                    <th>Detalle</th>
-                    <th>IP</th>
-                </tr>
-            </thead>
-            <tbody id="audit-table-body">
-                <tr><td colspan="6" class="text-center">Cargando...</td></tr>
-            </tbody>
-        </table>
+<!-- Summary Stats -->
+<div class="audit-stats" id="audit-stats"></div>
+
+<!-- Filters -->
+<div class="audit-filters">
+    <div class="audit-filters-group">
+        <div class="audit-filter-item">
+            <label for="audit-filter-accion"><i data-lucide="filter" style="width:14px;height:14px"></i> Accion</label>
+            <select id="audit-filter-accion" class="form-control" onchange="loadAuditLogs()">
+                <option value="">Todas las acciones</option>
+                {% for a in acciones %}
+                <option value="{{ a.value }}">{{ a.value|replace('_', ' ')|title }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="audit-filter-item">
+            <label for="audit-filter-desde"><i data-lucide="calendar" style="width:14px;height:14px"></i> Desde</label>
+            <input type="date" id="audit-filter-desde" class="form-control" onchange="loadAuditLogs()">
+        </div>
+        <div class="audit-filter-item">
+            <label for="audit-filter-hasta"><i data-lucide="calendar" style="width:14px;height:14px"></i> Hasta</label>
+            <input type="date" id="audit-filter-hasta" class="form-control" onchange="loadAuditLogs()">
+        </div>
+        <div class="audit-filter-item audit-filter-actions">
+            <button class="btn btn-sm btn-secondary" onclick="clearFilters()">
+                <i data-lucide="x" style="width:14px;height:14px"></i> Limpiar
+            </button>
+        </div>
     </div>
 </div>
+
+<!-- Audit Table -->
+<div class="table-container">
+    <table class="audit-table">
+        <thead>
+            <tr>
+                <th>Fecha/Hora</th>
+                <th>Actor</th>
+                <th>Accion</th>
+                <th>Recurso</th>
+                <th>Detalle</th>
+                <th>IP</th>
+            </tr>
+        </thead>
+        <tbody id="audit-table-body">
+            <tr><td colspan="6" class="text-center">
+                <div class="audit-loading"><span class="audit-spinner"></span> Cargando registros...</div>
+            </td></tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- Pagination -->
+<div class="audit-pagination" id="audit-pagination"></div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-function loadAuditLogs() {
+let currentPage = 1;
+const pageSize = 50;
+
+function loadAuditLogs(page) {
+    if (page) currentPage = page;
     const accion = document.getElementById('audit-filter-accion').value;
     const desde = document.getElementById('audit-filter-desde').value;
     const hasta = document.getElementById('audit-filter-hasta').value;
 
-    let url = '/api/audit-log?';
+    let url = '/api/audit-log?page=' + currentPage + '&page_size=' + pageSize + '&';
     if (accion) url += 'accion=' + accion + '&';
     if (desde) url += 'desde=' + desde + 'T00:00:00&';
     if (hasta) url += 'hasta=' + hasta + 'T23:59:59&';
@@ -60,25 +85,159 @@ function loadAuditLogs() {
     fetch(url)
         .then(r => r.json())
         .then(data => {
-            const tbody = document.getElementById('audit-table-body');
-            if (!data.items || data.items.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center">No hay registros.</td></tr>';
-                return;
-            }
-            tbody.innerHTML = data.items.map(log => `
-                <tr>
-                    <td>${new Date(log.timestamp).toLocaleString('es-ES')}</td>
-                    <td>
-                        <span class="badge badge-${log.actor_type}">${log.actor_type}</span>
-                        ${log.actor_label}
-                    </td>
-                    <td><span class="badge badge-accion">${log.accion_display}</span></td>
-                    <td>${log.recurso || ''} ${log.recurso_id ? '#' + log.recurso_id : ''}</td>
-                    <td class="audit-detail">${log.detalle ? JSON.stringify(log.detalle).substring(0, 80) : '-'}</td>
-                    <td>${log.ip_address || '-'}</td>
-                </tr>
-            `).join('');
+            renderStats(data);
+            renderTable(data);
+            renderPagination(data);
+            lucide.createIcons();
         });
+}
+
+function renderStats(data) {
+    const container = document.getElementById('audit-stats');
+    const total = data.total || 0;
+
+    // Count by action type from current page items
+    const counts = {};
+    (data.items || []).forEach(log => {
+        counts[log.accion] = (counts[log.accion] || 0) + 1;
+    });
+
+    container.innerHTML = `
+        <div class="audit-stat-card">
+            <div class="audit-stat-icon icon-primary"><i data-lucide="list"></i></div>
+            <div class="audit-stat-content">
+                <span class="audit-stat-value">${total}</span>
+                <span class="audit-stat-label">Total registros</span>
+            </div>
+        </div>
+        <div class="audit-stat-card">
+            <div class="audit-stat-icon icon-success"><i data-lucide="log-in"></i></div>
+            <div class="audit-stat-content">
+                <span class="audit-stat-value">${counts['login'] || 0}</span>
+                <span class="audit-stat-label">Inicios de sesion</span>
+            </div>
+        </div>
+        <div class="audit-stat-card">
+            <div class="audit-stat-icon icon-warning"><i data-lucide="edit-3"></i></div>
+            <div class="audit-stat-content">
+                <span class="audit-stat-value">${(counts['create'] || 0) + (counts['update'] || 0)}</span>
+                <span class="audit-stat-label">Cambios</span>
+            </div>
+        </div>
+        <div class="audit-stat-card">
+            <div class="audit-stat-icon icon-info"><i data-lucide="download"></i></div>
+            <div class="audit-stat-content">
+                <span class="audit-stat-value">${(counts['download'] || 0) + (counts['export'] || 0) + (counts['upload'] || 0)}</span>
+                <span class="audit-stat-label">Archivos</span>
+            </div>
+        </div>
+    `;
+}
+
+function getAccionIcon(accion) {
+    const icons = {
+        login: 'log-in', logout: 'log-out', login_failed: 'shield-x',
+        session_expired: 'clock', create: 'plus-circle', update: 'edit-3',
+        delete: 'trash-2', status_change: 'refresh-cw', upload: 'upload',
+        download: 'download', export: 'file-output', role_change: 'user-cog',
+        project_assign: 'user-plus', project_unassign: 'user-minus'
+    };
+    return icons[accion] || 'activity';
+}
+
+function getAccionClass(accion) {
+    const classes = {
+        login: 'audit-accion-success', logout: 'audit-accion-muted',
+        login_failed: 'audit-accion-danger', session_expired: 'audit-accion-warning',
+        create: 'audit-accion-info', update: 'audit-accion-info',
+        delete: 'audit-accion-danger', status_change: 'audit-accion-warning',
+        upload: 'audit-accion-success', download: 'audit-accion-muted',
+        export: 'audit-accion-muted', role_change: 'audit-accion-warning',
+        project_assign: 'audit-accion-info', project_unassign: 'audit-accion-warning'
+    };
+    return classes[accion] || '';
+}
+
+function formatTimestamp(ts) {
+    const d = new Date(ts);
+    const date = d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
+    const time = d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    return `<span class="audit-date">${date}</span><span class="audit-time">${time}</span>`;
+}
+
+function formatDetail(detalle) {
+    if (!detalle) return '<span class="audit-detail-empty">-</span>';
+    const str = JSON.stringify(detalle);
+    const short = str.length > 60 ? str.substring(0, 60) + '...' : str;
+    return `<span class="audit-detail-text" title="${str.replace(/"/g, '&quot;')}">${short}</span>`;
+}
+
+function renderTable(data) {
+    const tbody = document.getElementById('audit-table-body');
+    if (!data.items || data.items.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center">
+            <div class="audit-empty">
+                <i data-lucide="inbox" style="width:40px;height:40px;color:var(--color-text-muted)"></i>
+                <p>No hay registros de auditoria.</p>
+            </div>
+        </td></tr>`;
+        return;
+    }
+    tbody.innerHTML = data.items.map(log => `
+        <tr class="audit-row">
+            <td class="audit-cell-time">${formatTimestamp(log.timestamp)}</td>
+            <td class="audit-cell-actor">
+                <span class="badge badge-${log.actor_type}">${log.actor_type === 'internal' ? 'Interno' : 'Contraparte'}</span>
+                <span class="audit-actor-name">${log.actor_label}</span>
+            </td>
+            <td>
+                <span class="audit-accion-badge ${getAccionClass(log.accion)}">
+                    <i data-lucide="${getAccionIcon(log.accion)}" style="width:13px;height:13px"></i>
+                    ${log.accion_display}
+                </span>
+            </td>
+            <td class="audit-cell-recurso">
+                ${log.recurso ? `<span class="audit-recurso-type">${log.recurso}</span>` : ''}
+                ${log.recurso_id ? `<span class="audit-recurso-id">#${log.recurso_id}</span>` : ''}
+                ${!log.recurso && !log.recurso_id ? '<span class="audit-detail-empty">-</span>' : ''}
+            </td>
+            <td>${formatDetail(log.detalle)}</td>
+            <td class="audit-cell-ip">${log.ip_address || '<span class="audit-detail-empty">-</span>'}</td>
+        </tr>
+    `).join('');
+}
+
+function renderPagination(data) {
+    const container = document.getElementById('audit-pagination');
+    const totalPages = Math.ceil(data.total / pageSize);
+    if (totalPages <= 1) { container.innerHTML = ''; return; }
+
+    let pages = '';
+    for (let i = 1; i <= totalPages && i <= 10; i++) {
+        if (i === currentPage) {
+            pages += `<span class="audit-page-btn active">${i}</span>`;
+        } else {
+            pages += `<button class="audit-page-btn" onclick="loadAuditLogs(${i})">${i}</button>`;
+        }
+    }
+    if (totalPages > 10) pages += `<span class="audit-page-ellipsis">...</span>`;
+
+    container.innerHTML = `
+        <span class="audit-page-info">Mostrando ${(currentPage-1)*pageSize + 1}-${Math.min(currentPage*pageSize, data.total)} de ${data.total}</span>
+        <div class="audit-page-controls">
+            ${currentPage > 1 ? `<button class="audit-page-btn" onclick="loadAuditLogs(${currentPage-1})"><i data-lucide="chevron-left" style="width:14px;height:14px"></i></button>` : ''}
+            ${pages}
+            ${currentPage < totalPages ? `<button class="audit-page-btn" onclick="loadAuditLogs(${currentPage+1})"><i data-lucide="chevron-right" style="width:14px;height:14px"></i></button>` : ''}
+        </div>
+    `;
+}
+
+function clearFilters() {
+    document.getElementById('audit-filter-accion').value = '';
+    document.getElementById('audit-filter-desde').value = '';
+    document.getElementById('audit-filter-hasta').value = '';
+    currentPage = 1;
+    loadAuditLogs();
 }
 
 document.addEventListener('DOMContentLoaded', loadAuditLogs);

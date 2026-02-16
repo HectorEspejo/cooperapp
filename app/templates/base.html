@@ -19,6 +19,21 @@
     <div id="notifications" class="notifications"></div>
 
     <script src="/static/js/app.js"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    <script>
+        lucide.createIcons();
+        document.body.addEventListener('htmx:afterSwap', () => lucide.createIcons());
+        document.body.addEventListener('htmx:afterSettle', () => lucide.createIcons());
+    </script>
     {% block scripts %}{% endblock %}
+    <script src="https://encina.4d3.org/static/widget/encina-widget.js"></script>
+    <script>
+        EncWidget.init({
+            apiKey: 'ew_7718c20196b5b3f86b62c2c3dccc17e8e9da52ffe7302f30',
+            color: '#4A7C59',
+            position: 'right',
+            text: 'Soporte'
+        });
+    </script>
 </body>
 </html>

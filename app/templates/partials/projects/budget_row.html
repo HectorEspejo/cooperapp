@@ -55,7 +55,7 @@
     </td>
     <td class="col-percent">
         {% if line.has_deviation_alert %}
-        <span class="deviation-alert" title="Desviacion mayor al 10%">⚠️</span>
+        <span class="deviation-alert" title="Desviacion mayor al 10%"><i data-lucide="alert-triangle"></i></span>
         {% endif %}
         {{ '{:.1f}'.format(line.porcentaje_ejecucion) }}%
     </td>

@@ -31,8 +31,8 @@
     </td>
     <td>
         <div class="actions-cell">
-            <a href="/projects/{{ project.id }}" class="btn btn-icon" title="Ver">👁️</a>
-            <a href="/projects/{{ project.id }}/edit" class="btn btn-icon" title="Editar">✏️</a>
+            <a href="/projects/{{ project.id }}" class="btn btn-icon" title="Ver"><i data-lucide="eye"></i></a>
+            <a href="/projects/{{ project.id }}/edit" class="btn btn-icon" title="Editar"><i data-lucide="pencil"></i></a>
             <button
                 class="btn btn-icon btn-danger"
                 title="Eliminar"
@@ -40,7 +40,7 @@
                 hx-confirm="¿Eliminar proyecto {{ project.codigo_contable }}?"
                 hx-target="#project-row-{{ project.id }}"
                 hx-swap="outerHTML"
-            >🗑️</button>
+            ><i data-lucide="trash-2"></i></button>
         </div>
     </td>
 </tr>

@@ -1,14 +1,15 @@
+{% set _t = t if t is defined else None %}
 <div class="ml-tree-node ml-result" data-result-id="{{ result.id }}">
     <div class="ml-node-header">
         <button class="ml-toggle" onclick="toggleNode(this)">
-            <span class="toggle-icon">▼</span>
+            <i data-lucide="chevron-down" class="toggle-icon"></i>
         </button>
         <span class="ml-node-label ml-result-label">{{ result.numero }}</span>
         <span class="ml-node-text">{{ result.descripcion }}</span>
         <div class="ml-node-actions">
             <button
                 class="btn btn-icon"
-                title="Anadir Actividad"
+                title="{{ _t('ml.add_activity') if _t else 'Anadir Actividad' }}"
                 hx-get="/projects/{{ project.id }}/marco-logico/activity-form?result_id={{ result.id }}"
                 hx-target="#indicator-modal-container"
                 hx-swap="innerHTML"
@@ -16,7 +17,7 @@
             >+A</button>
             <button
                 class="btn btn-icon"
-                title="Anadir Indicador"
+                title="{{ _t('ml.add_indicator_title') if _t else 'Anadir Indicador' }}"
                 hx-get="/projects/{{ project.id }}/marco-logico/indicator-form?framework_id={{ framework.id }}&result_id={{ result.id }}"
                 hx-target="#indicator-modal-container"
                 hx-swap="innerHTML"
@@ -24,20 +25,20 @@
             >+I</button>
             <button
                 class="btn btn-icon"
-                title="Editar Resultado"
+                title="{{ _t('ml.edit_result') if _t else 'Editar Resultado' }}"
                 hx-get="/projects/{{ project.id }}/marco-logico/result-form?result_id={{ result.id }}"
                 hx-target="#indicator-modal-container"
                 hx-swap="innerHTML"
                 onclick="document.getElementById('indicator-modal-container').classList.add('active')"
-            >✎</button>
+            ><i data-lucide="pencil"></i></button>
             <button
                 class="btn btn-icon btn-danger"
-                title="Eliminar"
+                title="{{ _t('ml.delete') if _t else 'Eliminar' }}"
                 hx-delete="/projects/results/{{ result.id }}"
                 hx-target="#marco-logico-content"
                 hx-swap="innerHTML"
-                hx-confirm="¿Eliminar este resultado y todas sus actividades?"
-            >✕</button>
+                hx-confirm="{{ _t('ml.confirm_delete_result') if _t else 'Eliminar este resultado y todas sus actividades?' }}"
+            ><i data-lucide="x"></i></button>
         </div>
     </div>
 

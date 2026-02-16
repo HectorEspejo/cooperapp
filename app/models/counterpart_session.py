@@ -19,6 +19,7 @@ class CounterpartSession(Base):
     )
     last_activity: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     activo: Mapped[bool] = mapped_column(Boolean, default=True)
+    language: Mapped[str] = mapped_column(String(5), default="es")
 
     project = relationship("Project")
 

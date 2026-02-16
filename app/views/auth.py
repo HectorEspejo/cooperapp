@@ -14,6 +14,7 @@ from app.models.user import User
 from app.services.user_service import UserService
 from app.services.audit_service import AuditService
 from app.models.audit_log import ActorType, AccionAuditoria
+from app.i18n import detect_language, get_translator
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
@@ -95,9 +96,13 @@ def logout(request: Request, db: Session = Depends(get_db)):
 @router.get("/contraparte/login", response_class=HTMLResponse)
 def counterpart_login_page(request: Request):
     error = request.query_params.get("error")
+    lang = request.query_params.get("lang")
+    if not lang:
+        lang = detect_language(request.headers.get("accept-language"))
+    t = get_translator(lang)
     return templates.TemplateResponse(
         "pages/auth/counterpart_login.html",
-        {"request": request, "error": error},
+        {"request": request, "error": error, "lang": lang, "t": t},
     )
 
 
@@ -105,9 +110,10 @@ def counterpart_login_page(request: Request):
 async def counterpart_login(request: Request, db: Session = Depends(get_db)):
     form_data = await request.form()
     code = form_data.get("code", "").strip()
+    language = form_data.get("language", "es")
 
     if not code:
-        return RedirectResponse(url="/contraparte/login?error=empty", status_code=302)
+        return RedirectResponse(url=f"/contraparte/login?error=empty&lang={language}", status_code=302)
 
     ip = request.client.host if request.client else None
     project = validate_project_code(db, code)
@@ -124,10 +130,10 @@ async def counterpart_login(request: Request, db: Session = Depends(get_db)):
             detalle={"code_provided": code[:4] + "***"},
             ip_address=ip,
         )
-        return RedirectResponse(url="/contraparte/login?error=invalid", status_code=302)
+        return RedirectResponse(url=f"/contraparte/login?error=invalid&lang={language}", status_code=302)
 
     user_agent = request.headers.get("user-agent", "")
-    session = create_counterpart_session(db, project.id, ip, user_agent)
+    session = create_counterpart_session(db, project.id, ip, user_agent, language=language)
 
     # Auditar login contraparte
     audit = AuditService(db)
@@ -152,11 +158,13 @@ async def counterpart_login(request: Request, db: Session = Depends(get_db)):
 def counterpart_logout(request: Request, db: Session = Depends(get_db)):
     from app.models.counterpart_session import CounterpartSession
     token = request.cookies.get("counterpart_token")
+    lang = "es"
     if token:
         session = db.query(CounterpartSession).filter(
             CounterpartSession.session_token == token
         ).first()
         if session:
+            lang = session.language or "es"
             audit = AuditService(db)
             audit.log(
                 actor_type=ActorType.counterpart,
@@ -170,7 +178,7 @@ def counterpart_logout(request: Request, db: Session = Depends(get_db)):
             session.activo = False
             db.commit()
 
-    response = RedirectResponse(url="/contraparte/login", status_code=302)
+    response = RedirectResponse(url=f"/contraparte/login?lang={lang}", status_code=302)
     clear_counterpart_cookie(response)
     return response
 

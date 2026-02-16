@@ -52,7 +52,7 @@
     <div class="budget-alerts">
         {% for alert in budget.validation_alerts %}
         <div class="budget-alert {{ alert.alert_type }}">
-            <span class="alert-icon">{% if alert.alert_type == 'error' %}❌{% else %}⚠️{% endif %}</span>
+            <span class="alert-icon">{% if alert.alert_type == 'error' %}<i data-lucide="x-circle"></i>{% else %}<i data-lucide="alert-triangle"></i>{% endif %}</span>
             <span class="alert-message">{{ alert.message }}</span>
         </div>
         {% endfor %}
@@ -153,10 +153,10 @@
                         </td>
                         <td class="col-percent">
                             {% if line.has_deviation_alert %}
-                            <span class="deviation-alert" title="Desviacion mayor al 10%">⚠️</span>
+                            <span class="deviation-alert" title="Desviacion mayor al 10%"><i data-lucide="alert-triangle"></i></span>
                             {% endif %}
                             {% if line.has_max_percentage_alert %}
-                            <span class="max-exceeded-alert" title="Excede el porcentaje maximo">❌</span>
+                            <span class="max-exceeded-alert" title="Excede el porcentaje maximo"><i data-lucide="x-circle"></i></span>
                             {% endif %}
                             {{ '{:.1f}'.format(line.porcentaje_ejecucion) }}%
                         </td>
@@ -253,10 +253,10 @@
                         </td>
                         <td class="col-percent">
                             {% if line.has_deviation_alert %}
-                            <span class="deviation-alert" title="Desviacion mayor al 10%">⚠️</span>
+                            <span class="deviation-alert" title="Desviacion mayor al 10%"><i data-lucide="alert-triangle"></i></span>
                             {% endif %}
                             {% if line.has_max_percentage_alert %}
-                            <span class="max-exceeded-alert" title="Excede el porcentaje maximo">❌</span>
+                            <span class="max-exceeded-alert" title="Excede el porcentaje maximo"><i data-lucide="x-circle"></i></span>
                             {% endif %}
                             {{ '{:.1f}'.format(line.porcentaje_ejecucion) }}%
                         </td>
@@ -286,16 +286,16 @@
             <span class="spain-only-badge">ES</span> Partida solo Espana
         </span>
         <span class="legend-item">
-            <span class="deviation-alert">⚠️</span> Desviacion > 10%
+            <span class="deviation-alert"><i data-lucide="alert-triangle"></i></span> Desviacion > 10%
         </span>
         {% if budget.funder_max_indirect_percentage %}
         <span class="legend-item">
-            <span class="max-exceeded-alert">❌</span> Indirectos > {{ budget.funder_max_indirect_percentage }}%
+            <span class="max-exceeded-alert"><i data-lucide="x-circle"></i></span> Indirectos > {{ budget.funder_max_indirect_percentage }}%
         </span>
         {% endif %}
         {% if budget.funder_max_personnel_percentage %}
         <span class="legend-item">
-            <span class="max-exceeded-alert">❌</span> Personal > {{ budget.funder_max_personnel_percentage }}%
+            <span class="max-exceeded-alert"><i data-lucide="x-circle"></i></span> Personal > {{ budget.funder_max_personnel_percentage }}%
         </span>
         {% endif %}
         {% if not budget.audit_required %}

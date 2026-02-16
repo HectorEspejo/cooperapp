@@ -1,3 +1,4 @@
+{% set _t = t if t is defined else None %}
 <div class="marco-logico-container" id="marco-logico-content">
     <!-- Summary Header -->
     {% include "partials/projects/marco_logico_summary.html" %}
@@ -5,7 +6,7 @@
     <!-- General Objective Section -->
     <div class="ml-section">
         <div class="ml-section-header">
-            <h3>Objetivo General</h3>
+            <h3>{{ _t('ml.general_objective') if _t else 'Objetivo General' }}</h3>
         </div>
         <form
             class="objetivo-general-form"
@@ -16,10 +17,10 @@
             <textarea
                 name="objetivo_general"
                 rows="3"
-                placeholder="Describa el objetivo general del proyecto..."
+                placeholder="{{ _t('ml.describe_general_objective') if _t else 'Describa el objetivo general del proyecto...' }}"
             >{{ framework.objetivo_general if framework and framework.objetivo_general else '' }}</textarea>
             <div class="form-actions-inline">
-                <button type="submit" class="btn btn-sm btn-primary">Guardar</button>
+                <button type="submit" class="btn btn-sm btn-primary">{{ _t('ml.save') if _t else 'Guardar' }}</button>
             </div>
         </form>
     </div>
@@ -28,7 +29,7 @@
     {% if framework and framework.indicators %}
     <div class="ml-section ml-indicators-section">
         <div class="ml-section-header">
-            <h4>Indicadores del Objetivo General</h4>
+            <h4>{{ _t('ml.general_objective_indicators') if _t else 'Indicadores del Objetivo General' }}</h4>
             <button
                 class="btn btn-sm btn-secondary"
                 hx-get="/projects/{{ project.id }}/marco-logico/indicator-form?framework_id={{ framework.id }}"
@@ -36,7 +37,7 @@
                 hx-swap="innerHTML"
                 onclick="document.getElementById('indicator-modal-container').classList.add('active')"
             >
-                + Indicador
+                {{ _t('ml.add_indicator') if _t else '+ Indicador' }}
             </button>
         </div>
         <div class="ml-indicators-grid">
@@ -52,7 +53,7 @@
     <!-- Tree View -->
     <div class="ml-section">
         <div class="ml-section-header">
-            <h3>Estructura del Marco Logico</h3>
+            <h3>{{ _t('ml.framework_structure') if _t else 'Estructura del Marco Logico' }}</h3>
             <button
                 class="btn btn-sm btn-primary"
                 hx-get="/projects/{{ project.id }}/marco-logico/objective-form"
@@ -60,7 +61,7 @@
                 hx-swap="innerHTML"
                 onclick="document.getElementById('indicator-modal-container').classList.add('active')"
             >
-                + Objetivo Especifico
+                {{ _t('ml.add_specific_objective') if _t else '+ Objetivo Especifico' }}
             </button>
         </div>
 

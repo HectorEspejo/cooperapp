@@ -1,7 +1,8 @@
+{% set _t = t if t is defined else None %}
 <div class="ml-tree-node ml-activity" data-activity-id="{{ activity.id }}">
     <div class="ml-node-header ml-activity-header">
         <button class="ml-toggle" onclick="toggleNode(this)">
-            <span class="toggle-icon">▼</span>
+            <i data-lucide="chevron-down" class="toggle-icon"></i>
         </button>
         <span class="ml-node-label ml-activity-label">{{ activity.numero }}</span>
         <span class="ml-node-text">{{ activity.descripcion }}</span>
@@ -27,14 +28,14 @@
         <!-- Activity Dates -->
         <div class="ml-activity-dates">
             {% if activity.fecha_inicio_prevista or activity.fecha_fin_prevista %}
-            <span class="date-planned" title="Fechas previstas">
+            <span class="date-planned" title="{{ _t('ml.planned_dates') if _t else 'Fechas previstas' }}">
                 {{ activity.fecha_inicio_prevista.strftime('%d/%m') if activity.fecha_inicio_prevista else '?' }}
                 -
                 {{ activity.fecha_fin_prevista.strftime('%d/%m') if activity.fecha_fin_prevista else '?' }}
             </span>
             {% endif %}
             {% if activity.fecha_inicio_real or activity.fecha_fin_real %}
-            <span class="date-real" title="Fechas reales">
+            <span class="date-real" title="{{ _t('ml.actual_dates') if _t else 'Fechas reales' }}">
                 {{ activity.fecha_inicio_real.strftime('%d/%m') if activity.fecha_inicio_real else '?' }}
                 -
                 {{ activity.fecha_fin_real.strftime('%d/%m') if activity.fecha_fin_real else '?' }}
@@ -45,17 +46,17 @@
         <div class="ml-node-actions">
             <button
                 class="btn btn-icon {% if not activity.verification_sources and activity.estado.value == 'completada' %}btn-alert{% endif %}"
-                title="Fuentes de verificacion{% if not activity.verification_sources and activity.estado.value == 'completada' %} (sin fuentes){% endif %}"
+                title="{{ _t('ml.verification_sources') if _t else 'Fuentes de verificacion' }}{% if not activity.verification_sources and activity.estado.value == 'completada' %} ({{ _t('ml.no_sources') if _t else 'sin fuentes' }}){% endif %}"
                 onclick="openVerificationModal('activity', {{ activity.id }})"
             >
-                📋
+                <i data-lucide="clipboard-list"></i>
                 {% if activity.verification_sources %}
                 <span class="source-count-badge">{{ activity.verification_sources|length }}</span>
                 {% endif %}
             </button>
             <button
                 class="btn btn-icon"
-                title="Anadir Indicador"
+                title="{{ _t('ml.add_indicator_title') if _t else 'Anadir Indicador' }}"
                 hx-get="/projects/{{ project.id }}/marco-logico/indicator-form?framework_id={{ framework.id }}&activity_id={{ activity.id }}"
                 hx-target="#indicator-modal-container"
                 hx-swap="innerHTML"
@@ -63,20 +64,20 @@
             >+I</button>
             <button
                 class="btn btn-icon"
-                title="Editar Actividad"
+                title="{{ _t('ml.edit_activity') if _t else 'Editar Actividad' }}"
                 hx-get="/projects/{{ project.id }}/marco-logico/activity-form?activity_id={{ activity.id }}"
                 hx-target="#indicator-modal-container"
                 hx-swap="innerHTML"
                 onclick="document.getElementById('indicator-modal-container').classList.add('active')"
-            >✎</button>
+            ><i data-lucide="pencil"></i></button>
             <button
                 class="btn btn-icon btn-danger"
-                title="Eliminar"
+                title="{{ _t('ml.delete') if _t else 'Eliminar' }}"
                 hx-delete="/projects/activities/{{ activity.id }}"
                 hx-target="#marco-logico-content"
                 hx-swap="innerHTML"
-                hx-confirm="¿Eliminar esta actividad?"
-            >✕</button>
+                hx-confirm="{{ _t('ml.confirm_delete_activity') if _t else 'Eliminar esta actividad?' }}"
+            ><i data-lucide="x"></i></button>
         </div>
     </div>
 

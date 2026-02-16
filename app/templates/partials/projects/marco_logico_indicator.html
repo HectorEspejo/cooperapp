@@ -1,3 +1,4 @@
+{% set _t = t if t is defined else None %}
 <div class="ml-indicator-card" data-indicator-id="{{ indicator.id }}">
     <div class="ml-indicator-header">
         <span class="ml-indicator-code">{{ indicator.codigo }}</span>
@@ -5,61 +6,61 @@
         <div class="ml-indicator-actions">
             <button
                 class="btn btn-icon btn-sm {% if not indicator.verification_sources %}btn-alert{% endif %}"
-                title="Fuentes de verificacion{% if not indicator.verification_sources %} (sin fuentes){% endif %}"
+                title="{{ _t('ml.verification_sources') if _t else 'Fuentes de verificacion' }}{% if not indicator.verification_sources %} ({{ _t('ml.no_sources') if _t else 'sin fuentes' }}){% endif %}"
                 onclick="openVerificationModal('indicator', {{ indicator.id }})"
             >
-                📋
+                <i data-lucide="clipboard-list"></i>
                 {% if indicator.verification_sources %}
                 <span class="source-count-badge">{{ indicator.verification_sources|length }}</span>
                 {% endif %}
             </button>
             <button
                 class="btn btn-icon btn-sm"
-                title="Actualizar valor"
+                title="{{ _t('ml.update_value') if _t else 'Actualizar valor' }}"
                 hx-get="/projects/indicators/{{ indicator.id }}/update-form"
                 hx-target="#indicator-modal-container"
                 hx-swap="innerHTML"
                 onclick="document.getElementById('indicator-modal-container').classList.add('active')"
-            >📝</button>
+            ><i data-lucide="file-edit"></i></button>
             <button
                 class="btn btn-icon btn-sm"
-                title="Editar indicador"
+                title="{{ _t('ml.edit_indicator') if _t else 'Editar indicador' }}"
                 hx-get="/projects/indicators/{{ indicator.id }}/edit"
                 hx-target="#indicator-modal-container"
                 hx-swap="innerHTML"
                 onclick="document.getElementById('indicator-modal-container').classList.add('active')"
-            >✎</button>
+            ><i data-lucide="pencil"></i></button>
             <button
                 class="btn btn-icon btn-sm"
-                title="Ver historial"
+                title="{{ _t('ml.view_history') if _t else 'Ver historial' }}"
                 hx-get="/projects/indicators/{{ indicator.id }}/history"
                 hx-target="#indicator-modal-container"
                 hx-swap="innerHTML"
                 onclick="document.getElementById('indicator-modal-container').classList.add('active')"
-            >📊</button>
+            ><i data-lucide="bar-chart-3"></i></button>
             <button
                 class="btn btn-icon btn-sm btn-danger"
-                title="Eliminar"
+                title="{{ _t('ml.delete') if _t else 'Eliminar' }}"
                 hx-delete="/projects/indicators/{{ indicator.id }}"
                 hx-target="#marco-logico-content"
                 hx-swap="innerHTML"
-                hx-confirm="¿Eliminar este indicador?"
-            >✕</button>
+                hx-confirm="{{ _t('ml.confirm_delete_indicator') if _t else 'Eliminar este indicador?' }}"
+            ><i data-lucide="x"></i></button>
         </div>
     </div>
 
     <div class="ml-indicator-body">
         <div class="ml-indicator-values">
             <div class="ml-value-item">
-                <span class="ml-value-label">Base</span>
+                <span class="ml-value-label">{{ _t('ml.base') if _t else 'Base' }}</span>
                 <span class="ml-value-num">{{ indicator.valor_base or '-' }}</span>
             </div>
             <div class="ml-value-item">
-                <span class="ml-value-label">Meta</span>
+                <span class="ml-value-label">{{ _t('ml.target') if _t else 'Meta' }}</span>
                 <span class="ml-value-num">{{ indicator.valor_meta or '-' }}</span>
             </div>
             <div class="ml-value-item ml-value-actual">
-                <span class="ml-value-label">Actual</span>
+                <span class="ml-value-label">{{ _t('ml.current') if _t else 'Actual' }}</span>
                 <span class="ml-value-num">{{ indicator.valor_actual or '-' }}</span>
             </div>
         </div>
@@ -89,10 +90,10 @@
         {% if indicator.unidad_medida or indicator.fuente_verificacion %}
         <div class="ml-indicator-meta">
             {% if indicator.unidad_medida %}
-            <span class="ml-meta-item" title="Unidad de medida">📏 {{ indicator.unidad_medida }}</span>
+            <span class="ml-meta-item" title="{{ _t('ml.unit') if _t else 'Unidad de medida' }}"><i data-lucide="ruler"></i> {{ indicator.unidad_medida }}</span>
             {% endif %}
             {% if indicator.fuente_verificacion %}
-            <span class="ml-meta-item" title="Fuente de verificacion">📋 {{ indicator.fuente_verificacion|truncate(30) }}</span>
+            <span class="ml-meta-item" title="{{ _t('ml.verification_source') if _t else 'Fuente de verificacion' }}"><i data-lucide="clipboard-list"></i> {{ indicator.fuente_verificacion|truncate(30) }}</span>
             {% endif %}
         </div>
         {% endif %}

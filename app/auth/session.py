@@ -16,7 +16,8 @@ def destroy_internal_session(request: Request):
 
 
 def create_counterpart_session(
-    db: Session, project_id: int, ip_address: str | None, user_agent: str | None
+    db: Session, project_id: int, ip_address: str | None, user_agent: str | None,
+    language: str = "es",
 ) -> CounterpartSession:
     token = str(uuid4())
     session = CounterpartSession(
@@ -24,6 +25,7 @@ def create_counterpart_session(
         session_token=token,
         ip_address=ip_address,
         user_agent=user_agent,
+        language=language,
     )
     db.add(session)
     db.commit()

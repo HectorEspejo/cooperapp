@@ -28,7 +28,7 @@
                     {% if expense.documento_path %}
                     <a href="/projects/{{ project.id }}/expenses/{{ expense.id }}/document"
                        class="doc-badge doc-attached" title="Ver documento" target="_blank">
-                        <span class="doc-icon">📎</span>
+                        <span class="doc-icon"><i data-lucide="paperclip"></i></span>
                     </a>
                     {% elif expense.estado.value in ['borrador', 'pendiente_revision'] %}
                     <button class="doc-badge doc-missing" title="Subir factura (requerido para validar)"
@@ -36,7 +36,7 @@
                             hx-target="#expense-upload-modal-content"
                             hx-trigger="click"
                             onclick="openExpenseUploadModal()">
-                        <span class="doc-icon">📎</span>
+                        <span class="doc-icon"><i data-lucide="paperclip"></i></span>
                     </button>
                     {% else %}
                     <span class="doc-badge doc-none" title="Sin documento">-</span>
@@ -83,7 +83,7 @@
                             hx-target="#expense-modal-content"
                             hx-trigger="click"
                             onclick="openExpenseModal()"
-                        >✏️</button>
+                        ><i data-lucide="pencil"></i></button>
                         {% if user and user.rol and user.rol.value in ['director', 'coordinador'] %}
                         {% if expense.documento_path %}
                         <button
@@ -94,9 +94,9 @@
                             hx-select="#expenses-content"
                             hx-swap="outerHTML"
                             hx-confirm="¿Validar este gasto? Se actualizara el presupuesto ejecutado."
-                        >✓</button>
+                        ><i data-lucide="check"></i></button>
                         {% else %}
-                        <span class="btn-icon btn-disabled" title="Debe adjuntar factura para validar">✓</span>
+                        <span class="btn-icon btn-disabled" title="Debe adjuntar factura para validar"><i data-lucide="check"></i></span>
                         {% endif %}
                         {% endif %}
                         <button
@@ -107,7 +107,7 @@
                             hx-select="#expenses-content"
                             hx-swap="outerHTML"
                             hx-confirm="¿Eliminar este gasto?"
-                        >🗑️</button>
+                        ><i data-lucide="trash-2"></i></button>
                         {% elif expense.estado.value == 'pendiente_revision' %}
                         {% if user and user.rol and user.rol.value in ['director', 'coordinador'] %}
                         {% if expense.documento_path %}
@@ -119,9 +119,9 @@
                             hx-select="#expenses-content"
                             hx-swap="outerHTML"
                             hx-confirm="¿Validar este gasto?"
-                        >✓</button>
+                        ><i data-lucide="check"></i></button>
                         {% else %}
-                        <span class="btn-icon btn-disabled" title="Debe adjuntar factura para validar">✓</span>
+                        <span class="btn-icon btn-disabled" title="Debe adjuntar factura para validar"><i data-lucide="check"></i></span>
                         {% endif %}
                         <button
                             class="btn-icon btn-warning"
@@ -131,7 +131,7 @@
                             hx-select="#expenses-content"
                             hx-swap="outerHTML"
                             hx-confirm="¿Rechazar este gasto?"
-                        >✗</button>
+                        ><i data-lucide="x"></i></button>
                         {% endif %}
                         <button
                             class="btn-icon"
@@ -140,7 +140,7 @@
                             hx-target="#expenses-content"
                             hx-select="#expenses-content"
                             hx-swap="outerHTML"
-                        >↩️</button>
+                        ><i data-lucide="undo-2"></i></button>
                         {% elif expense.estado.value == 'validado' %}
                         {% if user and user.rol and user.rol.value in ['director', 'coordinador'] %}
                         <button
@@ -151,7 +151,7 @@
                             hx-select="#expenses-content"
                             hx-swap="outerHTML"
                             hx-confirm="¿Revertir a borrador? Se restara el importe del presupuesto ejecutado."
-                        >↩️</button>
+                        ><i data-lucide="undo-2"></i></button>
                         {% endif %}
                         {% elif expense.estado.value == 'rechazado' %}
                         <button
@@ -161,7 +161,7 @@
                             hx-target="#expenses-content"
                             hx-select="#expenses-content"
                             hx-swap="outerHTML"
-                        >↩️</button>
+                        ><i data-lucide="undo-2"></i></button>
                         <button
                             class="btn-icon btn-danger"
                             title="Eliminar"
@@ -170,7 +170,7 @@
                             hx-select="#expenses-content"
                             hx-swap="outerHTML"
                             hx-confirm="¿Eliminar este gasto?"
-                        >🗑️</button>
+                        ><i data-lucide="trash-2"></i></button>
                         {% endif %}
                     </div>
                 </td>
@@ -181,7 +181,7 @@
 </div>
 {% else %}
 <div class="empty-state expenses-empty">
-    <div class="empty-icon">📋</div>
+    <div class="empty-icon"><i data-lucide="clipboard-list"></i></div>
     <h3>Sin gastos registrados</h3>
     <p>No hay gastos registrados para este proyecto. Haz clic en "Nuevo Gasto" para comenzar.</p>
 </div>

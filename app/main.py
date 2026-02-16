@@ -32,6 +32,15 @@ async def lifespan(app: FastAPI):
     # Startup: Create tables and seed data
     Base.metadata.create_all(bind=engine)
 
+    # Migration: add language column to counterpart_sessions if missing
+    from sqlalchemy import inspect as sa_inspect, text
+    inspector = sa_inspect(engine)
+    columns = [c["name"] for c in inspector.get_columns("counterpart_sessions")]
+    if "language" not in columns:
+        with engine.connect() as conn:
+            conn.execute(text("ALTER TABLE counterpart_sessions ADD COLUMN language VARCHAR(5) DEFAULT 'es'"))
+            conn.commit()
+
     # Create uploads directory for expense documents
     os.makedirs("uploads", exist_ok=True)
 

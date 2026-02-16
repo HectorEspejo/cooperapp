@@ -2,11 +2,11 @@
     <div class="source-header">
         <div class="source-doc-info">
             {% if source.document.is_image %}
-            <span class="source-doc-icon">🖼</span>
+            <span class="source-doc-icon"><i data-lucide="image"></i></span>
             {% elif source.document.is_pdf %}
-            <span class="source-doc-icon">📄</span>
+            <span class="source-doc-icon"><i data-lucide="file-text"></i></span>
             {% else %}
-            <span class="source-doc-icon">📎</span>
+            <span class="source-doc-icon"><i data-lucide="paperclip"></i></span>
             {% endif %}
             <span class="source-doc-name" title="{{ source.document.original_filename }}">
                 {{ source.document.original_filename|truncate(30) }}
@@ -18,7 +18,7 @@
                 class="btn btn-icon btn-sm"
                 title="Descargar"
                 download
-            >📥</a>
+            ><i data-lucide="download"></i></a>
             {% if not source.validado %}
             <button
                 class="btn btn-icon btn-sm btn-success"
@@ -26,7 +26,7 @@
                 hx-post="/projects/verification-sources/{{ source.id }}/validate"
                 hx-target=".verification-modal"
                 hx-swap="outerHTML"
-            >✓</button>
+            ><i data-lucide="check"></i></button>
             {% endif %}
             <button
                 class="btn btn-icon btn-sm btn-danger"
@@ -35,7 +35,7 @@
                 hx-target=".verification-modal"
                 hx-swap="outerHTML"
                 hx-confirm="¿Eliminar esta fuente de verificacion?"
-            >✕</button>
+            ><i data-lucide="x"></i></button>
         </div>
     </div>
     <div class="source-body">
@@ -45,7 +45,7 @@
             </span>
             {% if source.validado %}
             <span class="source-validated-badge" title="Validado el {{ source.fecha_validacion.strftime('%d/%m/%Y') if source.fecha_validacion else '' }}">
-                ✓ Validado
+                <i data-lucide="check"></i> Validado
             </span>
             {% else %}
             <span class="source-pending-badge">

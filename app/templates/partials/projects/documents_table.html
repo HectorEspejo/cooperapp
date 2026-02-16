@@ -1,16 +1,17 @@
+{% set _t = t if t is defined else None %}
 {% if documents %}
 <div class="table-container">
     <table class="documents-table">
         <thead>
             <tr>
-                <th class="col-preview">Vista</th>
-                <th class="col-name">Documento</th>
-                <th class="col-categoria">Categoria</th>
-                <th class="col-size">Tamano</th>
-                <th class="col-date">Fecha</th>
-                <th class="col-estado">Estado</th>
-                <th class="col-vinculado">Vinculado</th>
-                <th class="col-actions">Acciones</th>
+                <th class="col-preview">{{ _t('docs.col_preview') if _t else 'Vista' }}</th>
+                <th class="col-name">{{ _t('docs.col_document') if _t else 'Documento' }}</th>
+                <th class="col-categoria">{{ _t('docs.category') if _t else 'Categoria' }}</th>
+                <th class="col-size">{{ _t('docs.col_size') if _t else 'Tamano' }}</th>
+                <th class="col-date">{{ _t('docs.col_date') if _t else 'Fecha' }}</th>
+                <th class="col-estado">{{ _t('docs.col_status') if _t else 'Estado' }}</th>
+                <th class="col-vinculado">{{ _t('docs.col_linked') if _t else 'Vinculado' }}</th>
+                <th class="col-actions">{{ _t('docs.col_actions') if _t else 'Acciones' }}</th>
             </tr>
         </thead>
         <tbody>
@@ -23,11 +24,11 @@
                     </div>
                     {% elif doc.is_pdf %}
                     <div class="doc-thumbnail doc-pdf" onclick="openDocumentPreview({{ doc.id }})">
-                        <span>📄</span>
+                        <span><i data-lucide="file-text"></i></span>
                     </div>
                     {% else %}
                     <div class="doc-thumbnail doc-file">
-                        <span>📎</span>
+                        <span><i data-lucide="paperclip"></i></span>
                     </div>
                     {% endif %}
                 </td>
@@ -54,23 +55,23 @@
                 </td>
                 <td class="col-estado">
                     {% if doc.sellado %}
-                    <span class="sellado-badge sellado" title="Sellado el {{ doc.fecha_sellado.strftime('%d/%m/%Y %H:%M') if doc.fecha_sellado else '' }}">
-                        🔒 Sellado
+                    <span class="sellado-badge sellado" title="{{ _t('docs.status_sealed') if _t else 'Sellado' }} {{ doc.fecha_sellado.strftime('%d/%m/%Y %H:%M') if doc.fecha_sellado else '' }}">
+                        <i data-lucide="lock"></i> {{ _t('docs.status_sealed') if _t else 'Sellado' }}
                     </span>
                     {% else %}
                     <span class="sellado-badge pendiente">
-                        📝 Pendiente
+                        <i data-lucide="file-edit"></i> {{ _t('docs.status_pending') if _t else 'Pendiente' }}
                     </span>
                     {% endif %}
                 </td>
                 <td class="col-vinculado">
                     {% if doc.verification_sources %}
-                    <span class="vinculado-badge vinculado" title="{{ doc.verification_sources|length }} fuente(s) de verificacion">
-                        🔗 {{ doc.verification_sources|length }}
+                    <span class="vinculado-badge vinculado" title="{{ doc.verification_sources|length }} {{ _t('docs.verification_sources_count') if _t else 'fuente(s) de verificacion' }}">
+                        <i data-lucide="link"></i> {{ doc.verification_sources|length }}
                     </span>
                     {% else %}
                     <span class="vinculado-badge huerfano">
-                        Sin vincular
+                        {{ _t('docs.status_unlinked') if _t else 'Sin vincular' }}
                     </span>
                     {% endif %}
                 </td>
@@ -79,36 +80,36 @@
                         <a
                             href="/api/documents/{{ doc.id }}/download"
                             class="btn btn-icon btn-sm"
-                            title="Descargar"
+                            title="{{ _t('docs.download') if _t else 'Descargar' }}"
                             download
-                        >📥</a>
+                        ><i data-lucide="download"></i></a>
                         {% if doc.is_image or doc.is_pdf %}
                         <button
                             class="btn btn-icon btn-sm"
-                            title="Previsualizar"
+                            title="{{ _t('docs.preview_action') if _t else 'Previsualizar' }}"
                             onclick="openDocumentPreview({{ doc.id }})"
-                        >👁</button>
+                        ><i data-lucide="eye"></i></button>
                         {% endif %}
                         {% if not doc.sellado %}
                         {% if user and user.rol and user.rol.value in ['director', 'coordinador'] %}
                         <button
                             class="btn btn-icon btn-sm btn-success"
-                            title="Sellar documento"
+                            title="{{ _t('docs.seal_document') if _t else 'Sellar documento' }}"
                             hx-post="/projects/{{ project.id }}/documents/{{ doc.id }}/seal"
                             hx-target="#documents-content"
                             hx-swap="innerHTML"
-                            hx-confirm="¿Sellar este documento? Esta accion no se puede deshacer."
-                        >🔒</button>
+                            hx-confirm="{{ _t('docs.confirm_seal') if _t else 'Sellar este documento? Esta accion no se puede deshacer.' }}"
+                        ><i data-lucide="lock"></i></button>
                         {% endif %}
                         {% if user and user.rol and user.rol.value in ['director', 'coordinador', 'tecnico_sede', 'gestor_pais'] %}
                         <button
                             class="btn btn-icon btn-sm btn-danger"
-                            title="Eliminar"
+                            title="{{ _t('ml.delete') if _t else 'Eliminar' }}"
                             hx-delete="/projects/{{ project.id }}/documents/{{ doc.id }}"
                             hx-target="#documents-content"
                             hx-swap="innerHTML"
-                            hx-confirm="¿Eliminar este documento?"
-                        >✕</button>
+                            hx-confirm="{{ _t('docs.confirm_delete') if _t else 'Eliminar este documento?' }}"
+                        ><i data-lucide="x"></i></button>
                         {% endif %}
                         {% endif %}
                     </div>
@@ -120,8 +121,8 @@
 </div>
 {% else %}
 <div class="empty-state documents-empty">
-    <div class="empty-icon">📄</div>
-    <h3>No hay documentos</h3>
-    <p>Sube el primer documento usando el formulario de arriba.</p>
+    <div class="empty-icon"><i data-lucide="file-text"></i></div>
+    <h3>{{ _t('docs.no_documents') if _t else 'No hay documentos' }}</h3>
+    <p>{{ _t('docs.upload_first') if _t else 'Sube el primer documento usando el formulario de arriba.' }}</p>
 </div>
 {% endif %}

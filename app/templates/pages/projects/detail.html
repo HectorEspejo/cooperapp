@@ -27,7 +27,7 @@
 <div class="detail-card">
     {% if justification_alert %}
     <div class="project-alert project-alert-{{ justification_alert.type }}">
-        <span class="alert-icon">{% if justification_alert.type == 'error' %}⚠{% else %}⏰{% endif %}</span>
+        <span class="alert-icon">{% if justification_alert.type == 'error' %}<i data-lucide="alert-triangle"></i>{% else %}<i data-lucide="clock"></i>{% endif %}</span>
         <span class="alert-message">{{ justification_alert.message }}</span>
         {% if project.fecha_justificacion %}
         <span class="alert-date">({{ project.fecha_justificacion.strftime('%d/%m/%Y') }})</span>

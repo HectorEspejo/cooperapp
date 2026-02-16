@@ -1,10 +1,10 @@
 <span class="session-timer {% if session.tiempo_restante_minutos < 30 %}session-timer-warning{% endif %}">
     {% set mins = session.tiempo_restante_minutos %}
     {% if mins > 60 %}
-        {{ mins // 60 }}h {{ mins % 60 }}m restantes
+        {{ mins // 60 }}h {{ mins % 60 }}m {{ t('timer.hours_remaining') }}
     {% elif mins > 0 %}
-        {{ mins }}m restantes
+        {{ mins }}m {{ t('timer.hours_remaining') }}
     {% else %}
-        Sesion expirada
+        {{ t('timer.expired') }}
     {% endif %}
 </span>

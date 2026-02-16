@@ -1,6 +1,6 @@
 {% extends "base_counterpart.html" %}
 
-{% block title %}Portal Contraparte - {{ project.titulo }}{% endblock %}
+{% block title %}{{ t('portal.counterpart') }} - {{ project.titulo }}{% endblock %}
 
 {% block content %}
 <div class="page-header">
@@ -15,13 +15,13 @@
             hx-get="/contraparte/{{ project.id }}/marco-logico"
             hx-target="#counterpart-content"
             hx-swap="innerHTML">
-        Marco Logico
+        {{ t('portal.marco_logico') }}
     </button>
     <button class="tab"
             hx-get="/contraparte/{{ project.id }}/documentos"
             hx-target="#counterpart-content"
             hx-swap="innerHTML">
-        Documentos
+        {{ t('portal.documentos') }}
     </button>
 </div>
 
@@ -29,6 +29,6 @@
      hx-get="/contraparte/{{ project.id }}/marco-logico"
      hx-trigger="load"
      hx-swap="innerHTML">
-    <div class="loading">Cargando...</div>
+    <div class="loading">{{ t('portal.loading') }}</div>
 </div>
 {% endblock %}

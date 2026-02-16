@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="{{ lang }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,9 +11,9 @@
     <nav class="navbar navbar-counterpart">
         <div class="navbar-container">
             <a href="/contraparte/{{ project.id }}" class="navbar-brand">
-                <span class="logo">🌍</span>
+                <span class="logo"><i data-lucide="globe"></i></span>
                 <span class="brand-text">CooperApp</span>
-                <span class="counterpart-badge">Contraparte</span>
+                <span class="counterpart-badge">{{ t('portal.counterpart') }}</span>
             </a>
             <div class="navbar-menu">
                 <span class="counterpart-project-name">{{ project.titulo }}</span>
@@ -23,7 +23,7 @@
                      hx-swap="innerHTML">
                 </div>
                 <form method="post" action="/contraparte/logout" style="display:inline;">
-                    <button type="submit" class="btn btn-sm btn-secondary">Cerrar sesion</button>
+                    <button type="submit" class="btn btn-sm btn-secondary">{{ t('portal.logout') }}</button>
                 </form>
             </div>
         </div>
@@ -34,6 +34,21 @@
     </main>
 
     <script src="/static/js/app.js"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    <script>
+        lucide.createIcons();
+        document.body.addEventListener('htmx:afterSwap', () => lucide.createIcons());
+        document.body.addEventListener('htmx:afterSettle', () => lucide.createIcons());
+    </script>
     {% block scripts %}{% endblock %}
+    <script src="https://encina.4d3.org/static/widget/encina-widget.js"></script>
+    <script>
+        EncWidget.init({
+            apiKey: 'ew_7718c20196b5b3f86b62c2c3dccc17e8e9da52ffe7302f30',
+            color: '#4A7C59',
+            position: 'right',
+            text: 'Soporte'
+        });
+    </script>
 </body>
 </html>

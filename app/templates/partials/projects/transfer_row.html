@@ -122,7 +122,7 @@
                 hx-target="#transfer-modal-content"
                 hx-trigger="click"
                 onclick="openTransferModal()"
-            >✏️</button>
+            ><i data-lucide="pencil"></i></button>
             {% if user and user.rol and user.rol.value in ['director', 'coordinador'] %}
             <button
                 type="button"
@@ -132,7 +132,7 @@
                 hx-target="#transfers-content"
                 hx-swap="outerHTML"
                 hx-confirm="¿Aprobar esta transferencia?"
-            >✓</button>
+            ><i data-lucide="check"></i></button>
             {% endif %}
             <button
                 type="button"
@@ -142,7 +142,7 @@
                 hx-target="#transfers-content"
                 hx-swap="outerHTML"
                 hx-confirm="¿Eliminar esta transferencia?"
-            >🗑️</button>
+            ><i data-lucide="trash-2"></i></button>
             {% elif transfer.estado.value == 'aprobada' %}
             <!-- Can edit, emit, or revert -->
             <button
@@ -153,7 +153,7 @@
                 hx-target="#transfer-modal-content"
                 hx-trigger="click"
                 onclick="openTransferModal()"
-            >✏️</button>
+            ><i data-lucide="pencil"></i></button>
             {% if user and user.rol and user.rol.value in ['director', 'coordinador'] %}
             <button
                 type="button"
@@ -163,7 +163,7 @@
                 hx-target="#transfers-content"
                 hx-swap="outerHTML"
                 hx-confirm="¿Confirmar emision de esta transferencia?"
-            >📤</button>
+            ><i data-lucide="upload"></i></button>
             {% endif %}
             <button
                 type="button"
@@ -172,7 +172,7 @@
                 hx-post="/projects/{{ project.id }}/transfers/{{ transfer.id }}/revert"
                 hx-target="#transfers-content"
                 hx-swap="outerHTML"
-            >↩️</button>
+            ><i data-lucide="undo-2"></i></button>
             {% elif transfer.estado.value == 'emitida' %}
             <!-- Can confirm reception or revert -->
             {% if user and user.rol and user.rol.value in ['director', 'coordinador'] %}
@@ -184,7 +184,7 @@
                 hx-target="#transfers-content"
                 hx-swap="outerHTML"
                 hx-confirm="¿Confirmar recepcion de esta transferencia?"
-            >📥</button>
+            ><i data-lucide="download"></i></button>
             {% endif %}
             <button
                 type="button"
@@ -193,7 +193,7 @@
                 hx-post="/projects/{{ project.id }}/transfers/{{ transfer.id }}/revert"
                 hx-target="#transfers-content"
                 hx-swap="outerHTML"
-            >↩️</button>
+            ><i data-lucide="undo-2"></i></button>
             {% elif transfer.estado.value == 'recibida' %}
             <!-- Can close or revert -->
             {% if user and user.rol and user.rol.value in ['director', 'coordinador'] %}
@@ -205,7 +205,7 @@
                 hx-target="#transfers-content"
                 hx-swap="outerHTML"
                 hx-confirm="¿Cerrar esta transferencia?"
-            >🔒</button>
+            ><i data-lucide="lock"></i></button>
             {% endif %}
             <button
                 type="button"
@@ -214,7 +214,7 @@
                 hx-post="/projects/{{ project.id }}/transfers/{{ transfer.id }}/revert"
                 hx-target="#transfers-content"
                 hx-swap="outerHTML"
-            >↩️</button>
+            ><i data-lucide="undo-2"></i></button>
             {% elif transfer.estado.value == 'cerrada' %}
             <!-- Can only revert -->
             <button
@@ -224,7 +224,7 @@
                 hx-post="/projects/{{ project.id }}/transfers/{{ transfer.id }}/revert"
                 hx-target="#transfers-content"
                 hx-swap="outerHTML"
-            >🔓</button>
+            ><i data-lucide="unlock"></i></button>
             {% endif %}
         </div>
     </td>

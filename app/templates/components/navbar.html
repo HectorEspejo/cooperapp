@@ -1,7 +1,7 @@
 <nav class="navbar">
     <div class="navbar-container">
         <a href="/projects" class="navbar-brand">
-            <span class="logo">🌍</span>
+            <span class="logo"><i data-lucide="globe"></i></span>
             <span class="brand-text">CooperApp</span>
         </a>
         <div class="navbar-menu">
@@ -13,7 +13,7 @@
                 <button class="user-menu-btn" onclick="this.parentElement.classList.toggle('open')">
                     <span class="user-avatar">{{ request.state.user.nombre[0] }}{{ request.state.user.apellidos[0] }}</span>
                     <span class="user-name">{{ request.state.user.nombre }}</span>
-                    <span class="user-chevron">&#9662;</span>
+                    <span class="user-chevron"><i data-lucide="chevron-down" class="icon-xs"></i></span>
                 </button>
                 <div class="user-dropdown">
                     <div class="user-dropdown-header">

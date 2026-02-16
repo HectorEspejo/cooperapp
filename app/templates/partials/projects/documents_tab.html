@@ -1,31 +1,32 @@
+{% set _t = t if t is defined else None %}
 <div class="documents-container" id="documents-content">
     <!-- Summary Stats -->
     <div class="documents-summary">
         <div class="summary-stats">
             <div class="summary-stat">
                 <span class="stat-value">{{ summary.total }}</span>
-                <span class="stat-label">Total</span>
+                <span class="stat-label">{{ _t('docs.total') if _t else 'Total' }}</span>
             </div>
             <div class="summary-stat stat-success">
                 <span class="stat-value">{{ summary.sellados }}</span>
-                <span class="stat-label">Sellados</span>
+                <span class="stat-label">{{ _t('docs.sealed') if _t else 'Sellados' }}</span>
             </div>
             <div class="summary-stat stat-warning">
                 <span class="stat-value">{{ summary.pendientes_sellar }}</span>
-                <span class="stat-label">Pendientes</span>
+                <span class="stat-label">{{ _t('docs.pending') if _t else 'Pendientes' }}</span>
             </div>
             <div class="summary-stat stat-info">
                 <span class="stat-value">{{ summary.vinculados }}</span>
-                <span class="stat-label">Vinculados</span>
+                <span class="stat-label">{{ _t('docs.linked') if _t else 'Vinculados' }}</span>
             </div>
             <div class="summary-stat">
                 <span class="stat-value">{{ summary.huerfanos }}</span>
-                <span class="stat-label">Sin vincular</span>
+                <span class="stat-label">{{ _t('docs.unlinked') if _t else 'Sin vincular' }}</span>
             </div>
         </div>
         <div class="summary-amounts">
             <div class="amount-item">
-                <span class="amount-label">Tamano total:</span>
+                <span class="amount-label">{{ _t('docs.total_size') if _t else 'Tamano total:' }}</span>
                 <span class="amount-value">{{ summary.tamano_total_human }}</span>
             </div>
         </div>
@@ -44,8 +45,8 @@
         >
             <div class="upload-zone" id="upload-zone">
                 <div class="upload-zone-content">
-                    <span class="upload-icon">📁</span>
-                    <p class="upload-text">Arrastra archivos aqui o haz clic para seleccionar</p>
+                    <span class="upload-icon"><i data-lucide="folder-open"></i></span>
+                    <p class="upload-text">{{ _t('docs.drag_files') if _t else 'Arrastra archivos aqui o haz clic para seleccionar' }}</p>
                     <input
                         type="file"
                         name="file"
@@ -58,7 +59,7 @@
             </div>
             <div class="upload-options">
                 <div class="form-group">
-                    <label for="categoria">Categoria</label>
+                    <label for="categoria">{{ _t('docs.category') if _t else 'Categoria' }}</label>
                     <select name="categoria" id="categoria" required>
                         {% for cat in categorias %}
                         <option value="{{ cat.value }}">{{ categoria_nombres[cat.value] }}</option>
@@ -66,11 +67,11 @@
                     </select>
                 </div>
                 <div class="form-group" style="flex: 1;">
-                    <label for="descripcion">Descripcion (opcional)</label>
-                    <input type="text" name="descripcion" id="descripcion" placeholder="Descripcion del documento...">
+                    <label for="descripcion">{{ _t('docs.description_optional') if _t else 'Descripcion (opcional)' }}</label>
+                    <input type="text" name="descripcion" id="descripcion" placeholder="{{ _t('docs.description_placeholder') if _t else 'Descripcion del documento...' }}">
                 </div>
                 <button type="submit" class="btn btn-primary" id="upload-btn" disabled>
-                    Subir documento
+                    {{ _t('docs.upload') if _t else 'Subir documento' }}
                 </button>
             </div>
         </form>
@@ -86,29 +87,29 @@
             hx-trigger="change"
         >
             <select name="categoria" class="filter-select">
-                <option value="">Todas las categorias</option>
+                <option value="">{{ _t('docs.all_categories') if _t else 'Todas las categorias' }}</option>
                 {% for cat in categorias %}
                 <option value="{{ cat.value }}">{{ categoria_nombres[cat.value] }}</option>
                 {% endfor %}
             </select>
             <select name="sellado" class="filter-select">
-                <option value="">Todos los estados</option>
-                <option value="true">Sellados</option>
-                <option value="false">Sin sellar</option>
+                <option value="">{{ _t('docs.all_statuses') if _t else 'Todos los estados' }}</option>
+                <option value="true">{{ _t('docs.sealed_filter') if _t else 'Sellados' }}</option>
+                <option value="false">{{ _t('docs.unsealed_filter') if _t else 'Sin sellar' }}</option>
             </select>
             <select name="vinculado" class="filter-select">
-                <option value="">Todos</option>
-                <option value="true">Vinculados</option>
-                <option value="false">Sin vincular</option>
+                <option value="">{{ _t('docs.all') if _t else 'Todos' }}</option>
+                <option value="true">{{ _t('docs.linked_filter') if _t else 'Vinculados' }}</option>
+                <option value="false">{{ _t('docs.unlinked_filter') if _t else 'Sin vincular' }}</option>
             </select>
         </form>
         <div class="filters-actions">
             <a
                 href="/api/projects/{{ project.id }}/documents/zip"
                 class="btn btn-secondary btn-sm"
-                title="Descargar todos como ZIP"
+                title="{{ _t('docs.download_zip_title') if _t else 'Descargar todos como ZIP' }}"
             >
-                📥 Descargar ZIP
+                <i data-lucide="download"></i> {{ _t('docs.download_zip') if _t else 'Descargar ZIP' }}
             </a>
         </div>
     </div>
@@ -184,4 +185,3 @@ function closeDocumentPreview() {
     });
 })();
 </script>
-

@@ -1,3 +1,4 @@
+{% set _t = t if t is defined else None %}
 <div class="modal-overlay" onclick="closeDocumentPreview()">
     <div class="document-preview-modal" onclick="event.stopPropagation()">
         <div class="modal-header">
@@ -15,10 +16,10 @@
             </div>
             {% else %}
             <div class="preview-unsupported">
-                <span class="preview-icon">📎</span>
-                <p>Vista previa no disponible para este tipo de archivo.</p>
+                <span class="preview-icon"><i data-lucide="paperclip"></i></span>
+                <p>{{ _t('docs.preview_unavailable') if _t else 'Vista previa no disponible para este tipo de archivo.' }}</p>
                 <a href="/api/documents/{{ document.id }}/download" class="btn btn-primary" download>
-                    📥 Descargar archivo
+                    <i data-lucide="download"></i> {{ _t('docs.download_file') if _t else 'Descargar archivo' }}
                 </a>
             </div>
             {% endif %}
@@ -26,26 +27,26 @@
         <div class="modal-footer">
             <div class="preview-info">
                 <span class="info-item">
-                    <strong>Categoria:</strong> {{ categoria_nombres[document.categoria.value] }}
+                    <strong>{{ _t('docs.info_category') if _t else 'Categoria:' }}</strong> {{ categoria_nombres[document.categoria.value] }}
                 </span>
                 <span class="info-item">
-                    <strong>Tamano:</strong> {{ document.file_size_human }}
+                    <strong>{{ _t('docs.info_size') if _t else 'Tamano:' }}</strong> {{ document.file_size_human }}
                 </span>
                 <span class="info-item">
-                    <strong>Subido:</strong> {{ document.created_at.strftime('%d/%m/%Y %H:%M') }}
+                    <strong>{{ _t('docs.info_uploaded') if _t else 'Subido:' }}</strong> {{ document.created_at.strftime('%d/%m/%Y %H:%M') }}
                 </span>
                 {% if document.sellado %}
                 <span class="info-item">
-                    <strong>Sellado:</strong> {{ document.fecha_sellado.strftime('%d/%m/%Y %H:%M') if document.fecha_sellado else 'Si' }}
+                    <strong>{{ _t('docs.info_sealed') if _t else 'Sellado:' }}</strong> {{ document.fecha_sellado.strftime('%d/%m/%Y %H:%M') if document.fecha_sellado else (_t('docs.yes') if _t else 'Si') }}
                 </span>
                 {% endif %}
             </div>
             <div class="preview-actions">
                 <a href="/api/documents/{{ document.id }}/download" class="btn btn-primary" download>
-                    📥 Descargar
+                    <i data-lucide="download"></i> {{ _t('docs.download') if _t else 'Descargar' }}
                 </a>
                 <button type="button" class="btn btn-secondary" onclick="closeDocumentPreview()">
-                    Cerrar
+                    {{ _t('docs.close') if _t else 'Cerrar' }}
                 </button>
             </div>
         </div>

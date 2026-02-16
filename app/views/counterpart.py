@@ -10,6 +10,7 @@ from app.services.logical_framework_service import LogicalFrameworkService
 from app.services.document_service import DocumentService
 from app.models.logical_framework import EstadoActividad
 from app.models.document import CategoriaDocumento, CATEGORIA_NOMBRES
+from app.i18n import get_translator
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
@@ -41,12 +42,16 @@ def counterpart_portal(
     if not project:
         raise HTTPException(status_code=404, detail="Proyecto no encontrado")
 
+    lang = session.language or "es"
+    t = get_translator(lang)
     return templates.TemplateResponse(
         "pages/counterpart/portal.html",
         {
             "request": request,
             "project": project,
             "session": session,
+            "lang": lang,
+            "t": t,
         },
     )
 
@@ -69,6 +74,8 @@ def counterpart_marco_logico(
     framework = lf_service.get_framework_by_project(project_id)
     summary = lf_service.get_framework_summary(project_id)
 
+    lang = session.language or "es"
+    t = get_translator(lang)
     return templates.TemplateResponse(
         "partials/projects/marco_logico_tab.html",
         {
@@ -78,6 +85,8 @@ def counterpart_marco_logico(
             "summary": summary,
             "estados_actividad": list(EstadoActividad),
             "readonly": True,
+            "lang": lang,
+            "t": t,
         },
     )
 
@@ -100,6 +109,8 @@ def counterpart_documents(
     documents = doc_service.get_project_documents(project_id)
     summary = doc_service.get_document_summary(project_id)
 
+    lang = session.language or "es"
+    t = get_translator(lang)
     return templates.TemplateResponse(
         "partials/projects/documents_tab.html",
         {
@@ -110,6 +121,8 @@ def counterpart_documents(
             "categorias": CategoriaDocumento,
             "categoria_nombres": CATEGORIA_NOMBRES,
             "readonly": True,
+            "lang": lang,
+            "t": t,
         },
     )
 
@@ -119,10 +132,14 @@ def session_timer(
     request: Request,
     session: CounterpartSession = Depends(get_current_counterpart),
 ):
+    lang = session.language or "es"
+    t = get_translator(lang)
     return templates.TemplateResponse(
         "partials/auth/session_timer.html",
         {
             "request": request,
             "session": session,
+            "lang": lang,
+            "t": t,
         },
     )

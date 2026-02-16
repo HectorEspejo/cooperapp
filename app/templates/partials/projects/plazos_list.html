@@ -10,7 +10,7 @@
                 hx-swap="innerHTML"
                 title="{{ 'Marcar como pendiente' if plazo.completado else 'Marcar como completado' }}"
             >
-                {% if plazo.completado %}✓{% endif %}
+                {% if plazo.completado %}<i data-lucide="check"></i>{% endif %}
             </button>
         </div>
         <div class="plazo-content">
@@ -24,7 +24,7 @@
             hx-swap="innerHTML"
             hx-confirm="¿Eliminar este plazo?"
             title="Eliminar"
-        >✕</button>
+        ><i data-lucide="x"></i></button>
     </li>
     {% endfor %}
 </ul>

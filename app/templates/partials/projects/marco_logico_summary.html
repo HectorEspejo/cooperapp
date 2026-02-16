@@ -1,29 +1,30 @@
+{% set _t = t if t is defined else None %}
 <div class="ml-summary">
     <div class="ml-stats-grid">
         <div class="ml-stat">
             <span class="ml-stat-value">{{ summary.total_objectives }}</span>
-            <span class="ml-stat-label">Objetivos</span>
+            <span class="ml-stat-label">{{ _t('ml.objectives') if _t else 'Objetivos' }}</span>
         </div>
         <div class="ml-stat">
             <span class="ml-stat-value">{{ summary.total_results }}</span>
-            <span class="ml-stat-label">Resultados</span>
+            <span class="ml-stat-label">{{ _t('ml.results') if _t else 'Resultados' }}</span>
         </div>
         <div class="ml-stat">
             <span class="ml-stat-value">
                 {{ summary.activities_completed }}/{{ summary.total_activities }}
             </span>
-            <span class="ml-stat-label">Actividades</span>
+            <span class="ml-stat-label">{{ _t('ml.activities') if _t else 'Actividades' }}</span>
         </div>
         <div class="ml-stat">
             <span class="ml-stat-value">
                 {{ summary.indicators_updated }}/{{ summary.total_indicators }}
             </span>
-            <span class="ml-stat-label">Indicadores</span>
+            <span class="ml-stat-label">{{ _t('ml.indicators') if _t else 'Indicadores' }}</span>
         </div>
         {% if summary.average_completion is not none %}
         <div class="ml-stat ml-stat-highlight">
             <span class="ml-stat-value">{{ "%.1f"|format(summary.average_completion) }}%</span>
-            <span class="ml-stat-label">Avance Medio</span>
+            <span class="ml-stat-label">{{ _t('ml.average_progress') if _t else 'Avance Medio' }}</span>
         </div>
         {% endif %}
     </div>
@@ -38,15 +39,15 @@
     <div class="ml-progress-legend">
         <span class="legend-item">
             <span class="legend-dot dot-completed"></span>
-            Completadas: {{ summary.activities_completed }}
+            {{ _t('ml.completed') if _t else 'Completadas' }}: {{ summary.activities_completed }}
         </span>
         <span class="legend-item">
             <span class="legend-dot dot-progress"></span>
-            En curso: {{ summary.activities_in_progress }}
+            {{ _t('ml.in_progress') if _t else 'En curso' }}: {{ summary.activities_in_progress }}
         </span>
         <span class="legend-item">
             <span class="legend-dot dot-pending"></span>
-            Pendientes: {{ summary.activities_pending }}
+            {{ _t('ml.pending') if _t else 'Pendientes' }}: {{ summary.activities_pending }}
         </span>
     </div>
     {% endif %}

@@ -1,44 +1,59 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="{{ lang }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Acceso Contraparte - CooperApp</title>
+    <title>{{ t('login.title') }}</title>
     <link rel="stylesheet" href="/static/css/main.css">
 </head>
 <body class="auth-body">
     <div class="auth-container">
         <div class="auth-card">
             <div class="auth-logo">
-                <span class="logo">🌍</span>
+                <span class="logo"><i data-lucide="globe"></i></span>
                 <h1>CooperApp</h1>
-                <p class="auth-subtitle">Portal de Contraparte</p>
+                <p class="auth-subtitle">{{ t('login.subtitle') }}</p>
             </div>
 
             {% if error == 'empty' %}
-            <div class="alert alert-danger">Introduce un codigo de proyecto.</div>
+            <div class="alert alert-danger">{{ t('login.error_empty') }}</div>
             {% elif error == 'invalid' %}
-            <div class="alert alert-danger">Codigo de proyecto no valido o el proyecto no esta en ejecucion.</div>
+            <div class="alert alert-danger">{{ t('login.error_invalid') }}</div>
             {% endif %}
 
             <form method="post" action="/contraparte/login" class="auth-form">
                 <div class="form-group">
-                    <label for="code">Codigo de Proyecto</label>
-                    <input type="text" id="code" name="code" placeholder="Ej: PRY-2024-001" required
+                    <label for="code">{{ t('login.code_label') }}</label>
+                    <input type="text" id="code" name="code" placeholder="{{ t('login.code_placeholder') }}" required
                            class="form-control" autofocus>
-                    <small class="form-help">Introduce el codigo contable del proyecto para acceder.</small>
+                    <small class="form-help">{{ t('login.code_help') }}</small>
                 </div>
-                <button type="submit" class="btn btn-primary btn-block">Acceder al Portal</button>
+                <div class="form-group">
+                    <label for="language">{{ t('login.language') }}</label>
+                    <select id="language" name="language" class="form-control">
+                        <option value="es" {% if lang == 'es' %}selected{% endif %}>Espanol</option>
+                        <option value="fr" {% if lang == 'fr' %}selected{% endif %}>Francais</option>
+                        <option value="en" {% if lang == 'en' %}selected{% endif %}>English</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">{{ t('login.submit') }}</button>
             </form>
 
             <div class="auth-divider">
-                <span>o</span>
+                <span>{{ t('login.or') }}</span>
             </div>
 
             <a href="/login" class="btn btn-outline">
-                Acceso interno (Microsoft)
+                {{ t('login.internal_access') }}
             </a>
         </div>
     </div>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    <script>
+        lucide.createIcons();
+        document.getElementById('language').addEventListener('change', function() {
+            window.location.href = '/contraparte/login?lang=' + this.value;
+        });
+    </script>
 </body>
 </html>
