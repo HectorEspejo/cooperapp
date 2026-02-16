@@ -18,7 +18,8 @@
                 name="objetivo_general"
                 rows="3"
                 placeholder="{{ _t('ml.describe_general_objective') if _t else 'Describa el objetivo general del proyecto...' }}"
-            >{{ framework.objetivo_general if framework and framework.objetivo_general else '' }}</textarea>
+                {% if readonly is defined and readonly %}disabled{% endif %}
+            >{{ tc('logical_framework', framework.id, 'objetivo_general', framework.objetivo_general) if tc is defined and framework and framework.objetivo_general else (framework.objetivo_general if framework and framework.objetivo_general else '') }}</textarea>
             <div class="form-actions-inline">
                 <button type="submit" class="btn btn-sm btn-primary">{{ _t('ml.save') if _t else 'Guardar' }}</button>
             </div>

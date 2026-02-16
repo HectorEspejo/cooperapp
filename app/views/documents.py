@@ -1,17 +1,26 @@
-from fastapi import APIRouter, Depends, Request, HTTPException, UploadFile, File, Form, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, Request, HTTPException, UploadFile, File, Form, Query
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-from app.database import get_db
+from app.database import get_db, SessionLocal
 from app.models.document import CategoriaDocumento, CATEGORIA_NOMBRES
 from app.models.user import User
 from app.services.document_service import DocumentService
 from app.services.project_service import ProjectService
+from app.services.translation_service import TranslationService
 from app.schemas.document import DocumentCreate, DocumentFilters
 from app.auth.dependencies import get_current_user, require_permission
 from app.auth.permissions import Permiso
 from app.services.audit_service import AuditService
 from app.models.audit_log import ActorType, AccionAuditoria
+
+
+def _trigger_translation_bg(entity_type: str, entity_id: int, fields_data: dict):
+    db = SessionLocal()
+    try:
+        TranslationService(db).translate_entity(entity_type, entity_id, fields_data)
+    finally:
+        db.close()
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
@@ -95,6 +104,7 @@ def documents_table(
 async def upload_document(
     request: Request,
     project_id: int,
+    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     categoria: CategoriaDocumento = Form(...),
     descripcion: str | None = Form(None),
@@ -127,6 +137,12 @@ async def upload_document(
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+    if document and descripcion:
+        background_tasks.add_task(
+            _trigger_translation_bg, "document", document.id,
+            {"descripcion": descripcion},
+        )
 
     # Return updated tab content
     documents = document_service.get_project_documents(project_id)

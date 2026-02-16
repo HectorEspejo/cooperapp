@@ -1,12 +1,13 @@
-from fastapi import APIRouter, Depends, Request, Form, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, Request, Form, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from datetime import date
-from app.database import get_db
+from app.database import get_db, SessionLocal
 from app.models.user import User
 from app.services.logical_framework_service import LogicalFrameworkService
 from app.services.project_service import ProjectService
+from app.services.translation_service import TranslationService
 from app.models.logical_framework import EstadoActividad
 from app.schemas.logical_framework import (
     LogicalFrameworkUpdate,
@@ -19,6 +20,14 @@ from app.auth.dependencies import get_current_user, require_permission
 from app.auth.permissions import Permiso
 from app.services.audit_service import AuditService
 from app.models.audit_log import ActorType, AccionAuditoria
+
+
+def _trigger_translation_bg(entity_type: str, entity_id: int, fields_data: dict):
+    db = SessionLocal()
+    try:
+        TranslationService(db).translate_entity(entity_type, entity_id, fields_data)
+    finally:
+        db.close()
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
@@ -68,6 +77,7 @@ def marco_logico_tab(
 def update_objetivo_general(
     request: Request,
     project_id: int,
+    background_tasks: BackgroundTasks,
     user: User = Depends(require_permission(Permiso.marco_editar)),
     objetivo_general: str = Form(""),
     service: LogicalFrameworkService = Depends(get_service),
@@ -98,6 +108,12 @@ def update_objetivo_general(
 
     framework = service.get_framework_by_project(project_id)
     summary = service.get_framework_summary(project_id)
+
+    if framework and objetivo_general:
+        background_tasks.add_task(
+            _trigger_translation_bg, "logical_framework", framework.id,
+            {"objetivo_general": objetivo_general},
+        )
 
     return templates.TemplateResponse(
         "partials/projects/marco_logico_tab.html",
@@ -189,6 +205,7 @@ def get_objective_form(
 def add_objective(
     request: Request,
     project_id: int,
+    background_tasks: BackgroundTasks,
     user: User = Depends(require_permission(Permiso.marco_editar)),
     numero: int = Form(...),
     descripcion: str = Form(...),
@@ -201,7 +218,7 @@ def add_objective(
         raise HTTPException(status_code=404, detail="Proyecto no encontrado")
 
     data = SpecificObjectiveCreate(numero=numero, descripcion=descripcion)
-    service.add_objective(project_id, data)
+    objective = service.add_objective(project_id, data)
 
     # Audit log
     audit = AuditService(service.db)
@@ -217,6 +234,12 @@ def add_objective(
         ip_address=request.client.host if request.client else None,
         project_id=project_id,
     )
+
+    if objective:
+        background_tasks.add_task(
+            _trigger_translation_bg, "specific_objective", objective.id,
+            {"descripcion": descripcion},
+        )
 
     framework = service.get_framework_by_project(project_id)
     summary = service.get_framework_summary(project_id)
@@ -237,6 +260,7 @@ def add_objective(
 async def update_objective(
     request: Request,
     objective_id: int,
+    background_tasks: BackgroundTasks,
     user: User = Depends(require_permission(Permiso.marco_editar)),
     service: LogicalFrameworkService = Depends(get_service),
     project_service: ProjectService = Depends(get_project_service)
@@ -272,6 +296,12 @@ async def update_objective(
         detalle=None,
         ip_address=request.client.host if request.client else None,
     )
+
+    if descripcion:
+        background_tasks.add_task(
+            _trigger_translation_bg, "specific_objective", objective_id,
+            {"descripcion": descripcion},
+        )
 
     # Get project_id from objective's framework
     objective = service.get_objective(objective_id)
@@ -382,6 +412,7 @@ def get_result_form(
 def add_result(
     request: Request,
     objective_id: int,
+    background_tasks: BackgroundTasks,
     user: User = Depends(require_permission(Permiso.marco_editar)),
     numero: str = Form(...),
     descripcion: str = Form(...),
@@ -394,7 +425,7 @@ def add_result(
         raise HTTPException(status_code=404, detail="Objetivo no encontrado")
 
     data = ResultCreate(numero=numero, descripcion=descripcion)
-    service.add_result(objective_id, data)
+    result = service.add_result(objective_id, data)
 
     project_id = objective.framework.project_id
 
@@ -412,6 +443,13 @@ def add_result(
         ip_address=request.client.host if request.client else None,
         project_id=project_id,
     )
+
+    if result:
+        background_tasks.add_task(
+            _trigger_translation_bg, "result", result.id,
+            {"descripcion": descripcion},
+        )
+
     framework = service.get_framework_by_project(project_id)
     project = project_service.get_by_id(project_id)
     summary = service.get_framework_summary(project_id)
@@ -432,6 +470,7 @@ def add_result(
 async def update_result(
     request: Request,
     result_id: int,
+    background_tasks: BackgroundTasks,
     user: User = Depends(require_permission(Permiso.marco_editar)),
     service: LogicalFrameworkService = Depends(get_service),
     project_service: ProjectService = Depends(get_project_service)
@@ -464,6 +503,12 @@ async def update_result(
         detalle=None,
         ip_address=request.client.host if request.client else None,
     )
+
+    if data.descripcion:
+        background_tasks.add_task(
+            _trigger_translation_bg, "result", result_id,
+            {"descripcion": data.descripcion},
+        )
 
     result = service.get_result(result_id)
     project_id = result.objective.framework.project_id
@@ -574,6 +619,7 @@ def get_activity_form(
 def add_activity(
     request: Request,
     result_id: int,
+    background_tasks: BackgroundTasks,
     user: User = Depends(require_permission(Permiso.marco_editar)),
     numero: str = Form(...),
     descripcion: str = Form(...),
@@ -593,7 +639,7 @@ def add_activity(
         fecha_inicio_prevista=fecha_inicio_prevista,
         fecha_fin_prevista=fecha_fin_prevista
     )
-    service.add_activity(result_id, data)
+    activity = service.add_activity(result_id, data)
 
     project_id = result.objective.framework.project_id
 
@@ -611,6 +657,13 @@ def add_activity(
         ip_address=request.client.host if request.client else None,
         project_id=project_id,
     )
+
+    if activity:
+        background_tasks.add_task(
+            _trigger_translation_bg, "activity", activity.id,
+            {"descripcion": descripcion},
+        )
+
     framework = service.get_framework_by_project(project_id)
     project = project_service.get_by_id(project_id)
     summary = service.get_framework_summary(project_id)
@@ -631,6 +684,7 @@ def add_activity(
 async def update_activity(
     request: Request,
     activity_id: int,
+    background_tasks: BackgroundTasks,
     user: User = Depends(require_permission(Permiso.marco_editar)),
     service: LogicalFrameworkService = Depends(get_service),
     project_service: ProjectService = Depends(get_project_service)
@@ -677,6 +731,12 @@ async def update_activity(
         ip_address=request.client.host if request.client else None,
         project_id=project_id,
     )
+
+    if data.descripcion:
+        background_tasks.add_task(
+            _trigger_translation_bg, "activity", activity_id,
+            {"descripcion": data.descripcion},
+        )
 
     framework = service.get_framework_by_project(project_id)
     project = project_service.get_by_id(project_id)
@@ -828,6 +888,7 @@ def get_indicator_form(
 async def create_indicator(
     request: Request,
     project_id: int,
+    background_tasks: BackgroundTasks,
     user: User = Depends(require_permission(Permiso.marco_editar)),
     service: LogicalFrameworkService = Depends(get_service),
     project_service: ProjectService = Depends(get_project_service)
@@ -858,7 +919,7 @@ async def create_indicator(
         valor_meta=form_data.get("valor_meta") or None,
         valor_actual=form_data.get("valor_actual") or None,
     )
-    service.create_indicator(data)
+    indicator = service.create_indicator(data)
 
     # Audit log
     audit = AuditService(service.db)
@@ -874,6 +935,16 @@ async def create_indicator(
         ip_address=request.client.host if request.client else None,
         project_id=project_id,
     )
+
+    if indicator:
+        fields = {"descripcion": data.descripcion or ""}
+        if data.unidad_medida:
+            fields["unidad_medida"] = data.unidad_medida
+        if data.fuente_verificacion:
+            fields["fuente_verificacion"] = data.fuente_verificacion
+        background_tasks.add_task(
+            _trigger_translation_bg, "indicator", indicator.id, fields,
+        )
 
     framework = service.get_framework_by_project(project_id)
     project = project_service.get_by_id(project_id)
@@ -922,6 +993,7 @@ def get_indicator_edit_form(
 async def update_indicator(
     request: Request,
     indicator_id: int,
+    background_tasks: BackgroundTasks,
     user: User = Depends(require_permission(Permiso.marco_editar)),
     service: LogicalFrameworkService = Depends(get_service),
     project_service: ProjectService = Depends(get_project_service)
@@ -959,6 +1031,19 @@ async def update_indicator(
         ip_address=request.client.host if request.client else None,
         project_id=project_id,
     )
+
+    fields = {}
+    if data.descripcion:
+        fields["descripcion"] = data.descripcion
+    if data.unidad_medida:
+        fields["unidad_medida"] = data.unidad_medida
+    if data.fuente_verificacion:
+        fields["fuente_verificacion"] = data.fuente_verificacion
+    if fields:
+        background_tasks.add_task(
+            _trigger_translation_bg, "indicator", indicator_id, fields,
+        )
+
     framework = service.get_framework_by_project(project_id)
     project = project_service.get_by_id(project_id)
     summary = service.get_framework_summary(project_id)
@@ -1000,6 +1085,7 @@ def get_indicator_update_form(
 def update_indicator_value(
     request: Request,
     indicator_id: int,
+    background_tasks: BackgroundTasks,
     user: User = Depends(require_permission(Permiso.marco_editar)),
     valor_nuevo: str = Form(...),
     observaciones: str = Form(""),

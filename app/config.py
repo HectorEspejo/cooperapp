@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     app_url: str = "http://localhost:8000"
     session_secret_key: str = "change-me-in-production"
     acme_email: str = ""
+    openrouter_api_key: str = ""
+    openrouter_model: str = "google/gemini-3-flash-preview"
 
     class Config:
         env_file = ".env"

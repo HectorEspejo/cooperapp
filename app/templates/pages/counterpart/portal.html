@@ -5,8 +5,8 @@
 {% block content %}
 <div class="page-header">
     <div>
-        <h1>{{ project.titulo }}</h1>
-        <p class="text-muted">{{ project.codigo_contable }} &middot; {{ project.pais }}</p>
+        <h1>{{ tc('project', project.id, 'titulo', project.titulo) if tc is defined else project.titulo }}</h1>
+        <p class="text-muted">{{ project.codigo_contable }} &middot; {{ tc('project', project.id, 'pais', project.pais) if tc is defined else project.pais }}</p>
     </div>
 </div>
 

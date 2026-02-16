@@ -8,7 +8,7 @@
                 <i data-lucide="chevron-down" class="toggle-icon"></i>
             </button>
             <span class="ml-node-label">OE{{ objective.numero }}</span>
-            <span class="ml-node-text">{{ objective.descripcion }}</span>
+            <span class="ml-node-text">{{ tc('specific_objective', objective.id, 'descripcion', objective.descripcion) if tc is defined else objective.descripcion }}</span>
             <div class="ml-node-actions">
                 <button
                     class="btn btn-icon"

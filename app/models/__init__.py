@@ -15,6 +15,7 @@ from app.models.report import Report, TipoInforme, TIPO_INFORME_NOMBRES
 from app.models.user import User, Rol, user_project
 from app.models.counterpart_session import CounterpartSession
 from app.models.audit_log import AuditLog, ActorType, AccionAuditoria
+from app.models.translation_cache import TranslationCache
 
 __all__ = [
     "Project", "Plazo", "ODSObjetivo", "EstadoProyecto", "TipoProyecto", "Financiador", "ODS", "ODS_NOMBRES",
@@ -30,4 +31,5 @@ __all__ = [
     "User", "Rol", "user_project",
     "CounterpartSession",
     "AuditLog", "ActorType", "AccionAuditoria",
+    "TranslationCache",
 ]

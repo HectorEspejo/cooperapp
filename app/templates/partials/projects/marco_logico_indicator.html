@@ -2,7 +2,7 @@
 <div class="ml-indicator-card" data-indicator-id="{{ indicator.id }}">
     <div class="ml-indicator-header">
         <span class="ml-indicator-code">{{ indicator.codigo }}</span>
-        <span class="ml-indicator-desc">{{ indicator.descripcion }}</span>
+        <span class="ml-indicator-desc">{{ tc('indicator', indicator.id, 'descripcion', indicator.descripcion) if tc is defined else indicator.descripcion }}</span>
         <div class="ml-indicator-actions">
             <button
                 class="btn btn-icon btn-sm {% if not indicator.verification_sources %}btn-alert{% endif %}"
@@ -90,10 +90,10 @@
         {% if indicator.unidad_medida or indicator.fuente_verificacion %}
         <div class="ml-indicator-meta">
             {% if indicator.unidad_medida %}
-            <span class="ml-meta-item" title="{{ _t('ml.unit') if _t else 'Unidad de medida' }}"><i data-lucide="ruler"></i> {{ indicator.unidad_medida }}</span>
+            <span class="ml-meta-item" title="{{ _t('ml.unit') if _t else 'Unidad de medida' }}"><i data-lucide="ruler"></i> {{ tc('indicator', indicator.id, 'unidad_medida', indicator.unidad_medida) if tc is defined else indicator.unidad_medida }}</span>
             {% endif %}
             {% if indicator.fuente_verificacion %}
-            <span class="ml-meta-item" title="{{ _t('ml.verification_source') if _t else 'Fuente de verificacion' }}"><i data-lucide="clipboard-list"></i> {{ indicator.fuente_verificacion|truncate(30) }}</span>
+            <span class="ml-meta-item" title="{{ _t('ml.verification_source') if _t else 'Fuente de verificacion' }}"><i data-lucide="clipboard-list"></i> {{ (tc('indicator', indicator.id, 'fuente_verificacion', indicator.fuente_verificacion) if tc is defined else indicator.fuente_verificacion)|truncate(30) }}</span>
             {% endif %}
         </div>
         {% endif %}

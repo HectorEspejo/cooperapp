@@ -5,7 +5,7 @@
             <i data-lucide="chevron-down" class="toggle-icon"></i>
         </button>
         <span class="ml-node-label ml-activity-label">{{ activity.numero }}</span>
-        <span class="ml-node-text">{{ activity.descripcion }}</span>
+        <span class="ml-node-text">{{ tc('activity', activity.id, 'descripcion', activity.descripcion) if tc is defined else activity.descripcion }}</span>
 
         <!-- Activity Status -->
         <div class="ml-activity-status">

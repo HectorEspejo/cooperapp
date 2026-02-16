@@ -38,7 +38,7 @@
                             {{ doc.original_filename|truncate(35) }}
                         </span>
                         {% if doc.descripcion %}
-                        <span class="doc-description">{{ doc.descripcion|truncate(50) }}</span>
+                        <span class="doc-description">{{ (tc('document', doc.id, 'descripcion', doc.descripcion) if tc is defined else doc.descripcion)|truncate(50) }}</span>
                         {% endif %}
                     </div>
                 </td>

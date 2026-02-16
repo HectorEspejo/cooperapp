@@ -1,19 +1,28 @@
-from fastapi import APIRouter, Depends, Request, Form, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, Request, Form, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from decimal import Decimal
 from datetime import date, datetime
 from typing import List
-from app.database import get_db
+from app.database import get_db, SessionLocal
 from app.models.project import EstadoProyecto, TipoProyecto, Financiador
 from app.models.user import User, Rol
 from app.schemas.project import ProjectCreate, ProjectUpdate, PlazoCreate
 from app.services.project_service import ProjectService
+from app.services.translation_service import TranslationService
 from app.auth.dependencies import get_current_user, require_permission, check_project_access
 from app.auth.permissions import Permiso, user_has_permission
 from app.services.audit_service import AuditService
 from app.models.audit_log import ActorType, AccionAuditoria
+
+
+def _trigger_translation_bg(entity_type: str, entity_id: int, fields_data: dict):
+    db = SessionLocal()
+    try:
+        TranslationService(db).translate_entity(entity_type, entity_id, fields_data)
+    finally:
+        db.close()
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
@@ -109,6 +118,7 @@ def projects_new(
 @router.post("/new", response_class=HTMLResponse)
 async def projects_create(
     request: Request,
+    background_tasks: BackgroundTasks,
     user: User = Depends(require_permission(Permiso.proyecto_crear)),
     service: ProjectService = Depends(get_service),
 ):
@@ -192,6 +202,11 @@ async def projects_create(
         project_id=project.id,
     )
 
+    background_tasks.add_task(
+        _trigger_translation_bg, "project", project.id,
+        {"titulo": project.titulo, "sector": project.sector or "", "pais": project.pais or ""},
+    )
+
     return RedirectResponse(url=f"/projects/{project.id}", status_code=303)
 
 
@@ -269,6 +284,7 @@ def projects_edit(
 async def projects_update(
     request: Request,
     project_id: int,
+    background_tasks: BackgroundTasks,
     user: User = Depends(require_permission(Permiso.proyecto_editar)),
     service: ProjectService = Depends(get_service),
 ):
@@ -338,6 +354,11 @@ async def projects_update(
         detalle={"titulo": titulo},
         ip_address=request.client.host if request.client else None,
         project_id=project_id,
+    )
+
+    background_tasks.add_task(
+        _trigger_translation_bg, "project", project_id,
+        {"titulo": titulo, "sector": sector or "", "pais": pais or ""},
     )
 
     return RedirectResponse(url=f"/projects/{project_id}", status_code=303)
