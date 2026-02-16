@@ -28,7 +28,6 @@ ENV/
 # Environment variables
 .env
 .env.*
-!.env.production.example
 
 # Database
 *.db
