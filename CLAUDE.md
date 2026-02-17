@@ -1,2 +1,2 @@
 - Escribe SIEMPRE en español
-- Cuando termines de implementar el plan, revisa el checklist correspondiente, el cual será un archivo markdown con formato 'cooperapp-fase[numero de fase]-checklist.md'
+- Si es necesario realizar alguna migracion de la base de datos en produccion, indica en tu mensaje final como hacerlo

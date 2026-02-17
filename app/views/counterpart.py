@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, Request, HTTPException
+import threading
+from fastapi import APIRouter, BackgroundTasks, Depends, Request, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
@@ -8,7 +9,7 @@ from app.auth.dependencies import get_current_counterpart
 from app.services.project_service import ProjectService
 from app.services.logical_framework_service import LogicalFrameworkService
 from app.services.document_service import DocumentService
-from app.services.translation_service import TranslationService
+from app.services.translation_service import TranslationService, _retry_pending_in_background
 from app.models.logical_framework import EstadoActividad
 from app.models.document import CategoriaDocumento, CATEGORIA_NOMBRES
 from app.i18n import get_translator
@@ -45,25 +46,79 @@ CATEGORIA_NOMBRES_I18N = {
 
 
 def _build_content_translator(db: Session, language: str):
+    """Construye tc() con traduccion lazy on-demand + retry en background.
+
+    - Si hay cache: devuelve la traduccion cacheada.
+    - Si no hay cache: intenta traducir on-demand (timeout corto 10s).
+    - Si on-demand falla: devuelve el original y acumula el campo en
+      `pending_retries` para reintentarlo en un thread background.
+    """
     if language == "es":
         def tc(entity_type, entity_id, field_name, original_text):
             return original_text or ""
+        tc.pending_retries = []
         return tc
 
     svc = TranslationService(db)
     cache = {}
+    pending_retries = []
 
     def tc(entity_type, entity_id, field_name, original_text):
         if not original_text:
             return ""
         key = (entity_type, entity_id, field_name)
-        if key not in cache:
-            cache[key] = svc.get_translated_text(
-                entity_type, entity_id, field_name, original_text, language
-            )
-        return cache[key]
+        if key in cache:
+            return cache[key]
 
+        # Buscar en DB
+        result = svc.get_translated_text(
+            entity_type, entity_id, field_name, original_text, language
+        )
+        if result != original_text:
+            # Hay traduccion en cache
+            cache[key] = result
+            return result
+
+        # No hay cache: intentar on-demand
+        translated = svc.translate_on_demand(
+            entity_type, entity_id, field_name, original_text, language
+        )
+        if translated:
+            cache[key] = translated
+            return translated
+
+        # Fallo on-demand: acumular para retry background
+        pending_retries.append({
+            "entity_type": entity_type,
+            "entity_id": entity_id,
+            "fields": {field_name: original_text},
+        })
+        cache[key] = original_text
+        return original_text
+
+    tc.pending_retries = pending_retries
     return tc
+
+
+def _flush_pending_retries(tc):
+    """Lanza un thread para reintentar las traducciones que fallaron on-demand."""
+    pending = getattr(tc, "pending_retries", [])
+    if not pending:
+        return
+    # Agrupar por entidad para hacer menos llamadas API
+    grouped = {}
+    for item in pending:
+        key = (item["entity_type"], item["entity_id"])
+        if key not in grouped:
+            grouped[key] = {"entity_type": item["entity_type"], "entity_id": item["entity_id"], "fields": {}}
+        grouped[key]["fields"].update(item["fields"])
+
+    thread = threading.Thread(
+        target=_retry_pending_in_background,
+        args=(list(grouped.values()),),
+        daemon=True,
+    )
+    thread.start()
 
 
 def get_project_service(db: Session = Depends(get_db)) -> ProjectService:
@@ -96,7 +151,7 @@ def counterpart_portal(
     lang = session.language or "es"
     t = get_translator(lang)
     tc = _build_content_translator(db, lang)
-    return templates.TemplateResponse(
+    response = templates.TemplateResponse(
         "pages/counterpart/portal.html",
         {
             "request": request,
@@ -107,6 +162,8 @@ def counterpart_portal(
             "tc": tc,
         },
     )
+    _flush_pending_retries(tc)
+    return response
 
 
 @router.get("/contraparte/{project_id}/marco-logico", response_class=HTMLResponse)
@@ -131,7 +188,7 @@ def counterpart_marco_logico(
     lang = session.language or "es"
     t = get_translator(lang)
     tc = _build_content_translator(db, lang)
-    return templates.TemplateResponse(
+    response = templates.TemplateResponse(
         "partials/projects/marco_logico_tab.html",
         {
             "request": request,
@@ -145,6 +202,8 @@ def counterpart_marco_logico(
             "tc": tc,
         },
     )
+    _flush_pending_retries(tc)
+    return response
 
 
 @router.get("/contraparte/{project_id}/documentos", response_class=HTMLResponse)
@@ -170,7 +229,7 @@ def counterpart_documents(
     t = get_translator(lang)
     tc = _build_content_translator(db, lang)
     cat_nombres = CATEGORIA_NOMBRES_I18N.get(lang, CATEGORIA_NOMBRES)
-    return templates.TemplateResponse(
+    response = templates.TemplateResponse(
         "partials/projects/documents_tab.html",
         {
             "request": request,
@@ -185,6 +244,8 @@ def counterpart_documents(
             "tc": tc,
         },
     )
+    _flush_pending_retries(tc)
+    return response
 
 
 @router.get("/contraparte/session-timer", response_class=HTMLResponse)
