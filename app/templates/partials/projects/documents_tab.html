@@ -1,4 +1,5 @@
 {% set _t = t if t is defined else None %}
+{% set _counterpart = is_counterpart if is_counterpart is defined else false %}
 <div class="documents-container" id="documents-content">
     <!-- Summary Stats -->
     <div class="documents-summary">
@@ -33,12 +34,12 @@
     </div>
 
     <!-- Upload Zone -->
-    {% if user and user.rol and user.rol.value in ['director', 'coordinador', 'tecnico_sede', 'gestor_pais'] %}
+    {% if (user and user.rol and user.rol.value in ['director', 'coordinador', 'tecnico_sede', 'gestor_pais']) or _counterpart %}
     <div class="documents-upload-section">
         <form
             id="document-upload-form"
             class="upload-form"
-            hx-post="/projects/{{ project.id }}/documents"
+            hx-post="{% if _counterpart %}/contraparte/{{ project.id }}/documents{% else %}/projects/{{ project.id }}/documents{% endif %}"
             hx-target="#documents-content"
             hx-swap="innerHTML"
             hx-encoding="multipart/form-data"
@@ -79,6 +80,7 @@
     {% endif %}
 
     <!-- Filters Bar -->
+    {% if not _counterpart %}
     <div class="documents-filters">
         <form
             class="filters-form"
@@ -113,6 +115,7 @@
             </a>
         </div>
     </div>
+    {% endif %}
 
     <!-- Documents Table -->
     <div id="documents-table-container">

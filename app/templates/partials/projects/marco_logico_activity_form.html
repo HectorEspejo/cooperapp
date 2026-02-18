@@ -1,14 +1,20 @@
+{% set _t = t if t is defined else None %}
+{% set _counterpart = is_counterpart if is_counterpart is defined else false %}
 <div class="modal-overlay" onclick="closeIndicatorModal(event)">
     <div class="ml-modal" onclick="event.stopPropagation()">
         <div class="modal-header">
-            <h3>{% if mode == 'edit' %}Editar Actividad{% else %}Nueva Actividad{% endif %}</h3>
+            <h3>{% if mode == 'edit' %}{{ _t('ml.edit_activity') if _t else 'Editar Actividad' }}{% else %}{{ _t('ml.new_activity') if _t else 'Nueva Actividad' }}{% endif %}</h3>
             <button class="btn-close" onclick="closeIndicatorModal()">&times;</button>
         </div>
 
         <form
             class="modal-body"
             {% if mode == 'edit' %}
+                {% if _counterpart %}
+            hx-put="/contraparte/{{ project_id }}/activities/{{ activity.id }}"
+                {% else %}
             hx-put="/projects/activities/{{ activity.id }}"
+                {% endif %}
             {% else %}
             hx-post="/projects/results/{{ result_id }}/activities"
             {% endif %}
@@ -18,7 +24,7 @@
         >
             <div class="form-grid">
                 <div class="form-group" style="max-width: 120px;">
-                    <label>Codigo</label>
+                    <label>{{ _t('ml.code') if _t else 'Codigo' }}</label>
                     <input
                         type="text"
                         name="numero"
@@ -29,7 +35,7 @@
                 </div>
                 {% if mode == 'edit' %}
                 <div class="form-group">
-                    <label>Estado</label>
+                    <label>{{ _t('ml.status') if _t else 'Estado' }}</label>
                     <select name="estado">
                         {% for estado in estados_actividad %}
                         <option value="{{ estado.value }}" {% if activity and activity.estado == estado %}selected{% endif %}>
@@ -42,20 +48,20 @@
             </div>
 
             <div class="form-group">
-                <label>Descripcion</label>
+                <label>{{ _t('ml.description') if _t else 'Descripcion' }}</label>
                 <textarea
                     name="descripcion"
                     rows="2"
-                    placeholder="Descripcion de la actividad..."
+                    placeholder="{{ _t('ml.activity_description_placeholder') if _t else 'Descripcion de la actividad...' }}"
                     required
                 >{{ activity.descripcion if activity else '' }}</textarea>
             </div>
 
             <div class="form-section">
-                <h4>Fechas Previstas</h4>
+                <h4>{{ _t('ml.planned_dates') if _t else 'Fechas Previstas' }}</h4>
                 <div class="form-grid">
                     <div class="form-group">
-                        <label>Inicio</label>
+                        <label>{{ _t('ml.start') if _t else 'Inicio' }}</label>
                         <input
                             type="date"
                             name="fecha_inicio_prevista"
@@ -63,7 +69,7 @@
                         >
                     </div>
                     <div class="form-group">
-                        <label>Fin</label>
+                        <label>{{ _t('ml.end') if _t else 'Fin' }}</label>
                         <input
                             type="date"
                             name="fecha_fin_prevista"
@@ -75,10 +81,10 @@
 
             {% if mode == 'edit' %}
             <div class="form-section">
-                <h4>Fechas Reales</h4>
+                <h4>{{ _t('ml.actual_dates') if _t else 'Fechas Reales' }}</h4>
                 <div class="form-grid">
                     <div class="form-group">
-                        <label>Inicio</label>
+                        <label>{{ _t('ml.start') if _t else 'Inicio' }}</label>
                         <input
                             type="date"
                             name="fecha_inicio_real"
@@ -86,7 +92,7 @@
                         >
                     </div>
                     <div class="form-group">
-                        <label>Fin</label>
+                        <label>{{ _t('ml.end') if _t else 'Fin' }}</label>
                         <input
                             type="date"
                             name="fecha_fin_real"
@@ -99,10 +105,10 @@
 
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" onclick="closeIndicatorModal()">
-                    Cancelar
+                    {{ _t('ml.cancel') if _t else 'Cancelar' }}
                 </button>
                 <button type="submit" class="btn btn-primary">
-                    {% if mode == 'edit' %}Guardar Cambios{% else %}Crear Actividad{% endif %}
+                    {% if mode == 'edit' %}{{ _t('ml.save_changes') if _t else 'Guardar Cambios' }}{% else %}{{ _t('ml.create_activity') if _t else 'Crear Actividad' }}{% endif %}
                 </button>
             </div>
         </form>

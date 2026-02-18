@@ -1,4 +1,5 @@
 {% set _t = t if t is defined else None %}
+{% set _counterpart = is_counterpart if is_counterpart is defined else false %}
 {% if framework and framework.specific_objectives %}
 <div class="ml-tree">
     {% for objective in framework.specific_objectives %}
@@ -9,6 +10,7 @@
             </button>
             <span class="ml-node-label">OE{{ objective.numero }}</span>
             <span class="ml-node-text">{{ tc('specific_objective', objective.id, 'descripcion', objective.descripcion) if tc is defined else objective.descripcion }}</span>
+            {% if not _counterpart %}
             <div class="ml-node-actions">
                 <button
                     class="btn btn-icon"
@@ -43,6 +45,7 @@
                     hx-confirm="{{ _t('ml.confirm_delete_objective') if _t else 'Eliminar este objetivo y todos sus elementos?' }}"
                 ><i data-lucide="x"></i></button>
             </div>
+            {% endif %}
         </div>
 
         <!-- Objective Indicators -->
@@ -66,7 +69,9 @@
 {% else %}
 <div class="ml-empty">
     <p>{{ _t('ml.no_objectives') if _t else 'No hay objetivos especificos definidos.' }}</p>
+    {% if not _counterpart %}
     <p class="text-muted">{{ _t('ml.click_add_objective') if _t else 'Haga clic en "+ Objetivo Especifico" para comenzar.' }}</p>
+    {% endif %}
 </div>
 {% endif %}
 

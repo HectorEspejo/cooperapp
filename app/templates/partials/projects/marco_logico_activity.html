@@ -1,4 +1,5 @@
 {% set _t = t if t is defined else None %}
+{% set _counterpart = is_counterpart if is_counterpart is defined else false %}
 <div class="ml-tree-node ml-activity" data-activity-id="{{ activity.id }}">
     <div class="ml-node-header ml-activity-header">
         <button class="ml-toggle" onclick="toggleNode(this)">
@@ -11,7 +12,7 @@
         <div class="ml-activity-status">
             <select
                 class="ml-status-select estado-{{ activity.estado.value }}"
-                hx-post="/projects/activities/{{ activity.id }}/status"
+                hx-post="{% if _counterpart %}/contraparte/{{ project.id }}/activities/{{ activity.id }}/status{% else %}/projects/activities/{{ activity.id }}/status{% endif %}"
                 hx-target="#marco-logico-content"
                 hx-swap="innerHTML"
                 hx-include="closest select"
@@ -44,6 +45,7 @@
         </div>
 
         <div class="ml-node-actions">
+            {% if not _counterpart %}
             <button
                 class="btn btn-icon {% if not activity.verification_sources and activity.estado.value == 'completada' %}btn-alert{% endif %}"
                 title="{{ _t('ml.verification_sources') if _t else 'Fuentes de verificacion' }}{% if not activity.verification_sources and activity.estado.value == 'completada' %} ({{ _t('ml.no_sources') if _t else 'sin fuentes' }}){% endif %}"
@@ -62,14 +64,16 @@
                 hx-swap="innerHTML"
                 onclick="document.getElementById('indicator-modal-container').classList.add('active')"
             >+I</button>
+            {% endif %}
             <button
                 class="btn btn-icon"
                 title="{{ _t('ml.edit_activity') if _t else 'Editar Actividad' }}"
-                hx-get="/projects/{{ project.id }}/marco-logico/activity-form?activity_id={{ activity.id }}"
+                hx-get="{% if _counterpart %}/contraparte/{{ project.id }}/marco-logico/activity-form?activity_id={{ activity.id }}{% else %}/projects/{{ project.id }}/marco-logico/activity-form?activity_id={{ activity.id }}{% endif %}"
                 hx-target="#indicator-modal-container"
                 hx-swap="innerHTML"
                 onclick="document.getElementById('indicator-modal-container').classList.add('active')"
             ><i data-lucide="pencil"></i></button>
+            {% if not _counterpart %}
             <button
                 class="btn btn-icon btn-danger"
                 title="{{ _t('ml.delete') if _t else 'Eliminar' }}"
@@ -78,6 +82,7 @@
                 hx-swap="innerHTML"
                 hx-confirm="{{ _t('ml.confirm_delete_activity') if _t else 'Eliminar esta actividad?' }}"
             ><i data-lucide="x"></i></button>
+            {% endif %}
         </div>
     </div>
 

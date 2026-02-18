@@ -1,4 +1,5 @@
 {% set _t = t if t is defined else None %}
+{% set _counterpart = is_counterpart if is_counterpart is defined else false %}
 <div class="ml-tree-node ml-result" data-result-id="{{ result.id }}">
     <div class="ml-node-header">
         <button class="ml-toggle" onclick="toggleNode(this)">
@@ -6,6 +7,7 @@
         </button>
         <span class="ml-node-label ml-result-label">{{ result.numero }}</span>
         <span class="ml-node-text">{{ tc('result', result.id, 'descripcion', result.descripcion) if tc is defined else result.descripcion }}</span>
+        {% if not _counterpart %}
         <div class="ml-node-actions">
             <button
                 class="btn btn-icon"
@@ -40,6 +42,7 @@
                 hx-confirm="{{ _t('ml.confirm_delete_result') if _t else 'Eliminar este resultado y todas sus actividades?' }}"
             ><i data-lucide="x"></i></button>
         </div>
+        {% endif %}
     </div>
 
     <!-- Result Indicators -->

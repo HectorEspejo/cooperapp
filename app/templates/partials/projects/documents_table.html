@@ -1,4 +1,5 @@
 {% set _t = t if t is defined else None %}
+{% set _counterpart = is_counterpart if is_counterpart is defined else false %}
 {% if documents %}
 <div class="table-container">
     <table class="documents-table">
@@ -16,14 +17,15 @@
         </thead>
         <tbody>
             {% for doc in documents %}
+            {% set _download_url = '/contraparte/' + project.id|string + '/documents/' + doc.id|string + '/download' if _counterpart else '/api/documents/' + doc.id|string + '/download' %}
             <tr class="document-row {% if doc.sellado %}sealed{% endif %}">
                 <td class="col-preview">
                     {% if doc.is_image %}
-                    <div class="doc-thumbnail" onclick="openDocumentPreview({{ doc.id }})">
-                        <img src="/api/documents/{{ doc.id }}/download" alt="{{ doc.original_filename }}">
+                    <div class="doc-thumbnail" {% if not _counterpart %}onclick="openDocumentPreview({{ doc.id }})"{% endif %}>
+                        <img src="{{ _download_url }}" alt="{{ doc.original_filename }}">
                     </div>
                     {% elif doc.is_pdf %}
-                    <div class="doc-thumbnail doc-pdf" onclick="openDocumentPreview({{ doc.id }})">
+                    <div class="doc-thumbnail doc-pdf" {% if not _counterpart %}onclick="openDocumentPreview({{ doc.id }})"{% endif %}>
                         <span><i data-lucide="file-text"></i></span>
                     </div>
                     {% else %}
@@ -78,11 +80,12 @@
                 <td class="col-actions">
                     <div class="action-buttons">
                         <a
-                            href="/api/documents/{{ doc.id }}/download"
+                            href="{{ _download_url }}"
                             class="btn btn-icon btn-sm"
                             title="{{ _t('docs.download') if _t else 'Descargar' }}"
                             download
                         ><i data-lucide="download"></i></a>
+                        {% if not _counterpart %}
                         {% if doc.is_image or doc.is_pdf %}
                         <button
                             class="btn btn-icon btn-sm"
@@ -110,6 +113,7 @@
                             hx-swap="innerHTML"
                             hx-confirm="{{ _t('docs.confirm_delete') if _t else 'Eliminar este documento?' }}"
                         ><i data-lucide="x"></i></button>
+                        {% endif %}
                         {% endif %}
                         {% endif %}
                     </div>

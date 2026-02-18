@@ -1,8 +1,10 @@
 {% set _t = t if t is defined else None %}
+{% set _counterpart = is_counterpart if is_counterpart is defined else false %}
 <div class="ml-indicator-card" data-indicator-id="{{ indicator.id }}">
     <div class="ml-indicator-header">
         <span class="ml-indicator-code">{{ indicator.codigo }}</span>
         <span class="ml-indicator-desc">{{ tc('indicator', indicator.id, 'descripcion', indicator.descripcion) if tc is defined else indicator.descripcion }}</span>
+        {% if not _counterpart %}
         <div class="ml-indicator-actions">
             <button
                 class="btn btn-icon btn-sm {% if not indicator.verification_sources %}btn-alert{% endif %}"
@@ -47,6 +49,7 @@
                 hx-confirm="{{ _t('ml.confirm_delete_indicator') if _t else 'Eliminar este indicador?' }}"
             ><i data-lucide="x"></i></button>
         </div>
+        {% endif %}
     </div>
 
     <div class="ml-indicator-body">

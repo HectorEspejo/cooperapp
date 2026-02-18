@@ -1,4 +1,5 @@
 {% set _t = t if t is defined else None %}
+{% set _counterpart = is_counterpart if is_counterpart is defined else false %}
 <div class="marco-logico-container" id="marco-logico-content">
     <!-- Summary Header -->
     {% include "partials/projects/marco_logico_summary.html" %}
@@ -18,11 +19,13 @@
                 name="objetivo_general"
                 rows="3"
                 placeholder="{{ _t('ml.describe_general_objective') if _t else 'Describa el objetivo general del proyecto...' }}"
-                {% if readonly is defined and readonly %}disabled{% endif %}
+                {% if (readonly is defined and readonly) or _counterpart %}disabled{% endif %}
             >{{ tc('logical_framework', framework.id, 'objetivo_general', framework.objetivo_general) if tc is defined and framework and framework.objetivo_general else (framework.objetivo_general if framework and framework.objetivo_general else '') }}</textarea>
+            {% if not _counterpart %}
             <div class="form-actions-inline">
                 <button type="submit" class="btn btn-sm btn-primary">{{ _t('ml.save') if _t else 'Guardar' }}</button>
             </div>
+            {% endif %}
         </form>
     </div>
 
@@ -31,6 +34,7 @@
     <div class="ml-section ml-indicators-section">
         <div class="ml-section-header">
             <h4>{{ _t('ml.general_objective_indicators') if _t else 'Indicadores del Objetivo General' }}</h4>
+            {% if not _counterpart %}
             <button
                 class="btn btn-sm btn-secondary"
                 hx-get="/projects/{{ project.id }}/marco-logico/indicator-form?framework_id={{ framework.id }}"
@@ -40,6 +44,7 @@
             >
                 {{ _t('ml.add_indicator') if _t else '+ Indicador' }}
             </button>
+            {% endif %}
         </div>
         <div class="ml-indicators-grid">
             {% for indicator in framework.indicators %}
@@ -55,6 +60,7 @@
     <div class="ml-section">
         <div class="ml-section-header">
             <h3>{{ _t('ml.framework_structure') if _t else 'Estructura del Marco Logico' }}</h3>
+            {% if not _counterpart %}
             <button
                 class="btn btn-sm btn-primary"
                 hx-get="/projects/{{ project.id }}/marco-logico/objective-form"
@@ -64,6 +70,7 @@
             >
                 {{ _t('ml.add_specific_objective') if _t else '+ Objetivo Especifico' }}
             </button>
+            {% endif %}
         </div>
 
         <!-- Tree -->
