@@ -88,7 +88,11 @@
 
 <script>
 function openTransferModal() {
-    document.getElementById('transfer-modal').style.display = 'flex';
+    var modal = document.getElementById('transfer-modal');
+    if (modal && modal.parentElement !== document.body) {
+        document.body.appendChild(modal);
+    }
+    modal.style.display = 'flex';
 }
 
 function closeTransferModal(event) {
@@ -107,7 +111,11 @@ document.addEventListener('keydown', function(e) {
 
 // Upload modal functions
 function openTransferUploadModal() {
-    document.getElementById('transfer-upload-modal').style.display = 'flex';
+    var modal = document.getElementById('transfer-upload-modal');
+    if (modal && modal.parentElement !== document.body) {
+        document.body.appendChild(modal);
+    }
+    modal.style.display = 'flex';
 }
 
 function closeTransferUploadModal(event) {

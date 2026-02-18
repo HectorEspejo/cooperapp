@@ -118,7 +118,11 @@
 
 <script>
 function openExpenseModal() {
-    document.getElementById('expense-modal').style.display = 'flex';
+    var modal = document.getElementById('expense-modal');
+    if (modal && modal.parentElement !== document.body) {
+        document.body.appendChild(modal);
+    }
+    modal.style.display = 'flex';
 }
 
 function closeExpenseModal(event) {
@@ -143,7 +147,11 @@ document.addEventListener('keydown', function(e) {
 
 // Upload modal functions
 function openExpenseUploadModal() {
-    document.getElementById('expense-upload-modal').style.display = 'flex';
+    var modal = document.getElementById('expense-upload-modal');
+    if (modal && modal.parentElement !== document.body) {
+        document.body.appendChild(modal);
+    }
+    modal.style.display = 'flex';
 }
 
 function closeExpenseUploadModal(event) {

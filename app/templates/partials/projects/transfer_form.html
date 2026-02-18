@@ -11,7 +11,9 @@
     hx-post="/projects/{{ project.id }}/transfers"
     {% endif %}
     hx-target="#transfers-content"
+    hx-select="#transfers-content"
     hx-swap="outerHTML"
+    hx-on::after-request="if(event.detail.successful) closeTransferModal()"
 >
     <div class="modal-body">
         <!-- Budget Info -->

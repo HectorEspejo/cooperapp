@@ -91,4 +91,16 @@ function closeVerificationModal() {
     document.getElementById('verification-modal-container').classList.remove('active');
     document.getElementById('verification-modal-container').innerHTML = '';
 }
+
+// Move modal containers to body when activated to escape .detail-card stacking context
+['indicator-modal-container', 'verification-modal-container'].forEach(function(id) {
+    var container = document.getElementById(id);
+    if (container) {
+        new MutationObserver(function() {
+            if (container.classList.contains('active') && container.parentElement !== document.body) {
+                document.body.appendChild(container);
+            }
+        }).observe(container, { attributes: true, attributeFilter: ['class'] });
+    }
+});
 </script>

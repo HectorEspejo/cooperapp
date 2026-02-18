@@ -2152,6 +2152,7 @@ a:hover {
     padding: 1rem 1.5rem;
     border-top: 1px solid var(--color-border);
     background-color: var(--color-bg);
+    border-radius: 0 0 var(--radius-xl) var(--radius-xl);
 }
 
 /* Expense Form Sections */
@@ -2498,9 +2499,12 @@ a:hover {
 
 /* Upload Modal */
 .upload-modal {
-    background-color: var(--color-white);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-lg);
+    background: var(--glass-bg-strong);
+    backdrop-filter: blur(var(--glass-blur-strong));
+    -webkit-backdrop-filter: blur(var(--glass-blur-strong));
+    border: 1px solid var(--glass-border-strong);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--glass-shadow-elevated);
     width: 100%;
     max-width: 500px;
 }
@@ -2659,9 +2663,12 @@ a:hover {
 
 /* Transfer Modal */
 .transfer-modal {
-    background-color: var(--color-white);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-lg);
+    background: var(--glass-bg-strong);
+    backdrop-filter: blur(var(--glass-blur-strong));
+    -webkit-backdrop-filter: blur(var(--glass-blur-strong));
+    border: 1px solid var(--glass-border-strong);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--glass-shadow-elevated);
     width: 100%;
     max-width: 700px;
     max-height: 90vh;
@@ -5118,6 +5125,8 @@ a:hover {
     .pagination { background-color: var(--color-white); }
     .modal-overlay { background-color: rgba(0, 0, 0, 0.5); }
     .expense-modal { background-color: var(--color-white); }
+    .transfer-modal { background-color: var(--color-white); }
+    .upload-modal { background-color: var(--color-white); }
     .notification { background-color: var(--color-text); }
     .upload-zone { background-color: var(--color-bg); }
     .ml-tree-node { background-color: var(--color-white); }

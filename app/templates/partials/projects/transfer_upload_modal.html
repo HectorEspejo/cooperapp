@@ -13,8 +13,10 @@
     <form
         hx-post="/projects/{{ project.id }}/transfers/{{ transfer.id }}/upload-{{ doc_type }}"
         hx-target="#transfers-content"
+        hx-select="#transfers-content"
         hx-swap="outerHTML"
         hx-encoding="multipart/form-data"
+        hx-on::after-request="if(event.detail.successful) closeTransferUploadModal()"
         class="modal-body"
     >
         <div class="upload-info">
@@ -61,18 +63,3 @@
     </form>
 </div>
 
-<script>
-function closeTransferUploadModal() {
-    const modal = document.getElementById('transfer-upload-modal');
-    if (modal) {
-        modal.style.display = 'none';
-    }
-}
-
-// Close modal on successful upload (handled by htmx swap)
-document.body.addEventListener('htmx:afterSwap', function(evt) {
-    if (evt.detail.target.id === 'transfers-content') {
-        closeTransferUploadModal();
-    }
-});
-</script>
