@@ -1,0 +1,64 @@
+{% if original_dates %}
+<div class="aplazamiento-original-dates">
+    <h4>Fechas Originales</h4>
+    <dl class="detail-list">
+        <dt>Fecha de Finalizacion</dt>
+        <dd>{{ original_dates.fecha_finalizacion.strftime('%d/%m/%Y') }}</dd>
+        {% if original_dates.fecha_justificacion %}
+        <dt>Fecha de Justificacion</dt>
+        <dd>{{ original_dates.fecha_justificacion.strftime('%d/%m/%Y') }}</dd>
+        {% endif %}
+    </dl>
+</div>
+{% endif %}
+
+{% if aplazamiento_history %}
+<div class="aplazamiento-history">
+    <h4>Historial de Aplazamientos</h4>
+    <div class="aplazamiento-timeline">
+        {% for a in aplazamiento_history %}
+        <div class="aplazamiento-timeline-item aplazamiento-{{ a.estado.value }}">
+            <div class="timeline-marker">
+                {% if a.estado.value == 'aprobado' %}
+                <i data-lucide="check-circle"></i>
+                {% elif a.estado.value == 'rechazado' %}
+                <i data-lucide="x-circle"></i>
+                {% else %}
+                <i data-lucide="clock"></i>
+                {% endif %}
+            </div>
+            <div class="timeline-content">
+                <div class="timeline-header">
+                    <span class="timeline-number">Aplazamiento #{{ a.numero_secuencial }}</span>
+                    <span class="aplazamiento-estado-badge aplazamiento-estado-{{ a.estado.value }}">
+                        {{ a.estado.value|title }}
+                    </span>
+                </div>
+                <div class="timeline-dates">
+                    <span>Finalizacion: {{ a.fecha_finalizacion_anterior.strftime('%d/%m/%Y') }} → {{ a.fecha_finalizacion_nueva.strftime('%d/%m/%Y') }}</span>
+                    {% if a.fecha_justificacion_anterior or a.fecha_justificacion_nueva %}
+                    <span>Justificacion: {{ a.fecha_justificacion_anterior.strftime('%d/%m/%Y') if a.fecha_justificacion_anterior else 'Sin fecha' }} → {{ a.fecha_justificacion_nueva.strftime('%d/%m/%Y') if a.fecha_justificacion_nueva else 'Sin fecha' }}</span>
+                    {% endif %}
+                </div>
+                <div class="timeline-meta">
+                    <span>Solicitado por {{ a.solicitante.nombre_completo }} el {{ a.created_at.strftime('%d/%m/%Y') }}</span>
+                    {% if a.resolved_at and a.aprobador %}
+                    <span>Resuelto por {{ a.aprobador.nombre_completo }} el {{ a.resolved_at.strftime('%d/%m/%Y') }}</span>
+                    {% endif %}
+                </div>
+                {% if a.motivo %}
+                <div class="timeline-motivo">
+                    <strong>Motivo:</strong> {{ a.motivo }}
+                </div>
+                {% endif %}
+                {% if a.motivo_rechazo %}
+                <div class="timeline-motivo timeline-motivo-rechazo">
+                    <strong>Motivo de rechazo:</strong> {{ a.motivo_rechazo }}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}

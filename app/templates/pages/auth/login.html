@@ -34,9 +34,15 @@
             {% endif %}
 
             {% if debug %}
-            <a href="/dev-login" class="btn btn-secondary btn-dev-login">
-                Acceso desarrollo (Director)
-            </a>
+            <div class="dev-login-section">
+                <p class="dev-login-label">Acceso desarrollo</p>
+                <div class="dev-login-grid">
+                    <a href="/dev-login/director" class="btn btn-secondary btn-dev-login">Director</a>
+                    <a href="/dev-login/coordinador" class="btn btn-secondary btn-dev-login">Coordinador</a>
+                    <a href="/dev-login/tecnico_sede" class="btn btn-secondary btn-dev-login">Tecnico Sede</a>
+                    <a href="/dev-login/gestor_pais" class="btn btn-secondary btn-dev-login">Gestor Pais</a>
+                </div>
+            </div>
             {% endif %}
 
             <div class="auth-divider">

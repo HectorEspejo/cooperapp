@@ -26,6 +26,9 @@ class AccionAuditoria(str, Enum):
     role_change = "role_change"
     project_assign = "project_assign"
     project_unassign = "project_unassign"
+    aplazamiento_solicitar = "aplazamiento_solicitar"
+    aplazamiento_aprobar = "aplazamiento_aprobar"
+    aplazamiento_rechazar = "aplazamiento_rechazar"
 
 
 class AuditLog(Base):
@@ -61,5 +64,8 @@ class AuditLog(Base):
             AccionAuditoria.role_change: "Cambio de rol",
             AccionAuditoria.project_assign: "Asignar proyecto",
             AccionAuditoria.project_unassign: "Desasignar proyecto",
+            AccionAuditoria.aplazamiento_solicitar: "Solicitud de aplazamiento",
+            AccionAuditoria.aplazamiento_aprobar: "Aplazamiento aprobado",
+            AccionAuditoria.aplazamiento_rechazar: "Aplazamiento rechazado",
         }
         return names.get(self.accion, self.accion.value)

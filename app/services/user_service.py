@@ -63,6 +63,36 @@ class UserService:
         self.db.refresh(user)
         return user
 
+    def get_or_create_dev_user_with_role(self, rol: Rol) -> User:
+        role_config = {
+            Rol.director: ("director@cooperapp.local", "Ana", "Garcia (Director)", "dev-director"),
+            Rol.coordinador: ("coordinador@cooperapp.local", "Carlos", "Lopez (Coordinador)", "dev-coordinador"),
+            Rol.tecnico_sede: ("tecnico@cooperapp.local", "Maria", "Fernandez (Tecnico)", "dev-tecnico"),
+            Rol.gestor_pais: ("gestor@cooperapp.local", "Pedro", "Martinez (Gestor)", "dev-gestor"),
+        }
+        email, nombre, apellidos, oid = role_config[rol]
+
+        user = self.db.query(User).filter(User.email == email).first()
+        if user:
+            user.rol = rol
+            user.ultimo_acceso = datetime.utcnow()
+            self.db.commit()
+            self.db.refresh(user)
+            return user
+
+        user = User(
+            email=email,
+            nombre=nombre,
+            apellidos=apellidos,
+            entra_oid=oid,
+            rol=rol,
+            ultimo_acceso=datetime.utcnow(),
+        )
+        self.db.add(user)
+        self.db.commit()
+        self.db.refresh(user)
+        return user
+
     def get_by_id(self, user_id: str) -> User | None:
         return self.db.query(User).filter(User.id == user_id).first()
 

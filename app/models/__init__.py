@@ -16,6 +16,7 @@ from app.models.user import User, Rol, user_project
 from app.models.counterpart_session import CounterpartSession
 from app.models.audit_log import AuditLog, ActorType, AccionAuditoria
 from app.models.translation_cache import TranslationCache
+from app.models.postponement import Aplazamiento, EstadoAplazamiento
 
 __all__ = [
     "Project", "Plazo", "ODSObjetivo", "EstadoProyecto", "TipoProyecto", "Financiador", "ODS", "ODS_NOMBRES",
@@ -32,4 +33,5 @@ __all__ = [
     "CounterpartSession",
     "AuditLog", "ActorType", "AccionAuditoria",
     "TranslationCache",
+    "Aplazamiento", "EstadoAplazamiento",
 ]

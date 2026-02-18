@@ -1,0 +1,48 @@
+<div class="modal-overlay" id="aplazamiento-modal" onclick="if(event.target===this) this.remove()">
+    <div class="aplazamiento-modal">
+        <div class="modal-header">
+            <h3>Solicitar Aplazamiento de Fechas</h3>
+            <button type="button" class="btn-close" onclick="document.getElementById('aplazamiento-modal').remove()">&times;</button>
+        </div>
+        <form method="POST" action="/projects/{{ project.id }}/aplazamientos">
+            <div class="modal-body">
+                <div class="aplazamiento-current-dates">
+                    <h4>Fechas actuales</h4>
+                    <div class="date-reference">
+                        <span class="date-label">Finalizacion:</span>
+                        <span class="date-value">{{ project.fecha_finalizacion.strftime('%d/%m/%Y') }}</span>
+                    </div>
+                    {% if project.fecha_justificacion %}
+                    <div class="date-reference">
+                        <span class="date-label">Justificacion:</span>
+                        <span class="date-value">{{ project.fecha_justificacion.strftime('%d/%m/%Y') }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label for="fecha_finalizacion_nueva">Nueva Fecha de Finalizacion *</label>
+                    <input type="date" id="fecha_finalizacion_nueva" name="fecha_finalizacion_nueva" required
+                        min="{{ project.fecha_finalizacion }}">
+                </div>
+
+                <div class="form-group">
+                    <label for="fecha_justificacion_nueva">Nueva Fecha de Justificacion</label>
+                    <input type="date" id="fecha_justificacion_nueva" name="fecha_justificacion_nueva"
+                        {% if project.fecha_justificacion %}min="{{ project.fecha_justificacion }}"{% endif %}>
+                </div>
+
+                <div class="form-group">
+                    <label for="motivo">Motivo de la solicitud * <small>(minimo 10 caracteres)</small></label>
+                    <textarea id="motivo" name="motivo" required minlength="10" rows="4"
+                        placeholder="Explique el motivo por el que se solicita el aplazamiento..."></textarea>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="document.getElementById('aplazamiento-modal').remove()">Cancelar</button>
+                <button type="submit" class="btn btn-primary">Enviar Solicitud</button>
+            </div>
+        </form>
+    </div>
+</div>

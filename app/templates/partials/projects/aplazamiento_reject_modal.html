@@ -1,0 +1,36 @@
+<div class="modal-overlay" id="aplazamiento-reject-modal" onclick="if(event.target===this) this.remove()">
+    <div class="aplazamiento-modal">
+        <div class="modal-header">
+            <h3>Rechazar Aplazamiento</h3>
+            <button type="button" class="btn-close" onclick="document.getElementById('aplazamiento-reject-modal').remove()">&times;</button>
+        </div>
+        <form method="POST" action="/projects/{{ project.id }}/aplazamientos/{{ aplazamiento_pendiente.id }}/rechazar">
+            <div class="modal-body">
+                <div class="aplazamiento-summary">
+                    <p>Aplazamiento #{{ aplazamiento_pendiente.numero_secuencial }} solicitado por <strong>{{ aplazamiento_pendiente.solicitante.nombre_completo }}</strong></p>
+                    <div class="date-reference">
+                        <span class="date-label">Nueva Finalizacion:</span>
+                        <span class="date-value">{{ aplazamiento_pendiente.fecha_finalizacion_nueva.strftime('%d/%m/%Y') }}</span>
+                    </div>
+                    {% if aplazamiento_pendiente.fecha_justificacion_nueva %}
+                    <div class="date-reference">
+                        <span class="date-label">Nueva Justificacion:</span>
+                        <span class="date-value">{{ aplazamiento_pendiente.fecha_justificacion_nueva.strftime('%d/%m/%Y') }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label for="motivo_rechazo">Motivo del rechazo * <small>(minimo 10 caracteres)</small></label>
+                    <textarea id="motivo_rechazo" name="motivo_rechazo" required minlength="10" rows="4"
+                        placeholder="Explique el motivo por el que se rechaza la solicitud..."></textarea>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="document.getElementById('aplazamiento-reject-modal').remove()">Cancelar</button>
+                <button type="submit" class="btn btn-danger">Rechazar Aplazamiento</button>
+            </div>
+        </form>
+    </div>
+</div>

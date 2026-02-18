@@ -35,6 +35,43 @@
     </div>
     {% endif %}
 
+    {% if aplazamiento_pendiente %}
+    <div class="project-alert project-alert-warning aplazamiento-banner">
+        <div class="aplazamiento-banner-content">
+            <div class="aplazamiento-banner-info">
+                <span class="alert-icon"><i data-lucide="clock"></i></span>
+                <div>
+                    <strong>Solicitud de aplazamiento pendiente</strong>
+                    <p>Solicitado por {{ aplazamiento_pendiente.solicitante.nombre_completo }} el {{ aplazamiento_pendiente.created_at.strftime('%d/%m/%Y') }}</p>
+                    <p>Nueva fecha finalizacion: {{ aplazamiento_pendiente.fecha_finalizacion_nueva.strftime('%d/%m/%Y') }}
+                    {% if aplazamiento_pendiente.fecha_justificacion_nueva %} | Nueva fecha justificacion: {{ aplazamiento_pendiente.fecha_justificacion_nueva.strftime('%d/%m/%Y') }}{% endif %}
+                    </p>
+                    <p><em>Motivo: {{ aplazamiento_pendiente.motivo }}</em></p>
+                </div>
+            </div>
+            {% if user and user.rol and user.rol.value in ['director', 'coordinador'] %}
+            <div class="aplazamiento-banner-actions">
+                <form method="POST" action="/projects/{{ project.id }}/aplazamientos/{{ aplazamiento_pendiente.id }}/aprobar" style="display:inline">
+                    <button type="submit" class="btn btn-success btn-sm"
+                        onclick="return confirm('¿Aprobar este aplazamiento? Las fechas del proyecto se actualizaran.')">
+                        <i data-lucide="check"></i> Aprobar
+                    </button>
+                </form>
+                <button type="button" class="btn btn-danger btn-sm"
+                    onclick="document.getElementById('aplazamiento-reject-container').style.display='block'">
+                    <i data-lucide="x"></i> Rechazar
+                </button>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% if user and user.rol and user.rol.value in ['director', 'coordinador'] %}
+    <div id="aplazamiento-reject-container" style="display:none">
+        {% include "partials/projects/aplazamiento_reject_modal.html" %}
+    </div>
+    {% endif %}
+    {% endif %}
+
     <div class="detail-header">
         <div class="detail-codes">
             <span class="code-badge">{{ project.codigo_contable }}</span>
@@ -152,12 +189,19 @@
                     <dt>Fecha de Inicio</dt>
                     <dd>{{ project.fecha_inicio.strftime('%d/%m/%Y') }}</dd>
                     <dt>Fecha de Finalizacion</dt>
-                    <dd>{{ project.fecha_finalizacion.strftime('%d/%m/%Y') }}</dd>
+                    <dd>
+                        {{ project.fecha_finalizacion.strftime('%d/%m/%Y') }}
+                        {% if project.ampliado %}
+                        <span class="badge badge-ampliado">Ampliado</span>
+                        {% endif %}
+                    </dd>
                     {% if project.fecha_justificacion %}
                     <dt>Fecha de Justificacion</dt>
                     <dd>{{ project.fecha_justificacion.strftime('%d/%m/%Y') }}</dd>
                     {% endif %}
                 </dl>
+
+                {% include "partials/projects/aplazamiento_history.html" %}
             </div>
 
             <div class="detail-section">

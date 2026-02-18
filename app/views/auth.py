@@ -222,3 +222,32 @@ def dev_login(request: Request, db: Session = Depends(get_db)):
     )
 
     return RedirectResponse(url="/projects", status_code=302)
+
+
+@router.get("/dev-login/{rol}")
+def dev_login_role(request: Request, rol: str, db: Session = Depends(get_db)):
+    if not settings.debug:
+        return RedirectResponse(url="/login", status_code=302)
+
+    from app.models.user import Rol
+    try:
+        rol_enum = Rol(rol)
+    except ValueError:
+        return RedirectResponse(url="/login", status_code=302)
+
+    service = UserService(db)
+    user = service.get_or_create_dev_user_with_role(rol_enum)
+    create_internal_session(request, user)
+
+    audit = AuditService(db)
+    audit.log(
+        actor_type=ActorType.internal,
+        actor_id=user.id,
+        actor_email=user.email,
+        actor_label=user.nombre_completo,
+        accion=AccionAuditoria.login,
+        detalle={"method": "dev-login", "rol": rol},
+        ip_address=request.client.host if request.client else None,
+    )
+
+    return RedirectResponse(url="/projects", status_code=302)

@@ -21,6 +21,7 @@ from app.views.auth import router as auth_router
 from app.views.users import router as users_router
 from app.views.counterpart import router as counterpart_router
 from app.views.audit import router as audit_router
+from app.views.postponements import router as postponements_router
 from app.services.project_service import ProjectService
 from app.services.budget_service import BudgetService
 
@@ -97,6 +98,7 @@ app.include_router(logical_framework_router, prefix="/projects")
 app.include_router(documents_router, prefix="/projects")
 app.include_router(verification_sources_router, prefix="/projects")
 app.include_router(reports_router, prefix="/projects")
+app.include_router(postponements_router, prefix="/projects")
 
 
 @app.get("/")

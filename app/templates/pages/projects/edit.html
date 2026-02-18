@@ -106,6 +106,7 @@
             </div>
         </div>
 
+        {% if project.estado.value == 'formulacion' %}
         <div class="form-grid form-grid-3">
             <div class="form-group">
                 <label for="fecha_inicio">Fecha de Inicio *</label>
@@ -113,12 +114,12 @@
                     value="{{ project.fecha_inicio }}">
             </div>
             <div class="form-group">
-                <label for="fecha_finalizacion">Fecha de Finalización *</label>
+                <label for="fecha_finalizacion">Fecha de Finalizacion *</label>
                 <input type="date" id="fecha_finalizacion" name="fecha_finalizacion" required
                     value="{{ project.fecha_finalizacion }}">
             </div>
             <div class="form-group">
-                <label for="fecha_justificacion">Fecha de Justificación</label>
+                <label for="fecha_justificacion">Fecha de Justificacion</label>
                 <input type="date" id="fecha_justificacion" name="fecha_justificacion"
                     value="{{ project.fecha_justificacion or '' }}">
             </div>
@@ -131,6 +132,39 @@
                 Proyecto ampliado
             </label>
         </div>
+        {% else %}
+        <div class="form-grid form-grid-3">
+            <div class="form-group">
+                <label>Fecha de Inicio</label>
+                <input type="date" disabled value="{{ project.fecha_inicio }}">
+                <input type="hidden" name="fecha_inicio" value="{{ project.fecha_inicio }}">
+            </div>
+            <div class="form-group">
+                <label>Fecha de Finalizacion</label>
+                <input type="date" disabled value="{{ project.fecha_finalizacion }}">
+                <input type="hidden" name="fecha_finalizacion" value="{{ project.fecha_finalizacion }}">
+            </div>
+            <div class="form-group">
+                <label>Fecha de Justificacion</label>
+                <input type="date" disabled value="{{ project.fecha_justificacion or '' }}">
+                <input type="hidden" name="fecha_justificacion" value="{{ project.fecha_justificacion or '' }}">
+            </div>
+        </div>
+        <input type="hidden" name="ampliado" value="{{ 'true' if project.ampliado else '' }}">
+
+        {% if aplazamiento_pendiente %}
+        <div class="alert alert-warning aplazamiento-alert">
+            <i data-lucide="clock"></i>
+            <span>Hay una solicitud de aplazamiento pendiente de aprobacion (solicitada por {{ aplazamiento_pendiente.solicitante.nombre_completo }} el {{ aplazamiento_pendiente.created_at.strftime('%d/%m/%Y') }}).</span>
+        </div>
+        {% elif user and user.rol and user.rol.value in ['director', 'coordinador', 'tecnico_sede'] %}
+        <div class="aplazamiento-action">
+            <button type="button" class="btn btn-warning" onclick="document.getElementById('aplazamiento-modal-container').style.display='block'">
+                <i data-lucide="calendar-plus"></i> Solicitar Aplazamiento de Fechas
+            </button>
+        </div>
+        {% endif %}
+        {% endif %}
 
         <!-- ODS Section -->
         <div class="form-section">
@@ -155,6 +189,12 @@
         </div>
     </form>
 </div>
+
+{% if project.estado.value != 'formulacion' and not aplazamiento_pendiente and user and user.rol and user.rol.value in ['director', 'coordinador', 'tecnico_sede'] %}
+<div id="aplazamiento-modal-container" style="display:none">
+    {% include "partials/projects/aplazamiento_form.html" %}
+</div>
+{% endif %}
 {% endblock %}
 
 {% block scripts %}

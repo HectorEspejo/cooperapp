@@ -25,6 +25,8 @@ class Permiso(str, Enum):
     informe_descargar = "informe_descargar"
     usuarios_gestionar = "usuarios_gestionar"
     auditoria_ver = "auditoria_ver"
+    aplazamiento_solicitar = "aplazamiento_solicitar"
+    aplazamiento_aprobar = "aplazamiento_aprobar"
 
 
 PERMISOS_POR_ROL: dict[Rol, set[Permiso]] = {
@@ -50,6 +52,8 @@ PERMISOS_POR_ROL: dict[Rol, set[Permiso]] = {
         Permiso.documento_sellar,
         Permiso.informe_generar,
         Permiso.informe_descargar,
+        Permiso.aplazamiento_solicitar,
+        Permiso.aplazamiento_aprobar,
     },
     Rol.tecnico_sede: {
         Permiso.proyecto_ver,
@@ -70,6 +74,7 @@ PERMISOS_POR_ROL: dict[Rol, set[Permiso]] = {
         Permiso.documento_sellar,
         Permiso.informe_generar,
         Permiso.informe_descargar,
+        Permiso.aplazamiento_solicitar,
     },
     Rol.gestor_pais: {
         Permiso.proyecto_ver,

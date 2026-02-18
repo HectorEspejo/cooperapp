@@ -4131,11 +4131,31 @@ a:hover {
     transform: translateY(-1px);
 }
 
+.dev-login-section {
+    margin-top: 1rem;
+}
+
+.dev-login-label {
+    text-align: center;
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.dev-login-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+}
+
 .btn-dev-login {
     display: block;
     width: 100%;
-    margin-top: 0.75rem;
     text-align: center;
+    font-size: 0.85rem;
+    padding: 0.5rem 0.75rem;
 }
 
 .btn-outline {
@@ -5112,4 +5132,344 @@ a:hover {
     .form-group textarea { background-color: var(--color-white); }
     body { background-color: var(--color-bg); }
     .auth-body { background-color: var(--color-bg); }
+}
+
+/* ==================== APLAZAMIENTO STYLES ==================== */
+
+/* Banner de aplazamiento pendiente */
+.aplazamiento-banner {
+    padding: 1rem 1.5rem;
+}
+
+.aplazamiento-banner-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.aplazamiento-banner-info {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-start;
+}
+
+.aplazamiento-banner-info p {
+    margin: 0.25rem 0;
+    font-size: 0.875rem;
+}
+
+.aplazamiento-banner-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+
+/* Badge Ampliado */
+.badge-ampliado {
+    display: inline-block;
+    background-color: var(--color-warning, #f59e0b);
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.15rem 0.5rem;
+    border-radius: 9999px;
+    margin-left: 0.5rem;
+    vertical-align: middle;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+}
+
+/* Alerta en formulario de edicion */
+.aplazamiento-alert {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 1rem 0;
+}
+
+.aplazamiento-action {
+    margin: 1rem 0;
+}
+
+/* Modal de aplazamiento */
+.aplazamiento-modal {
+    background: var(--color-white, #fff);
+    border-radius: 0.75rem;
+    width: 100%;
+    max-width: 560px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.aplazamiento-modal .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--color-border, #e5e7eb);
+}
+
+.aplazamiento-modal .modal-header h3 {
+    margin: 0;
+    font-size: 1.125rem;
+}
+
+.aplazamiento-modal .btn-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--color-text-muted, #6b7280);
+    line-height: 1;
+}
+
+.aplazamiento-modal .modal-body {
+    padding: 1.5rem;
+}
+
+.aplazamiento-modal .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    padding: 1rem 1.5rem;
+    border-top: 1px solid var(--color-border, #e5e7eb);
+}
+
+/* Fechas actuales de referencia */
+.aplazamiento-current-dates {
+    background: var(--color-bg, #f9fafb);
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-bottom: 1.25rem;
+}
+
+.aplazamiento-current-dates h4 {
+    margin: 0 0 0.5rem 0;
+    font-size: 0.875rem;
+    color: var(--color-text-muted, #6b7280);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.date-reference {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    margin: 0.25rem 0;
+    font-size: 0.875rem;
+}
+
+.date-label {
+    font-weight: 500;
+    color: var(--color-text-muted, #6b7280);
+}
+
+.date-value {
+    font-weight: 600;
+}
+
+/* Resumen en modal de rechazo */
+.aplazamiento-summary {
+    background: var(--color-bg, #f9fafb);
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-bottom: 1.25rem;
+}
+
+.aplazamiento-summary p {
+    margin: 0 0 0.5rem;
+}
+
+/* Fechas originales */
+.aplazamiento-original-dates {
+    background: var(--color-bg, #f9fafb);
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-top: 1rem;
+}
+
+.aplazamiento-original-dates h4 {
+    margin: 0 0 0.5rem 0;
+    font-size: 0.875rem;
+    color: var(--color-text-muted, #6b7280);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Timeline de historial */
+.aplazamiento-history {
+    margin-top: 1.25rem;
+}
+
+.aplazamiento-history h4 {
+    margin: 0 0 0.75rem 0;
+    font-size: 0.875rem;
+    color: var(--color-text-muted, #6b7280);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.aplazamiento-timeline {
+    position: relative;
+    padding-left: 2rem;
+}
+
+.aplazamiento-timeline::before {
+    content: '';
+    position: absolute;
+    left: 0.75rem;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--color-border, #e5e7eb);
+}
+
+.aplazamiento-timeline-item {
+    position: relative;
+    padding-bottom: 1.25rem;
+}
+
+.aplazamiento-timeline-item:last-child {
+    padding-bottom: 0;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -1.65rem;
+    top: 0;
+    width: 1.5rem;
+    height: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-white, #fff);
+    border-radius: 50%;
+    z-index: 1;
+}
+
+.aplazamiento-aprobado .timeline-marker {
+    color: var(--color-success, #10b981);
+}
+
+.aplazamiento-rechazado .timeline-marker {
+    color: var(--color-error, #ef4444);
+}
+
+.aplazamiento-pendiente .timeline-marker {
+    color: var(--color-warning, #f59e0b);
+}
+
+.timeline-marker [data-lucide] {
+    width: 1.25rem;
+    height: 1.25rem;
+}
+
+.timeline-content {
+    background: var(--color-bg, #f9fafb);
+    border-radius: 0.5rem;
+    padding: 0.75rem 1rem;
+}
+
+.timeline-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.timeline-number {
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
+.aplazamiento-estado-badge {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.15rem 0.5rem;
+    border-radius: 9999px;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+}
+
+.aplazamiento-estado-aprobado {
+    background-color: #d1fae5;
+    color: #065f46;
+}
+
+.aplazamiento-estado-rechazado {
+    background-color: #fee2e2;
+    color: #991b1b;
+}
+
+.aplazamiento-estado-pendiente {
+    background-color: #fef3c7;
+    color: #92400e;
+}
+
+.timeline-dates {
+    font-size: 0.8125rem;
+    color: var(--color-text, #374151);
+}
+
+.timeline-dates span {
+    display: block;
+    margin-bottom: 0.15rem;
+}
+
+.timeline-meta {
+    font-size: 0.75rem;
+    color: var(--color-text-muted, #6b7280);
+    margin-top: 0.35rem;
+}
+
+.timeline-meta span {
+    display: block;
+}
+
+.timeline-motivo {
+    font-size: 0.8125rem;
+    margin-top: 0.35rem;
+    padding: 0.5rem;
+    background: var(--color-white, #fff);
+    border-radius: 0.25rem;
+    border-left: 3px solid var(--color-border, #e5e7eb);
+}
+
+.timeline-motivo-rechazo {
+    border-left-color: var(--color-error, #ef4444);
+}
+
+/* Boton success */
+.btn-success {
+    background-color: var(--color-success, #10b981);
+    color: #fff;
+    border: none;
+}
+
+.btn-success:hover {
+    background-color: #059669;
+}
+
+/* Boton warning */
+.btn-warning {
+    background-color: var(--color-warning, #f59e0b);
+    color: #fff;
+    border: none;
+}
+
+.btn-warning:hover {
+    background-color: #d97706;
+}
+
+@media (max-width: 768px) {
+    .aplazamiento-banner-content {
+        flex-direction: column;
+    }
+
+    .aplazamiento-banner-actions {
+        align-self: flex-end;
+    }
 }

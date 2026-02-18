@@ -158,6 +158,9 @@ class Project(Base):
     reports: Mapped[list["Report"]] = relationship(
         back_populates="project", cascade="all, delete-orphan", order_by="Report.created_at.desc()"
     )
+    aplazamientos: Mapped[list["Aplazamiento"]] = relationship(
+        back_populates="project", cascade="all, delete-orphan", order_by="Aplazamiento.numero_secuencial"
+    )
 
     def __repr__(self) -> str:
         return f"<Project {self.codigo_contable}: {self.titulo[:30]}...>"
@@ -170,3 +173,4 @@ from app.models.transfer import Transfer
 from app.models.logical_framework import LogicalFramework
 from app.models.document import Document
 from app.models.report import Report
+from app.models.postponement import Aplazamiento

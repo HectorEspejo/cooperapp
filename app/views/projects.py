@@ -14,6 +14,7 @@ from app.services.translation_service import TranslationService
 from app.auth.dependencies import get_current_user, require_permission, check_project_access
 from app.auth.permissions import Permiso, user_has_permission
 from app.services.audit_service import AuditService
+from app.services.postponement_service import PostponementService
 from app.models.audit_log import ActorType, AccionAuditoria
 
 
@@ -246,6 +247,11 @@ def projects_detail(
                     "message": f"Faltan {days_until} dias para el plazo de justificacion",
                 }
 
+    postponement_service = PostponementService(service.db)
+    aplazamiento_pendiente = postponement_service.get_pending_for_project(project_id)
+    aplazamiento_history = postponement_service.get_history(project_id)
+    original_dates = postponement_service.get_original_dates(project_id)
+
     return templates.TemplateResponse(
         "pages/projects/detail.html",
         {
@@ -253,6 +259,9 @@ def projects_detail(
             "project": project,
             "user": user,
             "justification_alert": justification_alert,
+            "aplazamiento_pendiente": aplazamiento_pendiente,
+            "aplazamiento_history": aplazamiento_history,
+            "original_dates": original_dates,
             **get_common_context(service),
         },
     )
@@ -270,11 +279,16 @@ def projects_edit(
     if not project:
         raise HTTPException(status_code=404, detail="Proyecto no encontrado")
 
+    postponement_service = PostponementService(service.db)
+    aplazamiento_pendiente = postponement_service.get_pending_for_project(project_id)
+
     return templates.TemplateResponse(
         "pages/projects/edit.html",
         {
             "request": request,
             "project": project,
+            "user": user,
+            "aplazamiento_pendiente": aplazamiento_pendiente,
             **get_common_context(service),
         },
     )
@@ -312,16 +326,27 @@ async def projects_update(
     existing = service.get_by_codigo_contable(codigo_contable)
     if existing and existing.id != project_id:
         project = service.get_by_id(project_id)
+        postponement_service = PostponementService(service.db)
         return templates.TemplateResponse(
             "pages/projects/edit.html",
             {
                 "request": request,
                 "project": project,
+                "user": user,
+                "aplazamiento_pendiente": postponement_service.get_pending_for_project(project_id),
                 "error": f"Ya existe un proyecto con código contable {codigo_contable}",
                 **get_common_context(service),
             },
             status_code=400,
         )
+
+    # Server-side protection: if not in formulacion, preserve date fields and ampliado
+    project = service.get_by_id(project_id)
+    if project and project.estado != EstadoProyecto.formulacion:
+        fecha_inicio = str(project.fecha_inicio)
+        fecha_finalizacion = str(project.fecha_finalizacion)
+        fecha_justificacion = str(project.fecha_justificacion) if project.fecha_justificacion else None
+        ampliado = project.ampliado
 
     data = ProjectUpdate(
         codigo_contable=codigo_contable,
