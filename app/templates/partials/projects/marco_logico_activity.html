@@ -29,16 +29,16 @@
         <div class="ml-activity-dates">
             {% if activity.fecha_inicio_prevista or activity.fecha_fin_prevista %}
             <span class="date-planned" title="{{ _t('ml.planned_dates') if _t else 'Fechas previstas' }}">
-                {{ activity.fecha_inicio_prevista.strftime('%d/%m') if activity.fecha_inicio_prevista else '?' }}
+                {{ activity.fecha_inicio_prevista.strftime('%d/%m/%Y') if activity.fecha_inicio_prevista else '?' }}
                 -
-                {{ activity.fecha_fin_prevista.strftime('%d/%m') if activity.fecha_fin_prevista else '?' }}
+                {{ activity.fecha_fin_prevista.strftime('%d/%m/%Y') if activity.fecha_fin_prevista else '?' }}
             </span>
             {% endif %}
             {% if activity.fecha_inicio_real or activity.fecha_fin_real %}
             <span class="date-real" title="{{ _t('ml.actual_dates') if _t else 'Fechas reales' }}">
-                {{ activity.fecha_inicio_real.strftime('%d/%m') if activity.fecha_inicio_real else '?' }}
+                {{ activity.fecha_inicio_real.strftime('%d/%m/%Y') if activity.fecha_inicio_real else '?' }}
                 -
-                {{ activity.fecha_fin_real.strftime('%d/%m') if activity.fecha_fin_real else '?' }}
+                {{ activity.fecha_fin_real.strftime('%d/%m/%Y') if activity.fecha_fin_real else '?' }}
             </span>
             {% endif %}
         </div>
