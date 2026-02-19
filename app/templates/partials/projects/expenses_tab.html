@@ -4,36 +4,36 @@
         <div class="summary-stats">
             <div class="summary-stat">
                 <span class="stat-value">{{ summary.total_registrados }}</span>
-                <span class="stat-label">Registrados</span>
+                <span class="stat-label">{{ t('expenses.registered') if t is defined else 'Registrados' }}</span>
             </div>
             <div class="summary-stat stat-warning">
                 <span class="stat-value">{{ summary.total_borradores + summary.total_pendientes }}</span>
-                <span class="stat-label">Pendientes</span>
+                <span class="stat-label">{{ t('expenses.pending') if t is defined else 'Pendientes' }}</span>
             </div>
             <div class="summary-stat stat-success">
                 <span class="stat-value">{{ summary.total_validados }}</span>
-                <span class="stat-label">Validados</span>
+                <span class="stat-label">{{ t('expenses.validated') if t is defined else 'Validados' }}</span>
             </div>
             <div class="summary-stat stat-info">
                 <span class="stat-value">{{ summary.total_justificados }}</span>
-                <span class="stat-label">Justificados</span>
+                <span class="stat-label">{{ t('expenses.justified') if t is defined else 'Justificados' }}</span>
             </div>
         </div>
         <div class="summary-amounts">
             <div class="amount-item">
-                <span class="amount-label">Total registrado:</span>
+                <span class="amount-label">{{ t('expenses.total_registered') if t is defined else 'Total registrado:' }}</span>
                 <span class="amount-value">{{ "{:,.2f}".format(summary.importe_total) }} EUR</span>
             </div>
             <div class="amount-item">
-                <span class="amount-label">Validado:</span>
+                <span class="amount-label">{{ t('expenses.total_validated') if t is defined else 'Validado:' }}</span>
                 <span class="amount-value amount-success">{{ "{:,.2f}".format(summary.importe_validado) }} EUR</span>
             </div>
             <div class="amount-item">
-                <span class="amount-label">Espana:</span>
+                <span class="amount-label">{{ t('expenses.spain') if t is defined else 'Espana' }}:</span>
                 <span class="amount-value">{{ "{:,.2f}".format(summary.importe_espana) }} EUR</span>
             </div>
             <div class="amount-item">
-                <span class="amount-label">Terreno:</span>
+                <span class="amount-label">{{ t('expenses.field') if t is defined else 'Terreno' }}:</span>
                 <span class="amount-value">{{ "{:,.2f}".format(summary.importe_terreno) }} EUR</span>
             </div>
         </div>
@@ -43,39 +43,40 @@
     <div class="expenses-filters">
         <form
             class="filters-form"
-            hx-get="/projects/{{ project.id }}/expenses/table"
-            hx-target="#expenses-table-container"
+            hx-get="{% if is_counterpart %}/contraparte/{{ project.id }}/gastos{% else %}/projects/{{ project.id }}/expenses/table{% endif %}"
+            hx-target="{% if is_counterpart %}#expenses-content{% else %}#expenses-table-container{% endif %}"
+            {% if is_counterpart %}hx-select="#expenses-content" hx-swap="outerHTML"{% endif %}
             hx-trigger="change"
         >
             <div class="filter-group">
                 <select name="budget_line_id" class="filter-select">
-                    <option value="">Todas las partidas</option>
+                    <option value="">{{ t('expenses.all_lines') if t is defined else 'Todas las partidas' }}</option>
                     {% for line in budget_lines %}
-                    <option value="{{ line.id }}">{{ line.code }} - {{ line.name }}</option>
+                    <option value="{{ line.id }}">{{ line.code }} - {{ t('bl.' + funder_code + '.' + line.code) if t is defined and funder_code is defined and funder_code else line.name }}</option>
                     {% endfor %}
                 </select>
             </div>
             <div class="filter-group">
                 <select name="estado" class="filter-select">
-                    <option value="">Todos los estados</option>
-                    <option value="borrador">Borrador</option>
-                    <option value="pendiente_revision">Pendiente revision</option>
-                    <option value="validado">Validado</option>
-                    <option value="rechazado">Rechazado</option>
-                    <option value="justificado">Justificado</option>
+                    <option value="">{{ t('expenses.all_states') if t is defined else 'Todos los estados' }}</option>
+                    <option value="borrador">{{ t('expenses.state_draft') if t is defined else 'Borrador' }}</option>
+                    <option value="pendiente_revision">{{ t('expenses.state_pending') if t is defined else 'Pendiente revision' }}</option>
+                    <option value="validado">{{ t('expenses.state_validated') if t is defined else 'Validado' }}</option>
+                    <option value="rechazado">{{ t('expenses.state_rejected') if t is defined else 'Rechazado' }}</option>
+                    <option value="justificado">{{ t('expenses.state_justified') if t is defined else 'Justificado' }}</option>
                 </select>
             </div>
             <div class="filter-group">
                 <select name="ubicacion" class="filter-select">
-                    <option value="">Todas las ubicaciones</option>
-                    <option value="espana">Espana</option>
-                    <option value="terreno">Terreno</option>
+                    <option value="">{{ t('expenses.all_locations') if t is defined else 'Todas las ubicaciones' }}</option>
+                    <option value="espana">{{ t('expenses.spain') if t is defined else 'Espana' }}</option>
+                    <option value="terreno">{{ t('expenses.field') if t is defined else 'Terreno' }}</option>
                 </select>
             </div>
             {% if funding_sources is defined and funding_sources|length > 0 %}
             <div class="filter-group">
                 <select name="funding_source_id" class="filter-select">
-                    <option value="">Todos los financiadores</option>
+                    <option value="">{{ t('expenses.all_funders') if t is defined else 'Todos los financiadores' }}</option>
                     {% for source in funding_sources %}
                     <option value="{{ source.id }}">{{ source.nombre }}</option>
                     {% endfor %}
@@ -88,7 +89,18 @@
                 <input type="date" name="fecha_hasta" placeholder="Hasta" class="filter-date">
             </div>
         </form>
-        {% if user and user.rol and user.rol.value in ['director', 'coordinador', 'tecnico_sede'] %}
+        {% if is_counterpart %}
+        <button
+            type="button"
+            class="btn btn-primary"
+            hx-get="/contraparte/{{ project.id }}/gastos/nuevo"
+            hx-target="#expense-modal-content"
+            hx-trigger="click"
+            onclick="openExpenseModal()"
+        >
+            + {{ t('expenses.new_expense') if t is defined else 'Nuevo Gasto' }}
+        </button>
+        {% elif user and user.rol and user.rol.value in ['director', 'coordinador', 'tecnico_sede'] %}
         <button
             type="button"
             class="btn btn-primary"
@@ -97,7 +109,7 @@
             hx-trigger="click"
             onclick="openExpenseModal()"
         >
-            + Nuevo Gasto
+            + {{ t('expenses.new_expense') if t is defined else 'Nuevo Gasto' }}
         </button>
         {% endif %}
     </div>

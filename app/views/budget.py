@@ -13,9 +13,11 @@ from app.auth.dependencies import require_permission
 from app.auth.permissions import Permiso
 from app.services.audit_service import AuditService
 from app.models.audit_log import ActorType, AccionAuditoria
+from app.i18n import get_translator
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
+_t = get_translator("es")
 
 
 def get_budget_service(db: Session = Depends(get_db)) -> BudgetService:
@@ -54,6 +56,7 @@ def budget_tab(
             "funding_sources": funding_sources,
             "funding_summary": funding_summary,
             "user": user,
+            "t": _t,
         },
     )
 
@@ -102,6 +105,7 @@ def initialize_budget(
             "funding_sources": funding_sources,
             "funding_summary": funding_summary,
             "user": user,
+            "t": _t,
         },
     )
 
@@ -166,6 +170,7 @@ async def update_budget_line(
             "funding_sources": funding_sources,
             "funding_summary": funding_summary,
             "user": user,
+            "t": _t,
         },
     )
 
@@ -233,6 +238,7 @@ async def create_funding_source(
             "funding_sources": funding_sources,
             "funding_summary": funding_summary,
             "user": user,
+            "t": _t,
         },
     )
 
@@ -289,6 +295,7 @@ def delete_funding_source(
             "funding_sources": funding_sources,
             "funding_summary": funding_summary,
             "user": user,
+            "t": _t,
         },
     )
 
@@ -331,6 +338,7 @@ def get_line_distribution(
             "funding_sources": funding_sources,
             "alloc_map": alloc_map,
             "user": user,
+            "t": _t,
         },
     )
 
@@ -400,5 +408,6 @@ async def update_line_distribution(
             "funding_sources": funding_sources,
             "funding_summary": funding_summary,
             "user": user,
+            "t": _t,
         },
     )

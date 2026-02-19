@@ -1,7 +1,8 @@
 import os
 import threading
 from datetime import date
-from fastapi import APIRouter, BackgroundTasks, Depends, Request, HTTPException, UploadFile, File, Form
+from decimal import Decimal
+from fastapi import APIRouter, BackgroundTasks, Depends, Request, HTTPException, UploadFile, File, Form, Query
 from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
@@ -11,10 +12,15 @@ from app.auth.dependencies import get_current_counterpart
 from app.services.project_service import ProjectService
 from app.services.logical_framework_service import LogicalFrameworkService
 from app.services.document_service import DocumentService
+from app.services.expense_service import ExpenseService
+from app.services.budget_service import BudgetService
 from app.services.translation_service import TranslationService, _retry_pending_in_background
 from app.models.logical_framework import EstadoActividad
+from app.models.expense import UbicacionGasto, EstadoGasto
 from app.models.document import CategoriaDocumento, CATEGORIA_NOMBRES
+from app.models.funding import TipoFuente
 from app.schemas.logical_framework import ActivityUpdate
+from app.schemas.expense import ExpenseCreate, ExpenseFilters
 from app.schemas.document import DocumentCreate
 from app.services.audit_service import AuditService
 from app.models.audit_log import ActorType, AccionAuditoria
@@ -137,6 +143,14 @@ def get_lf_service(db: Session = Depends(get_db)) -> LogicalFrameworkService:
 
 def get_doc_service(db: Session = Depends(get_db)) -> DocumentService:
     return DocumentService(db)
+
+
+def get_expense_service(db: Session = Depends(get_db)) -> ExpenseService:
+    return ExpenseService(db)
+
+
+def get_budget_service(db: Session = Depends(get_db)) -> BudgetService:
+    return BudgetService(db)
 
 
 def _trigger_translation_bg(entity_type: str, entity_id: int, fields_data: dict):
@@ -551,3 +565,364 @@ def session_timer(
             "t": t,
         },
     )
+
+
+# ======================== Counterpart Budget Endpoints ========================
+
+
+@router.get("/contraparte/{project_id}/presupuesto", response_class=HTMLResponse)
+def counterpart_budget(
+    request: Request,
+    project_id: int,
+    session: CounterpartSession = Depends(get_current_counterpart),
+    project_service: ProjectService = Depends(get_project_service),
+    budget_service: BudgetService = Depends(get_budget_service),
+    db: Session = Depends(get_db),
+):
+    """Tab de presupuesto readonly para contraparte."""
+    project = _validate_counterpart_project(session, project_id, project_service)
+
+    budget_summary = budget_service.get_project_budget_summary(project_id)
+    funding_sources = budget_service.get_project_funding_sources(project_id)
+    funding_summary = budget_service.get_funding_summary(project_id)
+
+    lang = session.language or "es"
+    t = get_translator(lang)
+
+    return templates.TemplateResponse(
+        "partials/projects/budget_tab.html",
+        {
+            "request": request,
+            "project": project,
+            "budget": budget_summary,
+            "funding_sources": funding_sources,
+            "funding_summary": funding_summary,
+            "is_counterpart": True,
+            "lang": lang,
+            "t": t,
+        },
+    )
+
+
+# ======================== Counterpart Expense Endpoints ========================
+
+
+@router.get("/contraparte/{project_id}/gastos", response_class=HTMLResponse)
+def counterpart_expenses(
+    request: Request,
+    project_id: int,
+    budget_line_id: int | None = Query(None),
+    estado: str | None = Query(None),
+    ubicacion: str | None = Query(None),
+    fecha_desde: date | None = Query(None),
+    fecha_hasta: date | None = Query(None),
+    funding_source_id: int | None = Query(None),
+    session: CounterpartSession = Depends(get_current_counterpart),
+    project_service: ProjectService = Depends(get_project_service),
+    expense_service: ExpenseService = Depends(get_expense_service),
+    budget_service: BudgetService = Depends(get_budget_service),
+    db: Session = Depends(get_db),
+):
+    """Tab de gastos para contraparte."""
+    project = _validate_counterpart_project(session, project_id, project_service)
+
+    filters = ExpenseFilters(
+        budget_line_id=budget_line_id,
+        estado=EstadoGasto(estado) if estado else None,
+        ubicacion=UbicacionGasto(ubicacion) if ubicacion else None,
+        fecha_desde=fecha_desde,
+        fecha_hasta=fecha_hasta,
+        funding_source_id=funding_source_id,
+    )
+
+    expenses = expense_service.get_project_expenses(project_id, filters)
+    summary = expense_service.get_expense_summary(project_id)
+    budget_lines = expense_service.get_budget_lines_with_balance(project_id)
+    funding_sources = budget_service.get_project_funding_sources(project_id)
+
+    funder = budget_service.get_funder_for_financiador(project.financiador)
+    funder_code = funder.code if funder else None
+
+    lang = session.language or "es"
+    t = get_translator(lang)
+
+    return templates.TemplateResponse(
+        "partials/projects/expenses_tab.html",
+        {
+            "request": request,
+            "project": project,
+            "expenses": expenses,
+            "summary": summary,
+            "budget_lines": budget_lines,
+            "funding_sources": funding_sources,
+            "funder_code": funder_code,
+            "is_counterpart": True,
+            "lang": lang,
+            "t": t,
+        },
+    )
+
+
+@router.get("/contraparte/{project_id}/gastos/nuevo", response_class=HTMLResponse)
+def counterpart_new_expense_form(
+    request: Request,
+    project_id: int,
+    session: CounterpartSession = Depends(get_current_counterpart),
+    project_service: ProjectService = Depends(get_project_service),
+    expense_service: ExpenseService = Depends(get_expense_service),
+    budget_service: BudgetService = Depends(get_budget_service),
+):
+    """Formulario de nuevo gasto para contraparte."""
+    project = _validate_counterpart_project(session, project_id, project_service)
+
+    funding_source = budget_service.get_counterpart_funding_source(project_id)
+    if not funding_source:
+        raise HTTPException(status_code=400, detail="No hay fuente de financiacion tipo contraparte configurada")
+
+    budget_lines = expense_service.get_budget_lines_with_balance(project_id)
+
+    funder = budget_service.get_funder_for_financiador(project.financiador)
+    funder_code = funder.code if funder else None
+
+    lang = session.language or "es"
+    t = get_translator(lang)
+
+    return templates.TemplateResponse(
+        "partials/projects/counterpart_expense_form.html",
+        {
+            "request": request,
+            "project": project,
+            "funding_source": funding_source,
+            "budget_lines": budget_lines,
+            "funder_code": funder_code,
+            "lang": lang,
+            "t": t,
+        },
+    )
+
+
+@router.post("/contraparte/{project_id}/gastos", response_class=HTMLResponse)
+async def counterpart_create_expense(
+    request: Request,
+    project_id: int,
+    session: CounterpartSession = Depends(get_current_counterpart),
+    project_service: ProjectService = Depends(get_project_service),
+    expense_service: ExpenseService = Depends(get_expense_service),
+    budget_service: BudgetService = Depends(get_budget_service),
+    db: Session = Depends(get_db),
+):
+    """Crear gasto desde portal contraparte y enviarlo directamente a revision."""
+    project = _validate_counterpart_project(session, project_id, project_service)
+
+    form_data = await request.form()
+
+    try:
+        funding_source_id = int(form_data.get("funding_source_id"))
+        source = budget_service.get_funding_source_by_id(funding_source_id)
+        if not source or source.tipo != TipoFuente.contraparte:
+            raise HTTPException(status_code=400, detail="Fuente de financiacion invalida")
+
+        data = ExpenseCreate(
+            budget_line_id=int(form_data.get("budget_line_id")),
+            fecha_factura=date.fromisoformat(form_data.get("fecha_factura")),
+            concepto=form_data.get("concepto"),
+            expedidor=form_data.get("expedidor"),
+            persona=form_data.get("persona") or None,
+            cantidad_original=Decimal(str(form_data.get("cantidad_original", "0")).replace(",", ".")),
+            moneda_original=form_data.get("moneda_original", "EUR"),
+            tipo_cambio=Decimal(str(form_data.get("tipo_cambio")).replace(",", ".")) if form_data.get("tipo_cambio") else None,
+            cantidad_euros=Decimal(str(form_data.get("cantidad_euros", "0")).replace(",", ".")),
+            porcentaje=Decimal(str(form_data.get("porcentaje", "100")).replace(",", ".")),
+            financiado_por=source.nombre,
+            ubicacion=UbicacionGasto(form_data.get("ubicacion")),
+            observaciones=form_data.get("observaciones") or None,
+            funding_source_id=funding_source_id,
+        )
+
+        expense = expense_service.create_expense(project_id, data)
+        # Enviar directamente a revision
+        expense_service.submit_for_review(expense.id)
+
+        # Audit log
+        audit = AuditService(db)
+        audit.log(
+            actor_type=ActorType.counterpart,
+            actor_id=str(session.id),
+            actor_email=None,
+            actor_label=f"Contraparte ({project.codigo_contable})",
+            accion=AccionAuditoria.create,
+            recurso="expense",
+            recurso_id=str(expense.id),
+            detalle={"concepto": data.concepto, "cantidad_euros": str(data.cantidad_euros)},
+            ip_address=request.client.host if request.client else None,
+            project_id=project_id,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    # Devolver tab actualizado
+    expenses = expense_service.get_project_expenses(project_id)
+    summary = expense_service.get_expense_summary(project_id)
+    budget_lines = expense_service.get_budget_lines_with_balance(project_id)
+    funding_sources = budget_service.get_project_funding_sources(project_id)
+
+    funder = budget_service.get_funder_for_financiador(project.financiador)
+    funder_code = funder.code if funder else None
+
+    lang = session.language or "es"
+    t = get_translator(lang)
+
+    return templates.TemplateResponse(
+        "partials/projects/expenses_tab.html",
+        {
+            "request": request,
+            "project": project,
+            "expenses": expenses,
+            "summary": summary,
+            "budget_lines": budget_lines,
+            "funding_sources": funding_sources,
+            "funder_code": funder_code,
+            "is_counterpart": True,
+            "lang": lang,
+            "t": t,
+        },
+    )
+
+
+@router.get("/contraparte/{project_id}/gastos/{expense_id}/upload-modal", response_class=HTMLResponse)
+def counterpart_upload_modal(
+    request: Request,
+    project_id: int,
+    expense_id: int,
+    session: CounterpartSession = Depends(get_current_counterpart),
+    project_service: ProjectService = Depends(get_project_service),
+    expense_service: ExpenseService = Depends(get_expense_service),
+):
+    """Modal de subida de justificante para contraparte."""
+    project = _validate_counterpart_project(session, project_id, project_service)
+
+    expense = expense_service.get_expense_by_id(expense_id)
+    if not expense or expense.project_id != project_id:
+        raise HTTPException(status_code=404, detail="Gasto no encontrado")
+
+    # Solo permitir subir si esta pendiente_revision y es fuente contraparte
+    if expense.estado != EstadoGasto.pendiente_revision:
+        raise HTTPException(status_code=400, detail="Solo se puede subir justificante a gastos pendientes de revision")
+
+    lang = session.language or "es"
+    t = get_translator(lang)
+
+    return templates.TemplateResponse(
+        "partials/projects/counterpart_expense_upload.html",
+        {
+            "request": request,
+            "project": project,
+            "expense": expense,
+            "lang": lang,
+            "t": t,
+        },
+    )
+
+
+@router.post("/contraparte/{project_id}/gastos/{expense_id}/upload", response_class=HTMLResponse)
+async def counterpart_upload_document(
+    request: Request,
+    project_id: int,
+    expense_id: int,
+    file: UploadFile = File(...),
+    session: CounterpartSession = Depends(get_current_counterpart),
+    project_service: ProjectService = Depends(get_project_service),
+    expense_service: ExpenseService = Depends(get_expense_service),
+    budget_service: BudgetService = Depends(get_budget_service),
+    doc_service: DocumentService = Depends(get_doc_service),
+    db: Session = Depends(get_db),
+):
+    """Subir justificante desde portal contraparte."""
+    project = _validate_counterpart_project(session, project_id, project_service)
+
+    expense = expense_service.get_expense_by_id(expense_id)
+    if not expense or expense.project_id != project_id:
+        raise HTTPException(status_code=404, detail="Gasto no encontrado")
+
+    try:
+        expense_service.save_document(expense_id, file)
+
+        # Audit log
+        audit = AuditService(db)
+        audit.log(
+            actor_type=ActorType.counterpart,
+            actor_id=str(session.id),
+            actor_email=None,
+            actor_label=f"Contraparte ({project.codigo_contable})",
+            accion=AccionAuditoria.upload,
+            recurso="expense_document",
+            recurso_id=str(expense_id),
+            detalle={"filename": file.filename},
+            ip_address=request.client.host if request.client else None,
+            project_id=project_id,
+        )
+
+        # Also create entry in project documents
+        await file.seek(0)
+        budget_line = expense.budget_line
+        concepto_short = expense.concepto[:50] if len(expense.concepto) > 50 else expense.concepto
+        document_data = DocumentCreate(
+            categoria=CategoriaDocumento.factura,
+            descripcion=f"Factura - {budget_line.name} - {concepto_short}",
+        )
+        doc_service.create_document(project_id, file, document_data)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    # Devolver tab actualizado
+    expenses = expense_service.get_project_expenses(project_id)
+    summary = expense_service.get_expense_summary(project_id)
+    budget_lines = expense_service.get_budget_lines_with_balance(project_id)
+    funding_sources = budget_service.get_project_funding_sources(project_id)
+
+    funder = budget_service.get_funder_for_financiador(project.financiador)
+    funder_code = funder.code if funder else None
+
+    lang = session.language or "es"
+    t = get_translator(lang)
+
+    return templates.TemplateResponse(
+        "partials/projects/expenses_tab.html",
+        {
+            "request": request,
+            "project": project,
+            "expenses": expenses,
+            "summary": summary,
+            "budget_lines": budget_lines,
+            "funding_sources": funding_sources,
+            "funder_code": funder_code,
+            "is_counterpart": True,
+            "lang": lang,
+            "t": t,
+        },
+    )
+
+
+@router.get("/contraparte/{project_id}/gastos/{expense_id}/document")
+def counterpart_expense_document(
+    project_id: int,
+    expense_id: int,
+    session: CounterpartSession = Depends(get_current_counterpart),
+    project_service: ProjectService = Depends(get_project_service),
+    expense_service: ExpenseService = Depends(get_expense_service),
+):
+    """Descargar documento de gasto desde portal contraparte."""
+    _validate_counterpart_project(session, project_id, project_service)
+
+    expense = expense_service.get_expense_by_id(expense_id)
+    if not expense or expense.project_id != project_id:
+        raise HTTPException(status_code=404, detail="Gasto no encontrado")
+
+    if not expense.documento_path:
+        raise HTTPException(status_code=404, detail="Documento no encontrado")
+
+    if not os.path.exists(expense.documento_path):
+        raise HTTPException(status_code=404, detail="Archivo no encontrado")
+
+    filename = os.path.basename(expense.documento_path)
+    return FileResponse(expense.documento_path, filename=filename)

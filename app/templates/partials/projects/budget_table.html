@@ -1,6 +1,6 @@
 <div class="budget-container">
     <div class="budget-header">
-        <h3>Presupuesto</h3>
+        <h3>{{ t('budget.title') if t is defined else 'Presupuesto' }}</h3>
         {% if budget.funder_name %}
         <span class="funder-badge">{{ budget.funder_code }} - {{ budget.funder_name }}</span>
         {% endif %}
@@ -24,19 +24,19 @@
         <div class="summary-stats">
             <div class="summary-stat">
                 <span class="stat-value">{{ "{:,.2f}".format(budget.project_subvencion) }}</span>
-                <span class="stat-label">Subvencion (EUR)</span>
+                <span class="stat-label">{{ t('budget.subvencion') if t is defined else 'Subvencion (EUR)' }}</span>
             </div>
             <div class="summary-stat {% if budget.totals.total_aprobado > budget.project_subvencion %}stat-danger{% else %}stat-success{% endif %}">
                 <span class="stat-value">{{ "{:,.2f}".format(budget.totals.total_aprobado) }}</span>
-                <span class="stat-label">Total Aprobado</span>
+                <span class="stat-label">{{ t('budget.total_approved') if t is defined else 'Total Aprobado' }}</span>
             </div>
             <div class="summary-stat {% if disponible < 0 %}stat-danger{% elif disponible == 0 %}stat-success{% else %}stat-warning{% endif %}">
                 <span class="stat-value">{{ "{:,.2f}".format(disponible) }}</span>
-                <span class="stat-label">Disponible</span>
+                <span class="stat-label">{{ t('budget.available') if t is defined else 'Disponible' }}</span>
             </div>
             <div class="summary-stat stat-info">
                 <span class="stat-value">{{ "{:.1f}".format(porcentaje_asignado) }}%</span>
-                <span class="stat-label">Asignado</span>
+                <span class="stat-label">{{ t('budget.assigned') if t is defined else 'Asignado' }}</span>
             </div>
         </div>
         <div class="budget-progress-bar">
@@ -49,10 +49,10 @@
     <!-- Funder-specific info -->
     {% if budget.funder_code == 'AYTO' %}
     <div class="budget-funder-info">
-        <span class="info-item">Max. indirectos: {{ budget.funder_max_indirect_percentage }}%</span>
-        <span class="info-item">Max. personal: {{ budget.funder_max_personnel_percentage }}%</span>
+        <span class="info-item">{{ t('budget.max_indirect') if t is defined else 'Max. indirectos' }}: {{ budget.funder_max_indirect_percentage }}%</span>
+        <span class="info-item">{{ t('budget.max_personnel') if t is defined else 'Max. personal' }}: {{ budget.funder_max_personnel_percentage }}%</span>
         {% if not budget.audit_required %}
-        <span class="info-item info-highlight">Auditoria opcional (subvencion < 30.000 EUR)</span>
+        <span class="info-item info-highlight">{{ t('budget.audit_optional') if t is defined else 'Auditoria opcional (subvencion < 30.000 EUR)' }}</span>
         {% endif %}
     </div>
     {% endif %}
@@ -75,17 +75,17 @@
         <table class="budget-table">
             <thead>
                 <tr>
-                    <th class="col-code">Codigo</th>
-                    <th class="col-name">Partida</th>
-                    <th class="col-amount">Aprobado</th>
+                    <th class="col-code">{{ t('budget.col_code') if t is defined else 'Codigo' }}</th>
+                    <th class="col-name">{{ t('budget.col_item') if t is defined else 'Partida' }}</th>
+                    <th class="col-amount">{{ t('budget.col_approved') if t is defined else 'Aprobado' }}</th>
                     {% if has_funding %}
                     <th class="col-action-sm"></th>
                     {% endif %}
-                    <th class="col-amount">Ejec. Espana</th>
-                    <th class="col-amount">Ejec. Terreno</th>
-                    <th class="col-amount">Total Ejec.</th>
-                    <th class="col-amount">Diferencia</th>
-                    <th class="col-percent">% Ejec.</th>
+                    <th class="col-amount">{{ t('budget.col_exec_spain') if t is defined else 'Ejec. Espana' }}</th>
+                    <th class="col-amount">{{ t('budget.col_exec_field') if t is defined else 'Ejec. Terreno' }}</th>
+                    <th class="col-amount">{{ t('budget.col_total_exec') if t is defined else 'Total Ejec.' }}</th>
+                    <th class="col-amount">{{ t('budget.col_difference') if t is defined else 'Diferencia' }}</th>
+                    <th class="col-percent">{{ t('budget.col_exec_pct') if t is defined else '% Ejec.' }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -93,18 +93,18 @@
                     {# AECID: Show grouped by category with subtotals #}
                     {% for subtotal in budget.category_subtotals %}
                     <tr class="category-header">
-                        <td colspan="{% if has_funding %}9{% else %}8{% endif %}" class="category-title">{{ subtotal.category_name }}</td>
+                        <td colspan="{% if has_funding %}9{% else %}8{% endif %}" class="category-title">{{ t('budget.cat.' + subtotal.category.value) if t is defined else subtotal.category_name }}</td>
                     </tr>
                     {% for line in subtotal.lines %}
                     <tr class="budget-row {% if line.has_deviation_alert %}alert-row{% endif %}{% if line.has_max_percentage_alert %} max-exceeded-row{% endif %}" data-line-id="{{ line.id }}">
                         <td class="col-code">{{ line.code }}</td>
                         <td class="col-name">
-                            {{ line.name }}
+                            {{ t('bl.' + budget.funder_code + '.' + line.code) if t is defined and budget.funder_code else line.name }}
                             {% if line.is_spain_only %}
-                            <span class="spain-only-badge" title="Solo Espana">ES</span>
+                            <span class="spain-only-badge" title="{{ t('budget.spain_only') if t is defined else 'Solo Espana' }}">ES</span>
                             {% endif %}
                             {% if line.max_percentage %}
-                            <span class="max-pct-badge" title="Maximo {{ line.max_percentage }}% de costes directos">max {{ line.max_percentage }}%</span>
+                            <span class="max-pct-badge" title="{{ t('budget.max_pct') if t is defined else 'max' }} {{ line.max_percentage }}%">{{ t('budget.max_pct') if t is defined else 'max' }} {{ line.max_percentage }}%</span>
                             {% endif %}
                         </td>
                         <td class="col-amount">
@@ -131,7 +131,7 @@
                             {% if user and user.rol and user.rol.value in ['director', 'coordinador'] %}
                             <button
                                 class="btn-icon btn-sm"
-                                title="Distribuir por financiador"
+                                title="{{ t('budget.distribute_by_funder') if t is defined else 'Distribuir por financiador' }}"
                                 hx-get="/projects/{{ project.id }}/budget-lines/{{ line.id }}/distribution"
                                 hx-target="#distribution-modal-body"
                                 hx-trigger="click"
@@ -184,10 +184,10 @@
                         </td>
                         <td class="col-percent">
                             {% if line.has_deviation_alert %}
-                            <span class="deviation-alert" title="Desviacion mayor al 10%"><i data-lucide="alert-triangle"></i></span>
+                            <span class="deviation-alert" title="{{ t('budget.deviation_alert') if t is defined else 'Desviacion mayor al 10%' }}"><i data-lucide="alert-triangle"></i></span>
                             {% endif %}
                             {% if line.has_max_percentage_alert %}
-                            <span class="max-exceeded-alert" title="Excede el porcentaje maximo"><i data-lucide="x-circle"></i></span>
+                            <span class="max-exceeded-alert" title="{{ t('budget.max_exceeded') if t is defined else 'Excede el porcentaje maximo' }}"><i data-lucide="x-circle"></i></span>
                             {% endif %}
                             {{ '{:.1f}'.format(line.porcentaje_ejecucion) }}%
                         </td>
@@ -195,7 +195,7 @@
                     {% endfor %}
                     <tr class="category-subtotal">
                         <td class="col-code"></td>
-                        <td class="col-name"><em>Subtotal {{ subtotal.category_name }}</em></td>
+                        <td class="col-name"><em>{{ t('budget.subtotal') if t is defined else 'Subtotal' }} {{ t('budget.cat.' + subtotal.category.value) if t is defined else subtotal.category_name }}</em></td>
                         <td class="col-amount"><strong>{{ '{:,.2f}'.format(subtotal.total_aprobado) }}</strong></td>
                         {% if has_funding %}<td class="col-action-sm"></td>{% endif %}
                         <td class="col-amount"><strong>{{ '{:,.2f}'.format(subtotal.total_ejecutado_espana) }}</strong></td>
@@ -213,15 +213,15 @@
                     <tr class="budget-row {% if line.has_deviation_alert %}alert-row{% endif %}{% if line.has_max_percentage_alert %} max-exceeded-row{% endif %}{% if line.is_optional %} optional-row{% endif %}" data-line-id="{{ line.id }}">
                         <td class="col-code">{{ line.code }}</td>
                         <td class="col-name">
-                            {{ line.name }}
+                            {{ t('bl.' + budget.funder_code + '.' + line.code) if t is defined and budget.funder_code else line.name }}
                             {% if line.is_spain_only %}
-                            <span class="spain-only-badge" title="Solo Espana">ES</span>
+                            <span class="spain-only-badge" title="{{ t('budget.spain_only') if t is defined else 'Solo Espana' }}">ES</span>
                             {% endif %}
                             {% if line.is_optional %}
-                            <span class="optional-badge" title="Opcional para subvenciones < 30.000 EUR">OPT</span>
+                            <span class="optional-badge" title="{{ t('budget.optional_badge') if t is defined else 'Opcional para subvenciones < 30.000 EUR' }}">OPT</span>
                             {% endif %}
                             {% if line.max_percentage %}
-                            <span class="max-pct-badge" title="Maximo {{ line.max_percentage }}% de costes directos">max {{ line.max_percentage }}%</span>
+                            <span class="max-pct-badge" title="{{ t('budget.max_pct') if t is defined else 'max' }} {{ line.max_percentage }}%">{{ t('budget.max_pct') if t is defined else 'max' }} {{ line.max_percentage }}%</span>
                             {% endif %}
                         </td>
                         <td class="col-amount">
@@ -248,7 +248,7 @@
                             {% if user and user.rol and user.rol.value in ['director', 'coordinador'] %}
                             <button
                                 class="btn-icon btn-sm"
-                                title="Distribuir por financiador"
+                                title="{{ t('budget.distribute_by_funder') if t is defined else 'Distribuir por financiador' }}"
                                 hx-get="/projects/{{ project.id }}/budget-lines/{{ line.id }}/distribution"
                                 hx-target="#distribution-modal-body"
                                 hx-trigger="click"
@@ -301,10 +301,10 @@
                         </td>
                         <td class="col-percent">
                             {% if line.has_deviation_alert %}
-                            <span class="deviation-alert" title="Desviacion mayor al 10%"><i data-lucide="alert-triangle"></i></span>
+                            <span class="deviation-alert" title="{{ t('budget.deviation_alert') if t is defined else 'Desviacion mayor al 10%' }}"><i data-lucide="alert-triangle"></i></span>
                             {% endif %}
                             {% if line.has_max_percentage_alert %}
-                            <span class="max-exceeded-alert" title="Excede el porcentaje maximo"><i data-lucide="x-circle"></i></span>
+                            <span class="max-exceeded-alert" title="{{ t('budget.max_exceeded') if t is defined else 'Excede el porcentaje maximo' }}"><i data-lucide="x-circle"></i></span>
                             {% endif %}
                             {{ '{:.1f}'.format(line.porcentaje_ejecucion) }}%
                         </td>
@@ -332,24 +332,24 @@
 
     <div class="budget-legend">
         <span class="legend-item">
-            <span class="spain-only-badge">ES</span> Partida solo Espana
+            <span class="spain-only-badge">ES</span> {{ t('budget.legend_spain_only') if t is defined else 'Partida solo Espana' }}
         </span>
         <span class="legend-item">
-            <span class="deviation-alert"><i data-lucide="alert-triangle"></i></span> Desviacion > 10%
+            <span class="deviation-alert"><i data-lucide="alert-triangle"></i></span> {{ t('budget.legend_deviation') if t is defined else 'Desviacion > 10%' }}
         </span>
         {% if budget.funder_max_indirect_percentage %}
         <span class="legend-item">
-            <span class="max-exceeded-alert"><i data-lucide="x-circle"></i></span> Indirectos > {{ budget.funder_max_indirect_percentage }}%
+            <span class="max-exceeded-alert"><i data-lucide="x-circle"></i></span> {{ t('budget.legend_indirect_exceeded') if t is defined else 'Indirectos >' }} {{ budget.funder_max_indirect_percentage }}%
         </span>
         {% endif %}
         {% if budget.funder_max_personnel_percentage %}
         <span class="legend-item">
-            <span class="max-exceeded-alert"><i data-lucide="x-circle"></i></span> Personal > {{ budget.funder_max_personnel_percentage }}%
+            <span class="max-exceeded-alert"><i data-lucide="x-circle"></i></span> {{ t('budget.legend_personnel_exceeded') if t is defined else 'Personal >' }} {{ budget.funder_max_personnel_percentage }}%
         </span>
         {% endif %}
         {% if not budget.audit_required %}
         <span class="legend-item">
-            <span class="optional-badge">OPT</span> Partida opcional
+            <span class="optional-badge">OPT</span> {{ t('budget.legend_optional') if t is defined else 'Partida opcional' }}
         </span>
         {% endif %}
     </div>

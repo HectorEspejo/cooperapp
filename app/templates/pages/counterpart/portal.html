@@ -18,6 +18,18 @@
         {{ t('portal.marco_logico') }}
     </button>
     <button class="tab"
+            hx-get="/contraparte/{{ project.id }}/presupuesto"
+            hx-target="#counterpart-content"
+            hx-swap="innerHTML">
+        {{ t('portal.presupuesto') }}
+    </button>
+    <button class="tab"
+            hx-get="/contraparte/{{ project.id }}/gastos"
+            hx-target="#counterpart-content"
+            hx-swap="innerHTML">
+        {{ t('portal.gastos') }}
+    </button>
+    <button class="tab"
             hx-get="/contraparte/{{ project.id }}/documentos"
             hx-target="#counterpart-content"
             hx-swap="innerHTML">

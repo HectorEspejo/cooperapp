@@ -3,17 +3,17 @@
     <table class="expenses-table">
         <thead>
             <tr>
-                <th class="col-date">Fecha</th>
-                <th class="col-concept">Concepto</th>
-                <th class="col-document">Doc</th>
-                <th class="col-expedidor">Expedidor</th>
-                <th class="col-partida">Partida</th>
-                <th class="col-amount">Importe</th>
-                <th class="col-imputable">Imputable</th>
-                <th class="col-funder">Financiado por</th>
-                <th class="col-ubicacion">Ubicacion</th>
-                <th class="col-estado">Estado</th>
-                <th class="col-actions">Acciones</th>
+                <th class="col-date">{{ t('expenses.col_date') if t is defined else 'Fecha' }}</th>
+                <th class="col-concept">{{ t('expenses.col_concept') if t is defined else 'Concepto' }}</th>
+                <th class="col-document">{{ t('expenses.col_doc') if t is defined else 'Doc' }}</th>
+                <th class="col-expedidor">{{ t('expenses.col_issuer') if t is defined else 'Expedidor' }}</th>
+                <th class="col-partida">{{ t('expenses.col_line') if t is defined else 'Partida' }}</th>
+                <th class="col-amount">{{ t('expenses.col_amount') if t is defined else 'Importe' }}</th>
+                <th class="col-imputable">{{ t('expenses.col_imputable') if t is defined else 'Imputable' }}</th>
+                <th class="col-funder">{{ t('expenses.col_funded_by') if t is defined else 'Financiado por' }}</th>
+                <th class="col-ubicacion">{{ t('expenses.col_location') if t is defined else 'Ubicacion' }}</th>
+                <th class="col-estado">{{ t('expenses.col_state') if t is defined else 'Estado' }}</th>
+                <th class="col-actions">{{ t('expenses.col_actions') if t is defined else 'Acciones' }}</th>
             </tr>
         </thead>
         <tbody>
@@ -27,20 +27,20 @@
                 </td>
                 <td class="col-document">
                     {% if expense.documento_path %}
-                    <a href="/projects/{{ project.id }}/expenses/{{ expense.id }}/document"
-                       class="doc-badge doc-attached" title="Ver documento" target="_blank">
+                    <a href="{% if is_counterpart %}/contraparte/{{ project.id }}/gastos/{{ expense.id }}/document{% else %}/projects/{{ project.id }}/expenses/{{ expense.id }}/document{% endif %}"
+                       class="doc-badge doc-attached" title="{{ t('expenses.view_doc') if t is defined else 'Ver documento' }}" target="_blank">
                         <span class="doc-icon"><i data-lucide="paperclip"></i></span>
                     </a>
                     {% elif expense.estado.value in ['borrador', 'pendiente_revision'] %}
-                    <button class="doc-badge doc-missing" title="Subir factura (requerido para validar)"
-                            hx-get="/projects/{{ project.id }}/expenses/{{ expense.id }}/upload-modal"
+                    <button class="doc-badge doc-missing" title="{{ t('expenses.upload_invoice') if t is defined else 'Subir factura (requerido para validar)' }}"
+                            hx-get="{% if is_counterpart %}/contraparte/{{ project.id }}/gastos/{{ expense.id }}/upload-modal{% else %}/projects/{{ project.id }}/expenses/{{ expense.id }}/upload-modal{% endif %}"
                             hx-target="#expense-upload-modal-content"
                             hx-trigger="click"
                             onclick="openExpenseUploadModal()">
                         <span class="doc-icon"><i data-lucide="paperclip"></i></span>
                     </button>
                     {% else %}
-                    <span class="doc-badge doc-none" title="Sin documento">-</span>
+                    <span class="doc-badge doc-none" title="{{ t('expenses.no_doc') if t is defined else 'Sin documento' }}">-</span>
                     {% endif %}
                 </td>
                 <td class="col-expedidor">{{ expense.expedidor }}</td>
@@ -68,25 +68,46 @@
                 </td>
                 <td class="col-ubicacion">
                     <span class="ubicacion-badge ubicacion-{{ expense.ubicacion.value }}">
-                        {{ 'Espana' if expense.ubicacion.value == 'espana' else 'Terreno' }}
+                        {% if expense.ubicacion.value == 'espana' %}{{ t('expenses.spain') if t is defined else 'Espana' }}{% else %}{{ t('expenses.field') if t is defined else 'Terreno' }}{% endif %}
                     </span>
                 </td>
                 <td class="col-estado">
                     <span class="estado-gasto-badge estado-gasto-{{ expense.estado.value }}">
-                        {% if expense.estado.value == 'borrador' %}Borrador
-                        {% elif expense.estado.value == 'pendiente_revision' %}Pendiente
-                        {% elif expense.estado.value == 'validado' %}Validado
-                        {% elif expense.estado.value == 'rechazado' %}Rechazado
-                        {% elif expense.estado.value == 'justificado' %}Justificado
+                        {% if expense.estado.value == 'borrador' %}{{ t('expenses.badge_draft') if t is defined else 'Borrador' }}
+                        {% elif expense.estado.value == 'pendiente_revision' %}{{ t('expenses.badge_pending') if t is defined else 'Pendiente' }}
+                        {% elif expense.estado.value == 'validado' %}{{ t('expenses.badge_validated') if t is defined else 'Validado' }}
+                        {% elif expense.estado.value == 'rechazado' %}{{ t('expenses.badge_rejected') if t is defined else 'Rechazado' }}
+                        {% elif expense.estado.value == 'justificado' %}{{ t('expenses.badge_justified') if t is defined else 'Justificado' }}
                         {% endif %}
                     </span>
                 </td>
                 <td class="col-actions">
                     <div class="action-buttons">
+                        {% if is_counterpart %}
+                        {# Contraparte: solo ver doc o subir justificante #}
+                        {% if expense.documento_path %}
+                        <a class="btn-icon"
+                           title="{{ t('expenses.view_doc') if t is defined else 'Ver documento' }}"
+                           href="/contraparte/{{ project.id }}/gastos/{{ expense.id }}/document"
+                           target="_blank">
+                            <i data-lucide="file-text"></i>
+                        </a>
+                        {% elif expense.estado.value == 'pendiente_revision' and not expense.documento_path and expense.funding_source and expense.funding_source.tipo.value == 'contraparte' %}
+                        <button
+                            class="btn-icon"
+                            title="{{ t('expenses.upload_receipt') if t is defined else 'Subir Justificante' }}"
+                            hx-get="/contraparte/{{ project.id }}/gastos/{{ expense.id }}/upload-modal"
+                            hx-target="#expense-upload-modal-content"
+                            hx-trigger="click"
+                            onclick="openExpenseUploadModal()"
+                        ><i data-lucide="upload"></i></button>
+                        {% endif %}
+                        {% else %}
+                        {# Portal principal: acciones completas #}
                         {% if expense.estado.value == 'borrador' %}
                         <button
                             class="btn-icon"
-                            title="Editar"
+                            title="{{ t('expenses.edit') if t is defined else 'Editar' }}"
                             hx-get="/projects/{{ project.id }}/expenses/{{ expense.id }}/edit"
                             hx-target="#expense-modal-content"
                             hx-trigger="click"
@@ -96,54 +117,54 @@
                         {% if expense.documento_path %}
                         <button
                             class="btn-icon btn-success"
-                            title="Validar"
+                            title="{{ t('expenses.validate') if t is defined else 'Validar' }}"
                             hx-post="/projects/{{ project.id }}/expenses/{{ expense.id }}/validate"
                             hx-target="#expenses-content"
                             hx-select="#expenses-content"
                             hx-swap="outerHTML"
-                            hx-confirm="¿Validar este gasto? Se actualizara el presupuesto ejecutado."
+                            hx-confirm="{{ t('expenses.confirm_validate') if t is defined else 'Validar este gasto? Se actualizara el presupuesto ejecutado.' }}"
                         ><i data-lucide="check"></i></button>
                         {% else %}
-                        <span class="btn-icon btn-disabled" title="Debe adjuntar factura para validar"><i data-lucide="check"></i></span>
+                        <span class="btn-icon btn-disabled" title="{{ t('expenses.doc_required') if t is defined else 'Debe adjuntar factura para validar' }}"><i data-lucide="check"></i></span>
                         {% endif %}
                         {% endif %}
                         <button
                             class="btn-icon btn-danger"
-                            title="Eliminar"
+                            title="{{ t('expenses.delete') if t is defined else 'Eliminar' }}"
                             hx-delete="/projects/{{ project.id }}/expenses/{{ expense.id }}"
                             hx-target="#expenses-content"
                             hx-select="#expenses-content"
                             hx-swap="outerHTML"
-                            hx-confirm="¿Eliminar este gasto?"
+                            hx-confirm="{{ t('expenses.confirm_delete') if t is defined else 'Eliminar este gasto?' }}"
                         ><i data-lucide="trash-2"></i></button>
                         {% elif expense.estado.value == 'pendiente_revision' %}
                         {% if user and user.rol and user.rol.value in ['director', 'coordinador'] %}
                         {% if expense.documento_path %}
                         <button
                             class="btn-icon btn-success"
-                            title="Validar"
+                            title="{{ t('expenses.validate') if t is defined else 'Validar' }}"
                             hx-post="/projects/{{ project.id }}/expenses/{{ expense.id }}/validate"
                             hx-target="#expenses-content"
                             hx-select="#expenses-content"
                             hx-swap="outerHTML"
-                            hx-confirm="¿Validar este gasto?"
+                            hx-confirm="{{ t('expenses.confirm_validate_short') if t is defined else 'Validar este gasto?' }}"
                         ><i data-lucide="check"></i></button>
                         {% else %}
-                        <span class="btn-icon btn-disabled" title="Debe adjuntar factura para validar"><i data-lucide="check"></i></span>
+                        <span class="btn-icon btn-disabled" title="{{ t('expenses.doc_required') if t is defined else 'Debe adjuntar factura para validar' }}"><i data-lucide="check"></i></span>
                         {% endif %}
                         <button
                             class="btn-icon btn-warning"
-                            title="Rechazar"
+                            title="{{ t('expenses.reject') if t is defined else 'Rechazar' }}"
                             hx-post="/projects/{{ project.id }}/expenses/{{ expense.id }}/reject"
                             hx-target="#expenses-content"
                             hx-select="#expenses-content"
                             hx-swap="outerHTML"
-                            hx-confirm="¿Rechazar este gasto?"
+                            hx-confirm="{{ t('expenses.confirm_reject') if t is defined else 'Rechazar este gasto?' }}"
                         ><i data-lucide="x"></i></button>
                         {% endif %}
                         <button
                             class="btn-icon"
-                            title="Volver a borrador"
+                            title="{{ t('expenses.revert_draft') if t is defined else 'Volver a borrador' }}"
                             hx-post="/projects/{{ project.id }}/expenses/{{ expense.id }}/revert"
                             hx-target="#expenses-content"
                             hx-select="#expenses-content"
@@ -153,18 +174,18 @@
                         {% if user and user.rol and user.rol.value in ['director', 'coordinador'] %}
                         <button
                             class="btn-icon"
-                            title="Volver a borrador"
+                            title="{{ t('expenses.revert_draft') if t is defined else 'Volver a borrador' }}"
                             hx-post="/projects/{{ project.id }}/expenses/{{ expense.id }}/revert"
                             hx-target="#expenses-content"
                             hx-select="#expenses-content"
                             hx-swap="outerHTML"
-                            hx-confirm="¿Revertir a borrador? Se restara el importe del presupuesto ejecutado."
+                            hx-confirm="{{ t('expenses.confirm_revert') if t is defined else 'Revertir a borrador? Se restara el importe del presupuesto ejecutado.' }}"
                         ><i data-lucide="undo-2"></i></button>
                         {% endif %}
                         {% elif expense.estado.value == 'rechazado' %}
                         <button
                             class="btn-icon"
-                            title="Volver a borrador"
+                            title="{{ t('expenses.revert_draft') if t is defined else 'Volver a borrador' }}"
                             hx-post="/projects/{{ project.id }}/expenses/{{ expense.id }}/revert"
                             hx-target="#expenses-content"
                             hx-select="#expenses-content"
@@ -172,13 +193,14 @@
                         ><i data-lucide="undo-2"></i></button>
                         <button
                             class="btn-icon btn-danger"
-                            title="Eliminar"
+                            title="{{ t('expenses.delete') if t is defined else 'Eliminar' }}"
                             hx-delete="/projects/{{ project.id }}/expenses/{{ expense.id }}"
                             hx-target="#expenses-content"
                             hx-select="#expenses-content"
                             hx-swap="outerHTML"
-                            hx-confirm="¿Eliminar este gasto?"
+                            hx-confirm="{{ t('expenses.confirm_delete') if t is defined else 'Eliminar este gasto?' }}"
                         ><i data-lucide="trash-2"></i></button>
+                        {% endif %}
                         {% endif %}
                     </div>
                 </td>
@@ -190,7 +212,7 @@
 {% else %}
 <div class="empty-state expenses-empty">
     <div class="empty-icon"><i data-lucide="clipboard-list"></i></div>
-    <h3>Sin gastos registrados</h3>
-    <p>No hay gastos registrados para este proyecto. Haz clic en "Nuevo Gasto" para comenzar.</p>
+    <h3>{{ t('expenses.no_expenses') if t is defined else 'Sin gastos registrados' }}</h3>
+    <p>{{ t('expenses.no_expenses_desc') if t is defined else 'No hay gastos registrados para este proyecto. Haz clic en "Nuevo Gasto" para comenzar.' }}</p>
 </div>
 {% endif %}

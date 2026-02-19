@@ -1,15 +1,15 @@
 {% if funding_summary %}
 <div class="funding-summary-section">
-    <h4>Financiacion por Fuente</h4>
+    <h4>{{ t('budget.funding_by_source') if t is defined else 'Financiacion por Fuente' }}</h4>
     <div class="budget-table-wrapper">
         <table class="budget-table funding-summary-table">
             <thead>
                 <tr>
-                    <th class="col-name">Fuente</th>
-                    <th class="col-amount">Aprobado</th>
-                    <th class="col-amount">Ejecutado</th>
-                    <th class="col-amount">Disponible</th>
-                    <th class="col-percent">% Ejec.</th>
+                    <th class="col-name">{{ t('budget.col_source') if t is defined else 'Fuente' }}</th>
+                    <th class="col-amount">{{ t('budget.col_approved') if t is defined else 'Aprobado' }}</th>
+                    <th class="col-amount">{{ t('budget.col_executed') if t is defined else 'Ejecutado' }}</th>
+                    <th class="col-amount">{{ t('budget.available') if t is defined else 'Disponible' }}</th>
+                    <th class="col-percent">{{ t('budget.col_exec_pct') if t is defined else '% Ejec.' }}</th>
                 </tr>
             </thead>
             <tbody>

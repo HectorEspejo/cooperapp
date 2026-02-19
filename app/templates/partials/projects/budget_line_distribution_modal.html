@@ -1,5 +1,5 @@
 <div class="modal-header">
-    <h3>Distribucion por Financiador</h3>
+    <h3>{{ t('budget.distribution_title') if t is defined else 'Distribucion por Financiador' }}</h3>
     <button type="button" class="btn-close" onclick="closeDistributionModal()">&times;</button>
 </div>
 
@@ -35,7 +35,7 @@
         </div>
 
         <div class="distribution-total">
-            <span class="total-label">Total:</span>
+            <span class="total-label">{{ t('budget.distribution_total') if t is defined else 'Total:' }}</span>
             <span id="distribution-total-value" class="total-value">
                 {{ '{:.2f}'.format(alloc_map.values()|sum if alloc_map else 0) }}
             </span>
@@ -44,9 +44,9 @@
     </div>
 
     <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" onclick="closeDistributionModal()">Cancelar</button>
+        <button type="button" class="btn btn-secondary" onclick="closeDistributionModal()">{{ t('expenses.cancel') if t is defined else 'Cancelar' }}</button>
         {% if user and user.rol and user.rol.value in ['director', 'coordinador'] %}
-        <button type="submit" class="btn btn-primary">Guardar Distribucion</button>
+        <button type="submit" class="btn btn-primary">{{ t('budget.save_distribution') if t is defined else 'Guardar Distribucion' }}</button>
         {% endif %}
     </div>
 </form>

@@ -1,21 +1,23 @@
 <div class="modal-header">
-    <h3>{% if is_edit %}{{ t('expenses.edit_expense') if t is defined else 'Editar Gasto' }}{% else %}{{ t('expenses.new_expense') if t is defined else 'Nuevo Gasto' }}{% endif %}</h3>
+    <h3>{{ t('expenses.new_expense') if t is defined else 'Nuevo Gasto' }}</h3>
     <button type="button" class="btn-close" onclick="closeExpenseModal()">&times;</button>
 </div>
 
 <form
     class="expense-form"
-    {% if is_edit %}
-    hx-put="/projects/{{ project.id }}/expenses/{{ expense.id }}"
-    {% else %}
-    hx-post="/projects/{{ project.id }}/expenses"
-    {% endif %}
-    hx-target="#expenses-content"
-    hx-select="#expenses-content"
-    hx-swap="outerHTML"
+    hx-post="/contraparte/{{ project.id }}/gastos"
+    hx-target="#counterpart-content"
+    hx-swap="innerHTML"
     hx-on::after-request="if(event.detail.successful) closeExpenseModal()"
 >
+    <input type="hidden" name="funding_source_id" value="{{ funding_source.id }}">
     <div class="modal-body">
+        <!-- Notice Banner -->
+        <div class="alert alert-info">
+            <i data-lucide="info"></i>
+            <span>{{ t('expenses.counterpart_notice') if t is defined else 'Este gasto se enviara directamente a revision por el coordinador del proyecto.' }}</span>
+        </div>
+
         <!-- Balance Warning -->
         <div id="balance-warning" class="alert alert-warning" style="display: none;"></div>
 
@@ -28,7 +30,6 @@
                         type="date"
                         id="fecha_factura"
                         name="fecha_factura"
-                        value="{{ expense.fecha_factura.isoformat() if expense else '' }}"
                         required
                     >
                 </div>
@@ -47,9 +48,8 @@
                             data-disponible-espana="{{ line.disponible_espana }}"
                             data-disponible-terreno="{{ line.disponible_terreno }}"
                             data-spain-only="{{ 'true' if line.is_spain_only else 'false' }}"
-                            {% if expense and expense.budget_line_id == line.id %}selected{% endif %}
                         >
-                            {{ line.code }} - {{ t('bl.' + funder_code + '.' + line.code) if t is defined and funder_code is defined and funder_code else line.name }}
+                            {{ line.code }} - {{ t('bl.' + funder_code + '.' + line.code) if t is defined and funder_code else line.name }}
                             (Disp: {{ "{:,.2f}".format(line.disponible_espana) }} ESP / {{ "{:,.2f}".format(line.disponible_terreno) }} TER)
                         </option>
                         {% endfor %}
@@ -63,7 +63,6 @@
                     type="text"
                     id="concepto"
                     name="concepto"
-                    value="{{ expense.concepto if expense else '' }}"
                     maxlength="500"
                     required
                     placeholder="{{ t('expenses.concept_placeholder') if t is defined else 'Descripcion del gasto' }}"
@@ -77,7 +76,6 @@
                         type="text"
                         id="expedidor"
                         name="expedidor"
-                        value="{{ expense.expedidor if expense else '' }}"
                         maxlength="200"
                         required
                         placeholder="{{ t('expenses.issuer_placeholder') if t is defined else 'Nombre del proveedor' }}"
@@ -89,7 +87,6 @@
                         type="text"
                         id="persona"
                         name="persona"
-                        value="{{ expense.persona if expense else '' }}"
                         maxlength="200"
                         placeholder="{{ t('expenses.person_placeholder') if t is defined else 'Persona responsable (opcional)' }}"
                     >
@@ -107,7 +104,6 @@
                         type="number"
                         id="cantidad_original"
                         name="cantidad_original"
-                        value="{{ expense.cantidad_original if expense else '' }}"
                         step="0.01"
                         min="0"
                         required
@@ -122,12 +118,12 @@
                         name="moneda_original"
                         onchange="updateCurrencyConversion()"
                     >
-                        <option value="EUR" {% if not expense or expense.moneda_original == 'EUR' %}selected{% endif %}>EUR</option>
-                        <option value="USD" {% if expense and expense.moneda_original == 'USD' %}selected{% endif %}>USD</option>
-                        <option value="GBP" {% if expense and expense.moneda_original == 'GBP' %}selected{% endif %}>GBP</option>
-                        <option value="MAD" {% if expense and expense.moneda_original == 'MAD' %}selected{% endif %}>MAD</option>
-                        <option value="XOF" {% if expense and expense.moneda_original == 'XOF' %}selected{% endif %}>XOF</option>
-                        <option value="XAF" {% if expense and expense.moneda_original == 'XAF' %}selected{% endif %}>XAF</option>
+                        <option value="EUR" selected>EUR</option>
+                        <option value="USD">USD</option>
+                        <option value="GBP">GBP</option>
+                        <option value="MAD">MAD</option>
+                        <option value="XOF">XOF</option>
+                        <option value="XAF">XAF</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -136,7 +132,6 @@
                         type="number"
                         id="tipo_cambio"
                         name="tipo_cambio"
-                        value="{{ expense.tipo_cambio if expense and expense.tipo_cambio else '' }}"
                         step="0.000001"
                         min="0"
                         placeholder="1.000000"
@@ -152,7 +147,6 @@
                         type="number"
                         id="cantidad_euros"
                         name="cantidad_euros"
-                        value="{{ expense.cantidad_euros if expense else '' }}"
                         step="0.01"
                         min="0"
                         required
@@ -166,7 +160,7 @@
                         type="number"
                         id="porcentaje"
                         name="porcentaje"
-                        value="{{ expense.porcentaje if expense else '100' }}"
+                        value="100"
                         step="0.01"
                         min="0"
                         max="100"
@@ -177,66 +171,34 @@
             </div>
             <div class="imputable-display">
                 <span class="imputable-label">{{ t('expenses.imputable_amount') if t is defined else 'Importe imputable:' }}</span>
-                <span id="cantidad_imputable_display" class="imputable-value">
-                    {{ "{:,.2f}".format(expense.cantidad_imputable) if expense else '0.00' }} EUR
-                </span>
+                <span id="cantidad_imputable_display" class="imputable-value">0.00 EUR</span>
             </div>
         </div>
 
-        <!-- Location & Funder -->
+        <!-- Location -->
         <div class="form-section">
-            <div class="form-grid">
-                <div class="form-group">
-                    <label>{{ t('expenses.location') if t is defined else 'Ubicacion' }} *</label>
-                    <div class="radio-group">
-                        <label class="radio-label">
-                            <input
-                                type="radio"
-                                name="ubicacion"
-                                value="espana"
-                                {% if not expense or expense.ubicacion.value == 'espana' %}checked{% endif %}
-                                onchange="checkBudgetBalance()"
-                            >
-                            <span>{{ t('expenses.spain') if t is defined else 'Espana' }}</span>
-                        </label>
-                        <label class="radio-label">
-                            <input
-                                type="radio"
-                                name="ubicacion"
-                                value="terreno"
-                                {% if expense and expense.ubicacion.value == 'terreno' %}checked{% endif %}
-                                onchange="checkBudgetBalance()"
-                            >
-                            <span>{{ t('expenses.field') if t is defined else 'Terreno' }}</span>
-                        </label>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label for="financiado_por">{{ t('expenses.funded_by') if t is defined else 'Financiado por' }} *</label>
-                    {% if funding_sources is defined and funding_sources|length > 0 %}
-                    <select
-                        id="funding_source_id"
-                        name="funding_source_id"
-                        required
-                    >
-                        {% for source in funding_sources %}
-                        <option value="{{ source.id }}"
-                            {% if expense and expense.funding_source_id == source.id %}selected
-                            {% elif not expense and source.tipo.value == 'agencia' %}selected{% endif %}>
-                            {{ source.nombre }}
-                        </option>
-                        {% endfor %}
-                    </select>
-                    {% else %}
-                    <input
-                        type="text"
-                        id="financiado_por"
-                        name="financiado_por"
-                        value="{{ expense.financiado_por if expense else project.financiador.value }}"
-                        maxlength="100"
-                        required
-                    >
-                    {% endif %}
+            <div class="form-group">
+                <label>{{ t('expenses.location') if t is defined else 'Ubicacion' }} *</label>
+                <div class="radio-group">
+                    <label class="radio-label">
+                        <input
+                            type="radio"
+                            name="ubicacion"
+                            value="espana"
+                            onchange="checkBudgetBalance()"
+                        >
+                        <span>{{ t('expenses.spain') if t is defined else 'Espana' }}</span>
+                    </label>
+                    <label class="radio-label">
+                        <input
+                            type="radio"
+                            name="ubicacion"
+                            value="terreno"
+                            checked
+                            onchange="checkBudgetBalance()"
+                        >
+                        <span>{{ t('expenses.field') if t is defined else 'Terreno' }}</span>
+                    </label>
                 </div>
             </div>
         </div>
@@ -250,30 +212,18 @@
                     name="observaciones"
                     rows="3"
                     placeholder="{{ t('expenses.notes_placeholder') if t is defined else 'Notas adicionales (opcional)' }}"
-                >{{ expense.observaciones if expense else '' }}</textarea>
+                ></textarea>
             </div>
         </div>
-
-        {% if is_edit and expense.documento_path %}
-        <div class="form-section">
-            <div class="document-info">
-                <span class="doc-icon"><i data-lucide="paperclip"></i></span>
-                <span class="doc-name">{{ expense.documento_path.split('/')[-1] }}</span>
-            </div>
-        </div>
-        {% endif %}
     </div>
 
     <div class="modal-footer">
         <button type="button" class="btn btn-secondary" onclick="closeExpenseModal()">{{ t('expenses.cancel') if t is defined else 'Cancelar' }}</button>
-        <button type="submit" class="btn btn-primary">
-            {% if is_edit %}{{ t('expenses.save_changes') if t is defined else 'Guardar Cambios' }}{% else %}{{ t('expenses.create_expense') if t is defined else 'Crear Gasto' }}{% endif %}
-        </button>
+        <button type="submit" class="btn btn-primary">{{ t('expenses.submit_expense') if t is defined else 'Registrar Gasto' }}</button>
     </div>
 </form>
 
 <script>
-// Initialize imputable amount display
 document.addEventListener('DOMContentLoaded', function() {
     updateImputeAmount();
     checkBudgetBalance();

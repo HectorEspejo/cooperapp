@@ -1,7 +1,7 @@
 {% if user and user.rol and user.rol.value in ['director', 'coordinador'] %}
 <div class="funding-sources-section">
     <div class="section-header">
-        <h4>Fuentes de Financiacion</h4>
+        <h4>{{ t('budget.funding_sources') if t is defined else 'Fuentes de Financiacion' }}</h4>
     </div>
 
     {% if funding_sources %}
@@ -10,18 +10,18 @@
         <div class="funding-source-item">
             <span class="source-name">{{ source.nombre }}</span>
             <span class="source-tipo tipo-{{ source.tipo.value }}">
-                {% if source.tipo.value == 'agencia' %}Agencia
-                {% elif source.tipo.value == 'prodiversa' %}Prodiversa
-                {% elif source.tipo.value == 'contraparte' %}Contraparte
-                {% else %}Otro{% endif %}
+                {% if source.tipo.value == 'agencia' %}{{ t('budget.source_agencia') if t is defined else 'Agencia' }}
+                {% elif source.tipo.value == 'prodiversa' %}{{ t('budget.source_prodiversa') if t is defined else 'Prodiversa' }}
+                {% elif source.tipo.value == 'contraparte' %}{{ t('budget.source_contraparte') if t is defined else 'Contraparte' }}
+                {% else %}{{ t('budget.source_otro') if t is defined else 'Otro' }}{% endif %}
             </span>
             <button
                 class="btn-icon btn-danger btn-sm"
-                title="Eliminar fuente"
+                title="{{ t('budget.delete_source') if t is defined else 'Eliminar fuente' }}"
                 hx-delete="/projects/{{ project.id }}/funding-sources/{{ source.id }}"
                 hx-target="#tab-presupuesto"
                 hx-swap="innerHTML"
-                hx-confirm="¿Eliminar la fuente '{{ source.nombre }}'? Solo es posible si no tiene gastos asociados."
+                hx-confirm="{{ t('budget.confirm_delete_source') if t is defined else 'Eliminar la fuente? Solo es posible si no tiene gastos asociados.' }}"
             ><i data-lucide="trash-2"></i></button>
         </div>
         {% endfor %}
@@ -38,18 +38,18 @@
             <input
                 type="text"
                 name="nombre"
-                placeholder="Nombre del financiador"
+                placeholder="{{ t('budget.source_name_placeholder') if t is defined else 'Nombre del financiador' }}"
                 maxlength="200"
                 required
                 class="form-input"
             >
             <select name="tipo" class="form-select">
-                <option value="agencia">Agencia</option>
-                <option value="prodiversa">Prodiversa</option>
-                <option value="contraparte">Contraparte</option>
-                <option value="otro" selected>Otro</option>
+                <option value="agencia">{{ t('budget.source_agencia') if t is defined else 'Agencia' }}</option>
+                <option value="prodiversa">{{ t('budget.source_prodiversa') if t is defined else 'Prodiversa' }}</option>
+                <option value="contraparte">{{ t('budget.source_contraparte') if t is defined else 'Contraparte' }}</option>
+                <option value="otro" selected>{{ t('budget.source_otro') if t is defined else 'Otro' }}</option>
             </select>
-            <button type="submit" class="btn btn-sm btn-primary">+ Anadir Fuente</button>
+            <button type="submit" class="btn btn-sm btn-primary">{{ t('budget.add_source') if t is defined else '+ Anadir Fuente' }}</button>
         </div>
     </form>
 </div>

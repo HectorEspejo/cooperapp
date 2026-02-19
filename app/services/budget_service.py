@@ -570,6 +570,17 @@ class BudgetService:
     def get_funding_source_by_id(self, source_id: int) -> FuenteFinanciacion | None:
         return self.db.get(FuenteFinanciacion, source_id)
 
+    def get_counterpart_funding_source(self, project_id: int) -> FuenteFinanciacion | None:
+        """Obtiene la fuente tipo 'contraparte' del proyecto."""
+        query = (
+            select(FuenteFinanciacion)
+            .where(
+                FuenteFinanciacion.project_id == project_id,
+                FuenteFinanciacion.tipo == TipoFuente.contraparte,
+            )
+        )
+        return self.db.execute(query).scalars().first()
+
     def create_funding_source(self, project_id: int, nombre: str, tipo: TipoFuente) -> FuenteFinanciacion:
         # Get max orden for this project
         max_orden = self.db.execute(

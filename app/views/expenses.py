@@ -19,9 +19,11 @@ from app.auth.dependencies import get_current_user, require_permission
 from app.auth.permissions import Permiso
 from app.services.audit_service import AuditService
 from app.models.audit_log import ActorType, AccionAuditoria
+from app.i18n import get_translator
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
+_t = get_translator("es")
 
 
 def get_expense_service(db: Session = Depends(get_db)) -> ExpenseService:
@@ -71,6 +73,7 @@ def expenses_tab(
             "funding_sources": funding_sources,
             "estados": EstadoGasto,
             "ubicaciones": UbicacionGasto,
+            "t": _t,
         },
     )
 
@@ -114,6 +117,7 @@ def expenses_table(
             "project": project,
             "expenses": expenses,
             "budget_lines": budget_lines,
+            "t": _t,
         },
     )
 
@@ -145,6 +149,7 @@ def new_expense_form(
             "funding_sources": funding_sources,
             "ubicaciones": UbicacionGasto,
             "is_edit": False,
+            "t": _t,
         },
     )
 
@@ -181,6 +186,7 @@ def edit_expense_form(
             "funding_sources": funding_sources,
             "ubicaciones": UbicacionGasto,
             "is_edit": True,
+            "t": _t,
         },
     )
 
@@ -268,6 +274,7 @@ async def create_expense(
             "funding_sources": funding_sources,
             "estados": EstadoGasto,
             "ubicaciones": UbicacionGasto,
+            "t": _t,
         },
     )
 
@@ -370,6 +377,7 @@ async def update_expense(
             "funding_sources": funding_sources,
             "estados": EstadoGasto,
             "ubicaciones": UbicacionGasto,
+            "t": _t,
         },
     )
 
@@ -425,6 +433,7 @@ def delete_expense(
             "funding_sources": funding_sources,
             "estados": EstadoGasto,
             "ubicaciones": UbicacionGasto,
+            "t": _t,
         },
     )
 
@@ -482,6 +491,7 @@ def validate_expense(
             "funding_sources": funding_sources,
             "estados": EstadoGasto,
             "ubicaciones": UbicacionGasto,
+            "t": _t,
         },
     )
     # Trigger budget tab refresh when expense validation changes budget values
@@ -545,6 +555,7 @@ async def reject_expense(
             "funding_sources": funding_sources,
             "estados": EstadoGasto,
             "ubicaciones": UbicacionGasto,
+            "t": _t,
         },
     )
     # Trigger budget tab refresh when expense validation changes budget values
@@ -605,6 +616,7 @@ def revert_expense(
             "funding_sources": funding_sources,
             "estados": EstadoGasto,
             "ubicaciones": UbicacionGasto,
+            "t": _t,
         },
     )
     # Trigger budget tab refresh when expense validation changes budget values
@@ -632,7 +644,7 @@ def upload_modal(
 
     return templates.TemplateResponse(
         "partials/projects/expense_upload_modal.html",
-        {"request": request, "project": project, "expense": expense},
+        {"request": request, "project": project, "expense": expense, "t": _t},
     )
 
 
@@ -706,6 +718,7 @@ async def upload_document(
             "funding_sources": funding_sources,
             "estados": EstadoGasto,
             "ubicaciones": UbicacionGasto,
+            "t": _t,
         },
     )
 

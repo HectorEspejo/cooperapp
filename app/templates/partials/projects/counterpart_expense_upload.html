@@ -1,0 +1,32 @@
+<div class="modal-header">
+    <h3>{{ t('expenses.upload_receipt') }}</h3>
+    <button type="button" class="btn-close" onclick="closeExpenseUploadModal()">&times;</button>
+</div>
+
+<form
+    class="upload-form"
+    hx-post="/contraparte/{{ project.id }}/gastos/{{ expense.id }}/upload"
+    hx-target="#counterpart-content"
+    hx-swap="innerHTML"
+    hx-encoding="multipart/form-data"
+    hx-on::after-request="if(event.detail.successful) closeExpenseUploadModal()"
+>
+    <div class="modal-body">
+        <div class="form-group">
+            <label for="file">{{ t('expenses.upload_receipt') }} *</label>
+            <input
+                type="file"
+                id="file"
+                name="file"
+                required
+                accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
+            >
+        </div>
+        <p class="text-muted">{{ expense.concepto }}</p>
+    </div>
+
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeExpenseUploadModal()">{{ t('ml.cancel') }}</button>
+        <button type="submit" class="btn btn-primary">{{ t('expenses.upload_receipt') }}</button>
+    </div>
+</form>

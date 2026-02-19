@@ -9,10 +9,9 @@
 <div class="budget-init-form">
     <div class="empty-state budget-empty">
         <div class="empty-icon"><i data-lucide="bar-chart-3"></i></div>
-        <h3>Sin presupuesto configurado</h3>
+        <h3>{{ t('budget.no_budget') if t is defined else 'Sin presupuesto configurado' }}</h3>
         <p>
-            El financiador actual (<strong>{{ project.financiador.value }}</strong>) no tiene plantillas de presupuesto definidas,
-            o el presupuesto no se ha inicializado correctamente.
+            {{ t('budget.no_budget_desc') if t is defined else 'El financiador actual no tiene plantillas de presupuesto definidas, o el presupuesto no se ha inicializado correctamente.' }}
         </p>
     </div>
 
@@ -24,12 +23,12 @@
         hx-swap="innerHTML"
     >
         <p class="help-text">
-            Si deseas usar las plantillas de otro financiador, selecciona uno a continuacion:
+            {{ t('budget.select_funder_help') if t is defined else 'Si deseas usar las plantillas de otro financiador, selecciona uno a continuacion:' }}
         </p>
         <div class="form-group">
-            <label for="funder_id">Financiador</label>
+            <label for="funder_id">{{ t('budget.funder_label') if t is defined else 'Financiador' }}</label>
             <select name="funder_id" id="funder_id" required>
-                <option value="">Selecciona un financiador...</option>
+                <option value="">{{ t('budget.select_funder') if t is defined else 'Selecciona un financiador...' }}</option>
                 {% for funder in funders %}
                 <option value="{{ funder.id }}" {% if budget.funder_code == funder.code %}selected{% endif %}>
                     {{ funder.name }} ({{ funder.code }})
@@ -37,7 +36,7 @@
                 {% endfor %}
             </select>
         </div>
-        <button type="submit" class="btn btn-primary">Inicializar Presupuesto</button>
+        <button type="submit" class="btn btn-primary">{{ t('budget.initialize') if t is defined else 'Inicializar Presupuesto' }}</button>
     </form>
     {% endif %}
 </div>

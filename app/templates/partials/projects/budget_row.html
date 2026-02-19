@@ -3,7 +3,7 @@
     <td class="col-name">
         {{ line.name }}
         {% if line.is_spain_only %}
-        <span class="spain-only-badge" title="Solo Espana">ES</span>
+        <span class="spain-only-badge" title="{{ t('budget.spain_only') if t is defined else 'Solo Espana' }}">ES</span>
         {% endif %}
     </td>
     <td class="col-amount">
@@ -55,7 +55,7 @@
     </td>
     <td class="col-percent">
         {% if line.has_deviation_alert %}
-        <span class="deviation-alert" title="Desviacion mayor al 10%"><i data-lucide="alert-triangle"></i></span>
+        <span class="deviation-alert" title="{{ t('budget.deviation_alert') if t is defined else 'Desviacion mayor al 10%' }}"><i data-lucide="alert-triangle"></i></span>
         {% endif %}
         {{ '{:.1f}'.format(line.porcentaje_ejecucion) }}%
     </td>
