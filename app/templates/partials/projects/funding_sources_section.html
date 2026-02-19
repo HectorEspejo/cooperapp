@@ -1,0 +1,56 @@
+{% if user and user.rol and user.rol.value in ['director', 'coordinador'] %}
+<div class="funding-sources-section">
+    <div class="section-header">
+        <h4>Fuentes de Financiacion</h4>
+    </div>
+
+    {% if funding_sources %}
+    <div class="funding-sources-list">
+        {% for source in funding_sources %}
+        <div class="funding-source-item">
+            <span class="source-name">{{ source.nombre }}</span>
+            <span class="source-tipo tipo-{{ source.tipo.value }}">
+                {% if source.tipo.value == 'agencia' %}Agencia
+                {% elif source.tipo.value == 'prodiversa' %}Prodiversa
+                {% elif source.tipo.value == 'contraparte' %}Contraparte
+                {% else %}Otro{% endif %}
+            </span>
+            <button
+                class="btn-icon btn-danger btn-sm"
+                title="Eliminar fuente"
+                hx-delete="/projects/{{ project.id }}/funding-sources/{{ source.id }}"
+                hx-target="#tab-presupuesto"
+                hx-swap="innerHTML"
+                hx-confirm="¿Eliminar la fuente '{{ source.nombre }}'? Solo es posible si no tiene gastos asociados."
+            ><i data-lucide="trash-2"></i></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <form
+        class="funding-source-add-form"
+        hx-post="/projects/{{ project.id }}/funding-sources"
+        hx-target="#tab-presupuesto"
+        hx-swap="innerHTML"
+    >
+        <div class="form-inline">
+            <input
+                type="text"
+                name="nombre"
+                placeholder="Nombre del financiador"
+                maxlength="200"
+                required
+                class="form-input"
+            >
+            <select name="tipo" class="form-select">
+                <option value="agencia">Agencia</option>
+                <option value="prodiversa">Prodiversa</option>
+                <option value="contraparte">Contraparte</option>
+                <option value="otro" selected>Otro</option>
+            </select>
+            <button type="submit" class="btn btn-sm btn-primary">+ Anadir Fuente</button>
+        </div>
+    </form>
+</div>
+{% endif %}

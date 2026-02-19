@@ -6,6 +6,16 @@
         {% endif %}
     </div>
 
+    <!-- Funding Sources Section -->
+    {% if funding_sources is defined %}
+    {% include "partials/projects/funding_sources_section.html" %}
+    {% endif %}
+
+    <!-- Funding Summary by Source -->
+    {% if funding_summary is defined and funding_summary %}
+    {% include "partials/projects/budget_funding_summary.html" %}
+    {% endif %}
+
     <!-- Budget Summary vs Subvencion -->
     {% if budget.project_subvencion is not none %}
     {% set disponible = budget.project_subvencion - budget.totals.total_aprobado %}
@@ -59,6 +69,8 @@
     </div>
     {% endif %}
 
+    {% set has_funding = funding_sources is defined and funding_sources|length > 0 %}
+
     <div class="budget-table-wrapper">
         <table class="budget-table">
             <thead>
@@ -66,6 +78,9 @@
                     <th class="col-code">Codigo</th>
                     <th class="col-name">Partida</th>
                     <th class="col-amount">Aprobado</th>
+                    {% if has_funding %}
+                    <th class="col-action-sm"></th>
+                    {% endif %}
                     <th class="col-amount">Ejec. Espana</th>
                     <th class="col-amount">Ejec. Terreno</th>
                     <th class="col-amount">Total Ejec.</th>
@@ -78,7 +93,7 @@
                     {# AECID: Show grouped by category with subtotals #}
                     {% for subtotal in budget.category_subtotals %}
                     <tr class="category-header">
-                        <td colspan="8" class="category-title">{{ subtotal.category_name }}</td>
+                        <td colspan="{% if has_funding %}9{% else %}8{% endif %}" class="category-title">{{ subtotal.category_name }}</td>
                     </tr>
                     {% for line in subtotal.lines %}
                     <tr class="budget-row {% if line.has_deviation_alert %}alert-row{% endif %}{% if line.has_max_percentage_alert %} max-exceeded-row{% endif %}" data-line-id="{{ line.id }}">
@@ -93,7 +108,9 @@
                             {% endif %}
                         </td>
                         <td class="col-amount">
-                            {% if user and user.rol and user.rol.value in ['director', 'coordinador'] %}
+                            {% if has_funding %}
+                            <span class="budget-readonly">{{ '{:,.2f}'.format(line.aprobado) }}</span>
+                            {% elif user and user.rol and user.rol.value in ['director', 'coordinador'] %}
                             <input
                                 type="text"
                                 class="budget-input {% if line.has_max_percentage_alert %}input-error{% endif %}"
@@ -109,6 +126,20 @@
                             <span class="budget-readonly">{{ '{:,.2f}'.format(line.aprobado) }}</span>
                             {% endif %}
                         </td>
+                        {% if has_funding %}
+                        <td class="col-action-sm">
+                            {% if user and user.rol and user.rol.value in ['director', 'coordinador'] %}
+                            <button
+                                class="btn-icon btn-sm"
+                                title="Distribuir por financiador"
+                                hx-get="/projects/{{ project.id }}/budget-lines/{{ line.id }}/distribution"
+                                hx-target="#distribution-modal-body"
+                                hx-trigger="click"
+                                onclick="openDistributionModal()"
+                            ><i data-lucide="split"></i></button>
+                            {% endif %}
+                        </td>
+                        {% endif %}
                         <td class="col-amount">
                             {% if user and user.rol and user.rol.value in ['director', 'coordinador'] %}
                             <input
@@ -166,6 +197,7 @@
                         <td class="col-code"></td>
                         <td class="col-name"><em>Subtotal {{ subtotal.category_name }}</em></td>
                         <td class="col-amount"><strong>{{ '{:,.2f}'.format(subtotal.total_aprobado) }}</strong></td>
+                        {% if has_funding %}<td class="col-action-sm"></td>{% endif %}
                         <td class="col-amount"><strong>{{ '{:,.2f}'.format(subtotal.total_ejecutado_espana) }}</strong></td>
                         <td class="col-amount"><strong>{{ '{:,.2f}'.format(subtotal.total_ejecutado_terreno) }}</strong></td>
                         <td class="col-amount"><strong>{{ '{:,.2f}'.format(subtotal.total_ejecutado) }}</strong></td>
@@ -193,7 +225,9 @@
                             {% endif %}
                         </td>
                         <td class="col-amount">
-                            {% if user and user.rol and user.rol.value in ['director', 'coordinador'] %}
+                            {% if has_funding %}
+                            <span class="budget-readonly">{{ '{:,.2f}'.format(line.aprobado) }}</span>
+                            {% elif user and user.rol and user.rol.value in ['director', 'coordinador'] %}
                             <input
                                 type="text"
                                 class="budget-input {% if line.has_max_percentage_alert %}input-error{% endif %}"
@@ -209,6 +243,20 @@
                             <span class="budget-readonly">{{ '{:,.2f}'.format(line.aprobado) }}</span>
                             {% endif %}
                         </td>
+                        {% if has_funding %}
+                        <td class="col-action-sm">
+                            {% if user and user.rol and user.rol.value in ['director', 'coordinador'] %}
+                            <button
+                                class="btn-icon btn-sm"
+                                title="Distribuir por financiador"
+                                hx-get="/projects/{{ project.id }}/budget-lines/{{ line.id }}/distribution"
+                                hx-target="#distribution-modal-body"
+                                hx-trigger="click"
+                                onclick="openDistributionModal()"
+                            ><i data-lucide="split"></i></button>
+                            {% endif %}
+                        </td>
+                        {% endif %}
                         <td class="col-amount">
                             {% if user and user.rol and user.rol.value in ['director', 'coordinador'] %}
                             <input
@@ -269,6 +317,7 @@
                     <td class="col-code"><strong>TOTAL</strong></td>
                     <td class="col-name"></td>
                     <td class="col-amount"><strong>{{ '{:,.2f}'.format(budget.totals.total_aprobado) }}</strong></td>
+                    {% if has_funding %}<td class="col-action-sm"></td>{% endif %}
                     <td class="col-amount"><strong>{{ '{:,.2f}'.format(budget.totals.total_ejecutado_espana) }}</strong></td>
                     <td class="col-amount"><strong>{{ '{:,.2f}'.format(budget.totals.total_ejecutado_terreno) }}</strong></td>
                     <td class="col-amount"><strong>{{ '{:,.2f}'.format(budget.totals.total_ejecutado) }}</strong></td>

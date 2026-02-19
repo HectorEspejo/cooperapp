@@ -94,6 +94,9 @@ class ProjectBudgetLine(Base):
         "ProjectBudgetLine", back_populates="parent", cascade="all, delete-orphan"
     )
     expenses: Mapped[list["Expense"]] = relationship(back_populates="budget_line")
+    funding_allocations: Mapped[list["AsignacionFinanciador"]] = relationship(
+        back_populates="budget_line", cascade="all, delete-orphan"
+    )
 
     @property
     def disponible_espana(self) -> Decimal:
@@ -133,3 +136,4 @@ class ProjectBudgetLine(Base):
 # Import at end to avoid circular import
 from app.models.project import Project
 from app.models.expense import Expense
+from app.models.funding import AsignacionFinanciador

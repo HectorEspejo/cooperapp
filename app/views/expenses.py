@@ -12,6 +12,7 @@ from app.models.user import User
 from app.services.expense_service import ExpenseService
 from app.services.project_service import ProjectService
 from app.services.document_service import DocumentService
+from app.services.budget_service import BudgetService
 from app.schemas.expense import ExpenseCreate, ExpenseUpdate, ExpenseFilters
 from app.schemas.document import DocumentCreate
 from app.auth.dependencies import get_current_user, require_permission
@@ -35,6 +36,10 @@ def get_document_service(db: Session = Depends(get_db)) -> DocumentService:
     return DocumentService(db)
 
 
+def get_budget_service(db: Session = Depends(get_db)) -> BudgetService:
+    return BudgetService(db)
+
+
 @router.get("/{project_id}/expenses", response_class=HTMLResponse)
 def expenses_tab(
     request: Request,
@@ -42,6 +47,7 @@ def expenses_tab(
     user: User = Depends(require_permission(Permiso.gasto_ver)),
     expense_service: ExpenseService = Depends(get_expense_service),
     project_service: ProjectService = Depends(get_project_service),
+    budget_service: BudgetService = Depends(get_budget_service),
 ):
     """Render the expenses tab content"""
     project = project_service.get_by_id(project_id)
@@ -51,6 +57,7 @@ def expenses_tab(
     expenses = expense_service.get_project_expenses(project_id)
     summary = expense_service.get_expense_summary(project_id)
     budget_lines = expense_service.get_budget_lines_with_balance(project_id)
+    funding_sources = budget_service.get_project_funding_sources(project_id)
 
     return templates.TemplateResponse(
         "partials/projects/expenses_tab.html",
@@ -61,6 +68,7 @@ def expenses_tab(
             "expenses": expenses,
             "summary": summary,
             "budget_lines": budget_lines,
+            "funding_sources": funding_sources,
             "estados": EstadoGasto,
             "ubicaciones": UbicacionGasto,
         },
@@ -77,6 +85,7 @@ def expenses_table(
     ubicacion: str | None = Query(None),
     fecha_desde: date | None = Query(None),
     fecha_hasta: date | None = Query(None),
+    funding_source_id: int | None = Query(None),
     expense_service: ExpenseService = Depends(get_expense_service),
     project_service: ProjectService = Depends(get_project_service),
 ):
@@ -91,6 +100,7 @@ def expenses_table(
         ubicacion=UbicacionGasto(ubicacion) if ubicacion else None,
         fecha_desde=fecha_desde,
         fecha_hasta=fecha_hasta,
+        funding_source_id=funding_source_id,
     )
 
     expenses = expense_service.get_project_expenses(project_id, filters)
@@ -115,6 +125,7 @@ def new_expense_form(
     user: User = Depends(require_permission(Permiso.gasto_crear)),
     expense_service: ExpenseService = Depends(get_expense_service),
     project_service: ProjectService = Depends(get_project_service),
+    budget_service: BudgetService = Depends(get_budget_service),
 ):
     """Render new expense form modal"""
     project = project_service.get_by_id(project_id)
@@ -122,6 +133,7 @@ def new_expense_form(
         raise HTTPException(status_code=404, detail="Proyecto no encontrado")
 
     budget_lines = expense_service.get_budget_lines_with_balance(project_id)
+    funding_sources = budget_service.get_project_funding_sources(project_id)
 
     return templates.TemplateResponse(
         "partials/projects/expense_form.html",
@@ -130,6 +142,7 @@ def new_expense_form(
             "project": project,
             "expense": None,
             "budget_lines": budget_lines,
+            "funding_sources": funding_sources,
             "ubicaciones": UbicacionGasto,
             "is_edit": False,
         },
@@ -144,6 +157,7 @@ def edit_expense_form(
     user: User = Depends(require_permission(Permiso.gasto_crear)),
     expense_service: ExpenseService = Depends(get_expense_service),
     project_service: ProjectService = Depends(get_project_service),
+    budget_service: BudgetService = Depends(get_budget_service),
 ):
     """Render edit expense form modal"""
     project = project_service.get_by_id(project_id)
@@ -155,6 +169,7 @@ def edit_expense_form(
         raise HTTPException(status_code=404, detail="Gasto no encontrado")
 
     budget_lines = expense_service.get_budget_lines_with_balance(project_id)
+    funding_sources = budget_service.get_project_funding_sources(project_id)
 
     return templates.TemplateResponse(
         "partials/projects/expense_form.html",
@@ -163,6 +178,7 @@ def edit_expense_form(
             "project": project,
             "expense": expense,
             "budget_lines": budget_lines,
+            "funding_sources": funding_sources,
             "ubicaciones": UbicacionGasto,
             "is_edit": True,
         },
@@ -176,6 +192,7 @@ async def create_expense(
     user: User = Depends(require_permission(Permiso.gasto_crear)),
     expense_service: ExpenseService = Depends(get_expense_service),
     project_service: ProjectService = Depends(get_project_service),
+    budget_service: BudgetService = Depends(get_budget_service),
 ):
     """Create a new expense and return updated table"""
     form_data = await request.form()
@@ -186,6 +203,17 @@ async def create_expense(
 
     try:
         # Parse form data
+        # Parse funding_source_id
+        funding_source_id_str = form_data.get("funding_source_id")
+        funding_source_id = int(funding_source_id_str) if funding_source_id_str else None
+
+        # If funding_source_id is set, derive financiado_por from the source name
+        financiado_por = form_data.get("financiado_por", "")
+        if funding_source_id:
+            source = budget_service.get_funding_source_by_id(funding_source_id)
+            if source:
+                financiado_por = source.nombre
+
         data = ExpenseCreate(
             budget_line_id=int(form_data.get("budget_line_id")),
             fecha_factura=date.fromisoformat(form_data.get("fecha_factura")),
@@ -197,9 +225,10 @@ async def create_expense(
             tipo_cambio=Decimal(str(form_data.get("tipo_cambio")).replace(",", ".")) if form_data.get("tipo_cambio") else None,
             cantidad_euros=Decimal(str(form_data.get("cantidad_euros", "0")).replace(",", ".")),
             porcentaje=Decimal(str(form_data.get("porcentaje", "100")).replace(",", ".")),
-            financiado_por=form_data.get("financiado_por"),
+            financiado_por=financiado_por,
             ubicacion=UbicacionGasto(form_data.get("ubicacion")),
             observaciones=form_data.get("observaciones") or None,
+            funding_source_id=funding_source_id,
         )
 
         expense = expense_service.create_expense(project_id, data)
@@ -225,6 +254,7 @@ async def create_expense(
     expenses = expense_service.get_project_expenses(project_id)
     summary = expense_service.get_expense_summary(project_id)
     budget_lines = expense_service.get_budget_lines_with_balance(project_id)
+    funding_sources = budget_service.get_project_funding_sources(project_id)
 
     return templates.TemplateResponse(
         "partials/projects/expenses_tab.html",
@@ -235,6 +265,7 @@ async def create_expense(
             "expenses": expenses,
             "summary": summary,
             "budget_lines": budget_lines,
+            "funding_sources": funding_sources,
             "estados": EstadoGasto,
             "ubicaciones": UbicacionGasto,
         },
@@ -249,6 +280,7 @@ async def update_expense(
     user: User = Depends(require_permission(Permiso.gasto_crear)),
     expense_service: ExpenseService = Depends(get_expense_service),
     project_service: ProjectService = Depends(get_project_service),
+    budget_service: BudgetService = Depends(get_budget_service),
 ):
     """Update an expense and return updated row"""
     form_data = await request.form()
@@ -287,6 +319,14 @@ async def update_expense(
             update_data["porcentaje"] = Decimal(str(form_data.get("porcentaje")).replace(",", "."))
         if form_data.get("financiado_por"):
             update_data["financiado_por"] = form_data.get("financiado_por")
+        if "funding_source_id" in form_data:
+            fs_id_str = form_data.get("funding_source_id")
+            if fs_id_str:
+                update_data["funding_source_id"] = int(fs_id_str)
+                # Also update financiado_por from the source name
+                source = budget_service.get_funding_source_by_id(int(fs_id_str))
+                if source:
+                    update_data["financiado_por"] = source.nombre
         if form_data.get("ubicacion"):
             update_data["ubicacion"] = UbicacionGasto(form_data.get("ubicacion"))
         if "observaciones" in form_data:
@@ -316,6 +356,7 @@ async def update_expense(
     expenses = expense_service.get_project_expenses(project_id)
     summary = expense_service.get_expense_summary(project_id)
     budget_lines = expense_service.get_budget_lines_with_balance(project_id)
+    funding_sources = budget_service.get_project_funding_sources(project_id)
 
     return templates.TemplateResponse(
         "partials/projects/expenses_tab.html",
@@ -326,6 +367,7 @@ async def update_expense(
             "expenses": expenses,
             "summary": summary,
             "budget_lines": budget_lines,
+            "funding_sources": funding_sources,
             "estados": EstadoGasto,
             "ubicaciones": UbicacionGasto,
         },
@@ -340,6 +382,7 @@ def delete_expense(
     user: User = Depends(require_permission(Permiso.gasto_crear)),
     expense_service: ExpenseService = Depends(get_expense_service),
     project_service: ProjectService = Depends(get_project_service),
+    budget_service: BudgetService = Depends(get_budget_service),
 ):
     """Delete an expense"""
     project = project_service.get_by_id(project_id)
@@ -368,6 +411,7 @@ def delete_expense(
     expenses = expense_service.get_project_expenses(project_id)
     summary = expense_service.get_expense_summary(project_id)
     budget_lines = expense_service.get_budget_lines_with_balance(project_id)
+    funding_sources = budget_service.get_project_funding_sources(project_id)
 
     return templates.TemplateResponse(
         "partials/projects/expenses_tab.html",
@@ -378,6 +422,7 @@ def delete_expense(
             "expenses": expenses,
             "summary": summary,
             "budget_lines": budget_lines,
+            "funding_sources": funding_sources,
             "estados": EstadoGasto,
             "ubicaciones": UbicacionGasto,
         },
@@ -392,6 +437,7 @@ def validate_expense(
     user: User = Depends(require_permission(Permiso.gasto_validar)),
     expense_service: ExpenseService = Depends(get_expense_service),
     project_service: ProjectService = Depends(get_project_service),
+    budget_service: BudgetService = Depends(get_budget_service),
 ):
     """Validate an expense"""
     project = project_service.get_by_id(project_id)
@@ -422,6 +468,7 @@ def validate_expense(
     expenses = expense_service.get_project_expenses(project_id)
     summary = expense_service.get_expense_summary(project_id)
     budget_lines = expense_service.get_budget_lines_with_balance(project_id)
+    funding_sources = budget_service.get_project_funding_sources(project_id)
 
     response = templates.TemplateResponse(
         "partials/projects/expenses_tab.html",
@@ -432,6 +479,7 @@ def validate_expense(
             "expenses": expenses,
             "summary": summary,
             "budget_lines": budget_lines,
+            "funding_sources": funding_sources,
             "estados": EstadoGasto,
             "ubicaciones": UbicacionGasto,
         },
@@ -449,6 +497,7 @@ async def reject_expense(
     user: User = Depends(require_permission(Permiso.gasto_validar)),
     expense_service: ExpenseService = Depends(get_expense_service),
     project_service: ProjectService = Depends(get_project_service),
+    budget_service: BudgetService = Depends(get_budget_service),
 ):
     """Reject an expense"""
     project = project_service.get_by_id(project_id)
@@ -482,6 +531,7 @@ async def reject_expense(
     expenses = expense_service.get_project_expenses(project_id)
     summary = expense_service.get_expense_summary(project_id)
     budget_lines = expense_service.get_budget_lines_with_balance(project_id)
+    funding_sources = budget_service.get_project_funding_sources(project_id)
 
     response = templates.TemplateResponse(
         "partials/projects/expenses_tab.html",
@@ -492,6 +542,7 @@ async def reject_expense(
             "expenses": expenses,
             "summary": summary,
             "budget_lines": budget_lines,
+            "funding_sources": funding_sources,
             "estados": EstadoGasto,
             "ubicaciones": UbicacionGasto,
         },
@@ -509,6 +560,7 @@ def revert_expense(
     user: User = Depends(require_permission(Permiso.gasto_validar)),
     expense_service: ExpenseService = Depends(get_expense_service),
     project_service: ProjectService = Depends(get_project_service),
+    budget_service: BudgetService = Depends(get_budget_service),
 ):
     """Revert an expense to draft"""
     project = project_service.get_by_id(project_id)
@@ -539,6 +591,7 @@ def revert_expense(
     expenses = expense_service.get_project_expenses(project_id)
     summary = expense_service.get_expense_summary(project_id)
     budget_lines = expense_service.get_budget_lines_with_balance(project_id)
+    funding_sources = budget_service.get_project_funding_sources(project_id)
 
     response = templates.TemplateResponse(
         "partials/projects/expenses_tab.html",
@@ -549,6 +602,7 @@ def revert_expense(
             "expenses": expenses,
             "summary": summary,
             "budget_lines": budget_lines,
+            "funding_sources": funding_sources,
             "estados": EstadoGasto,
             "ubicaciones": UbicacionGasto,
         },
@@ -592,6 +646,7 @@ async def upload_document(
     expense_service: ExpenseService = Depends(get_expense_service),
     project_service: ProjectService = Depends(get_project_service),
     document_service: DocumentService = Depends(get_document_service),
+    budget_service: BudgetService = Depends(get_budget_service),
 ):
     """Upload a document for an expense"""
     project = project_service.get_by_id(project_id)
@@ -637,6 +692,7 @@ async def upload_document(
     expenses = expense_service.get_project_expenses(project_id)
     summary = expense_service.get_expense_summary(project_id)
     budget_lines = expense_service.get_budget_lines_with_balance(project_id)
+    funding_sources = budget_service.get_project_funding_sources(project_id)
 
     return templates.TemplateResponse(
         "partials/projects/expenses_tab.html",
@@ -647,6 +703,7 @@ async def upload_document(
             "expenses": expenses,
             "summary": summary,
             "budget_lines": budget_lines,
+            "funding_sources": funding_sources,
             "estados": EstadoGasto,
             "ubicaciones": UbicacionGasto,
         },

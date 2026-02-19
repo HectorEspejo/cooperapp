@@ -10,6 +10,7 @@
                 <th class="col-partida">Partida</th>
                 <th class="col-amount">Importe</th>
                 <th class="col-imputable">Imputable</th>
+                <th class="col-funder">Financiado por</th>
                 <th class="col-ubicacion">Ubicacion</th>
                 <th class="col-estado">Estado</th>
                 <th class="col-actions">Acciones</th>
@@ -56,6 +57,13 @@
                     <span class="amount-cell">{{ "{:,.2f}".format(expense.cantidad_imputable) }}</span>
                     {% if expense.porcentaje < 100 %}
                     <span class="percentage-badge">{{ expense.porcentaje }}%</span>
+                    {% endif %}
+                </td>
+                <td class="col-funder">
+                    {% if expense.funding_source %}
+                    <span class="funder-name">{{ expense.funding_source.nombre }}</span>
+                    {% else %}
+                    <span class="funder-name funder-text">{{ expense.financiado_por }}</span>
                     {% endif %}
                 </td>
                 <td class="col-ubicacion">

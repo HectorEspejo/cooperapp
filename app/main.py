@@ -42,6 +42,16 @@ async def lifespan(app: FastAPI):
             conn.execute(text("ALTER TABLE counterpart_sessions ADD COLUMN language VARCHAR(5) DEFAULT 'es'"))
             conn.commit()
 
+    # Migration: add funding_source_id column to expenses if missing
+    expense_columns = [c["name"] for c in inspector.get_columns("expenses")]
+    if "funding_source_id" not in expense_columns:
+        with engine.connect() as conn:
+            conn.execute(text(
+                "ALTER TABLE expenses ADD COLUMN funding_source_id INTEGER "
+                "REFERENCES project_funding_sources(id) ON DELETE SET NULL"
+            ))
+            conn.commit()
+
     # Create uploads directory for expense documents
     os.makedirs("uploads", exist_ok=True)
 
@@ -60,6 +70,39 @@ async def lifespan(app: FastAPI):
         budget_service.seed_aecid_templates()
         budget_service.seed_dipu_templates()
         budget_service.seed_ayto_templates()
+
+        # Migration: create default funding sources for existing projects with budgets
+        from app.models.project import Project as ProjectModel
+        from app.models.funding import FuenteFinanciacion
+        from sqlalchemy import select as sa_select, func as sa_func
+        projects_with_budget = db.execute(
+            sa_select(ProjectModel)
+            .where(ProjectModel.funder_id.isnot(None))
+        ).scalars().all()
+        for proj in projects_with_budget:
+            existing_sources = db.execute(
+                sa_select(sa_func.count(FuenteFinanciacion.id))
+                .where(FuenteFinanciacion.project_id == proj.id)
+            ).scalar()
+            if existing_sources == 0:
+                budget_service.auto_create_default_sources(proj)
+                # Try to map existing expense financiado_por to funding sources
+                from app.models.expense import Expense as ExpenseModel
+                sources = budget_service.get_project_funding_sources(proj.id)
+                source_map = {s.nombre.lower(): s.id for s in sources}
+                expenses = db.execute(
+                    sa_select(ExpenseModel)
+                    .where(
+                        ExpenseModel.project_id == proj.id,
+                        ExpenseModel.funding_source_id.is_(None),
+                    )
+                ).scalars().all()
+                for exp in expenses:
+                    if exp.financiado_por:
+                        matched_id = source_map.get(exp.financiado_por.lower())
+                        if matched_id:
+                            exp.funding_source_id = matched_id
+                db.commit()
     finally:
         db.close()
 

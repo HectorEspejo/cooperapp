@@ -1,0 +1,66 @@
+<div class="modal-header">
+    <h3>Distribucion por Financiador</h3>
+    <button type="button" class="btn-close" onclick="closeDistributionModal()">&times;</button>
+</div>
+
+<form
+    class="distribution-form"
+    hx-put="/projects/{{ project.id }}/budget-lines/{{ line.id }}/distribution"
+    hx-target="#tab-presupuesto"
+    hx-swap="innerHTML"
+    hx-on::after-request="if(event.detail.successful) closeDistributionModal()"
+>
+    <div class="modal-body">
+        <div class="distribution-line-info">
+            <span class="line-code">{{ line.code }}</span>
+            <span class="line-name">{{ line.name }}</span>
+        </div>
+
+        <div class="distribution-inputs">
+            {% for source in funding_sources %}
+            <div class="distribution-row">
+                <label for="source_{{ source.id }}">{{ source.nombre }}</label>
+                <input
+                    type="number"
+                    id="source_{{ source.id }}"
+                    name="source_{{ source.id }}"
+                    value="{{ '{:.2f}'.format(alloc_map.get(source.id, 0)) }}"
+                    step="0.01"
+                    min="0"
+                    class="budget-input"
+                    oninput="updateDistributionTotal()"
+                >
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="distribution-total">
+            <span class="total-label">Total:</span>
+            <span id="distribution-total-value" class="total-value">
+                {{ '{:.2f}'.format(alloc_map.values()|sum if alloc_map else 0) }}
+            </span>
+            <span class="total-currency">EUR</span>
+        </div>
+    </div>
+
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeDistributionModal()">Cancelar</button>
+        {% if user and user.rol and user.rol.value in ['director', 'coordinador'] %}
+        <button type="submit" class="btn btn-primary">Guardar Distribucion</button>
+        {% endif %}
+    </div>
+</form>
+
+<script>
+function updateDistributionTotal() {
+    const inputs = document.querySelectorAll('.distribution-inputs input[type="number"]');
+    let total = 0;
+    inputs.forEach(function(input) {
+        total += parseFloat(input.value || 0);
+    });
+    const el = document.getElementById('distribution-total-value');
+    if (el) {
+        el.textContent = total.toFixed(2);
+    }
+}
+</script>

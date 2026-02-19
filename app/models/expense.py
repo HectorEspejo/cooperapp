@@ -1,7 +1,7 @@
 from enum import Enum
 from decimal import Decimal
 from datetime import date, datetime
-from sqlalchemy import String, Numeric, Text, Date, DateTime, Enum as SQLEnum, ForeignKey
+from sqlalchemy import String, Integer, Numeric, Text, Date, DateTime, Enum as SQLEnum, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database import Base
 
@@ -45,6 +45,9 @@ class Expense(Base):
     fecha_revision: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     observaciones: Mapped[str | None] = mapped_column(Text, nullable=True)
     documento_path: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    funding_source_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("project_funding_sources.id", ondelete="SET NULL"), nullable=True
+    )
 
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(
@@ -54,6 +57,7 @@ class Expense(Base):
     # Relationships
     project: Mapped["Project"] = relationship(back_populates="expenses")
     budget_line: Mapped["ProjectBudgetLine"] = relationship(back_populates="expenses")
+    funding_source: Mapped["FuenteFinanciacion | None"] = relationship()
 
     @property
     def cantidad_imputable(self) -> Decimal:
@@ -67,3 +71,4 @@ class Expense(Base):
 # Import at end to avoid circular import
 from app.models.project import Project
 from app.models.budget import ProjectBudgetLine
+from app.models.funding import FuenteFinanciacion

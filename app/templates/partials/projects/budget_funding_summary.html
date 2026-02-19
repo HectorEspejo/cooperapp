@@ -1,0 +1,67 @@
+{% if funding_summary %}
+<div class="funding-summary-section">
+    <h4>Financiacion por Fuente</h4>
+    <div class="budget-table-wrapper">
+        <table class="budget-table funding-summary-table">
+            <thead>
+                <tr>
+                    <th class="col-name">Fuente</th>
+                    <th class="col-amount">Aprobado</th>
+                    <th class="col-amount">Ejecutado</th>
+                    <th class="col-amount">Disponible</th>
+                    <th class="col-percent">% Ejec.</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% set ns = namespace(total_aprobado=0, total_ejecutado=0, total_disponible=0) %}
+                {% for row in funding_summary %}
+                <tr class="funding-row">
+                    <td class="col-name">
+                        <span class="source-nombre">{{ row.source_nombre }}</span>
+                        <span class="source-tipo-mini tipo-{{ row.source_tipo.value }}">
+                            {% if row.source_tipo.value == 'agencia' %}AG
+                            {% elif row.source_tipo.value == 'prodiversa' %}PD
+                            {% elif row.source_tipo.value == 'contraparte' %}CP
+                            {% else %}OT{% endif %}
+                        </span>
+                    </td>
+                    <td class="col-amount">{{ "{:,.2f}".format(row.total_aprobado) }}</td>
+                    <td class="col-amount">{{ "{:,.2f}".format(row.total_ejecutado) }}</td>
+                    <td class="col-amount {% if row.disponible < 0 %}negative{% endif %}">
+                        {{ "{:,.2f}".format(row.disponible) }}
+                    </td>
+                    <td class="col-percent">
+                        <div class="mini-progress">
+                            <div class="mini-progress-bar" style="width: {{ [row.porcentaje, 100] | min }}%"></div>
+                        </div>
+                        {{ "{:.1f}".format(row.porcentaje) }}%
+                    </td>
+                </tr>
+                {% set ns.total_aprobado = ns.total_aprobado + row.total_aprobado|float %}
+                {% set ns.total_ejecutado = ns.total_ejecutado + row.total_ejecutado|float %}
+                {% set ns.total_disponible = ns.total_disponible + row.disponible|float %}
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr class="budget-totals">
+                    <td class="col-name"><strong>TOTAL</strong></td>
+                    <td class="col-amount"><strong>{{ "{:,.2f}".format(ns.total_aprobado) }}</strong></td>
+                    <td class="col-amount"><strong>{{ "{:,.2f}".format(ns.total_ejecutado) }}</strong></td>
+                    <td class="col-amount {% if ns.total_disponible < 0 %}negative{% endif %}">
+                        <strong>{{ "{:,.2f}".format(ns.total_disponible) }}</strong>
+                    </td>
+                    <td class="col-percent">
+                        <strong>
+                        {% if ns.total_aprobado > 0 %}
+                            {{ "{:.1f}".format(ns.total_ejecutado / ns.total_aprobado * 100) }}%
+                        {% else %}
+                            0.0%
+                        {% endif %}
+                        </strong>
+                    </td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+{% endif %}

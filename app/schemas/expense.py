@@ -18,6 +18,7 @@ class ExpenseBase(BaseModel):
     financiado_por: str = Field(..., max_length=100)
     ubicacion: UbicacionGasto
     observaciones: str | None = None
+    funding_source_id: int | None = None
 
 
 class ExpenseCreate(ExpenseBase):
@@ -41,6 +42,7 @@ class ExpenseUpdate(BaseModel):
     ubicacion: UbicacionGasto | None = None
     observaciones: str | None = None
     comprobacion: str | None = Field(None, max_length=100)
+    funding_source_id: int | None = None
 
 
 class BudgetLineInfo(BaseModel):
@@ -122,3 +124,4 @@ class ExpenseFilters(BaseModel):
     ubicacion: UbicacionGasto | None = None
     fecha_desde: date | None = None
     fecha_hasta: date | None = None
+    funding_source_id: int | None = None

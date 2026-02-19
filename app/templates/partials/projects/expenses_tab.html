@@ -72,6 +72,16 @@
                     <option value="terreno">Terreno</option>
                 </select>
             </div>
+            {% if funding_sources is defined and funding_sources|length > 0 %}
+            <div class="filter-group">
+                <select name="funding_source_id" class="filter-select">
+                    <option value="">Todos los financiadores</option>
+                    {% for source in funding_sources %}
+                    <option value="{{ source.id }}">{{ source.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
             <div class="filter-group filter-dates">
                 <input type="date" name="fecha_desde" placeholder="Desde" class="filter-date">
                 <span class="date-separator">-</span>

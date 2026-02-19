@@ -17,6 +17,7 @@ from app.models.counterpart_session import CounterpartSession
 from app.models.audit_log import AuditLog, ActorType, AccionAuditoria
 from app.models.translation_cache import TranslationCache
 from app.models.postponement import Aplazamiento, EstadoAplazamiento
+from app.models.funding import FuenteFinanciacion, AsignacionFinanciador, TipoFuente, TIPO_FUENTE_NOMBRES as TIPO_FUENTE_FINANCIACION_NOMBRES
 
 __all__ = [
     "Project", "Plazo", "ODSObjetivo", "EstadoProyecto", "TipoProyecto", "Financiador", "ODS", "ODS_NOMBRES",
@@ -34,4 +35,5 @@ __all__ = [
     "AuditLog", "ActorType", "AccionAuditoria",
     "TranslationCache",
     "Aplazamiento", "EstadoAplazamiento",
+    "FuenteFinanciacion", "AsignacionFinanciador", "TipoFuente", "TIPO_FUENTE_FINANCIACION_NOMBRES",
 ]

@@ -4,6 +4,8 @@ from sqlalchemy import select, func
 from sqlalchemy.orm import Session, selectinload
 from app.models.budget import Funder, BudgetLineTemplate, ProjectBudgetLine, CategoriaPartida
 from app.models.project import Project, Financiador
+from app.models.expense import Expense, EstadoGasto
+from app.models.funding import FuenteFinanciacion, AsignacionFinanciador, TipoFuente
 from app.schemas.budget import (
     ProjectBudgetLineUpdate,
     ProjectBudgetLineResponse,
@@ -12,6 +14,7 @@ from app.schemas.budget import (
     CategorySubtotal,
     BudgetValidationAlert,
 )
+from app.schemas.funding import FundingSummaryRow
 
 
 # Mapping from Financiador enum to Funder code
@@ -403,6 +406,10 @@ class BudgetService:
         for line in budget_lines:
             self.db.refresh(line)
 
+        # Auto-create default funding sources
+        if project:
+            self.auto_create_default_sources(project)
+
         return budget_lines
 
     def initialize_budget_from_project(self, project: Project) -> list[ProjectBudgetLine]:
@@ -460,6 +467,9 @@ class BudgetService:
         self.db.commit()
         for line in budget_lines:
             self.db.refresh(line)
+
+        # Auto-create default funding sources
+        self.auto_create_default_sources(project)
 
         return budget_lines
 
@@ -544,6 +554,240 @@ class BudgetService:
         self.db.commit()
         self.db.refresh(line)
         return line
+
+    # =============================================
+    # Funding Sources (Fuentes de Financiacion)
+    # =============================================
+
+    def get_project_funding_sources(self, project_id: int) -> list[FuenteFinanciacion]:
+        query = (
+            select(FuenteFinanciacion)
+            .where(FuenteFinanciacion.project_id == project_id)
+            .order_by(FuenteFinanciacion.orden)
+        )
+        return list(self.db.execute(query).scalars().all())
+
+    def get_funding_source_by_id(self, source_id: int) -> FuenteFinanciacion | None:
+        return self.db.get(FuenteFinanciacion, source_id)
+
+    def create_funding_source(self, project_id: int, nombre: str, tipo: TipoFuente) -> FuenteFinanciacion:
+        # Get max orden for this project
+        max_orden = self.db.execute(
+            select(func.max(FuenteFinanciacion.orden))
+            .where(FuenteFinanciacion.project_id == project_id)
+        ).scalar() or 0
+
+        source = FuenteFinanciacion(
+            project_id=project_id,
+            nombre=nombre,
+            tipo=tipo,
+            orden=max_orden + 1,
+        )
+        self.db.add(source)
+        self.db.flush()
+
+        # Create empty allocations for all existing budget lines
+        lines = self.get_project_budget(project_id)
+        for line in lines:
+            allocation = AsignacionFinanciador(
+                budget_line_id=line.id,
+                funding_source_id=source.id,
+                aprobado=Decimal("0"),
+            )
+            self.db.add(allocation)
+
+        self.db.commit()
+        self.db.refresh(source)
+        return source
+
+    def delete_funding_source(self, source_id: int) -> bool:
+        source = self.get_funding_source_by_id(source_id)
+        if not source:
+            return False
+
+        # Check if any expenses reference this source
+        has_expenses = self.db.execute(
+            select(func.count(Expense.id))
+            .where(Expense.funding_source_id == source_id)
+        ).scalar()
+
+        if has_expenses > 0:
+            raise ValueError("No se puede eliminar una fuente de financiacion con gastos asociados")
+
+        self.db.delete(source)
+        self.db.commit()
+        return True
+
+    def auto_create_default_sources(self, project: Project) -> list[FuenteFinanciacion]:
+        existing = self.get_project_funding_sources(project.id)
+        if existing:
+            return existing
+
+        # Determine the agency name from the project's financiador
+        agency_name = project.financiador.value
+
+        sources_data = [
+            (agency_name, TipoFuente.agencia, 1),
+            ("Prodiversa", TipoFuente.prodiversa, 2),
+            ("Contraparte", TipoFuente.contraparte, 3),
+        ]
+
+        sources = []
+        for nombre, tipo, orden in sources_data:
+            source = FuenteFinanciacion(
+                project_id=project.id,
+                nombre=nombre,
+                tipo=tipo,
+                orden=orden,
+            )
+            self.db.add(source)
+            sources.append(source)
+
+        self.db.flush()
+
+        # Create empty allocations for all budget lines x sources
+        lines = self.get_project_budget(project.id)
+        for line in lines:
+            for source in sources:
+                allocation = AsignacionFinanciador(
+                    budget_line_id=line.id,
+                    funding_source_id=source.id,
+                    aprobado=Decimal("0"),
+                )
+                self.db.add(allocation)
+
+        self.db.commit()
+        for source in sources:
+            self.db.refresh(source)
+
+        return sources
+
+    # =============================================
+    # Budget Line Distribution by Funding Source
+    # =============================================
+
+    def get_line_distribution(self, budget_line_id: int) -> list[AsignacionFinanciador]:
+        query = (
+            select(AsignacionFinanciador)
+            .where(AsignacionFinanciador.budget_line_id == budget_line_id)
+        )
+        return list(self.db.execute(query).scalars().all())
+
+    def update_line_distribution(self, budget_line_id: int, allocations: list[dict]) -> None:
+        line = self.get_budget_line_by_id(budget_line_id)
+        if not line:
+            raise ValueError("Partida presupuestaria no encontrada")
+
+        total = Decimal("0")
+        for alloc_data in allocations:
+            funding_source_id = alloc_data["funding_source_id"]
+            aprobado = Decimal(str(alloc_data["aprobado"]))
+
+            # Find or create the allocation
+            existing = self.db.execute(
+                select(AsignacionFinanciador)
+                .where(
+                    AsignacionFinanciador.budget_line_id == budget_line_id,
+                    AsignacionFinanciador.funding_source_id == funding_source_id,
+                )
+            ).scalar_one_or_none()
+
+            if existing:
+                existing.aprobado = aprobado
+            else:
+                new_alloc = AsignacionFinanciador(
+                    budget_line_id=budget_line_id,
+                    funding_source_id=funding_source_id,
+                    aprobado=aprobado,
+                )
+                self.db.add(new_alloc)
+
+            total += aprobado
+
+        # Update the budget line's total aprobado
+        line.aprobado = total
+        self.db.commit()
+        self.db.refresh(line)
+
+    def ensure_allocations_for_line(self, budget_line_id: int, project_id: int) -> None:
+        sources = self.get_project_funding_sources(project_id)
+        for source in sources:
+            existing = self.db.execute(
+                select(AsignacionFinanciador)
+                .where(
+                    AsignacionFinanciador.budget_line_id == budget_line_id,
+                    AsignacionFinanciador.funding_source_id == source.id,
+                )
+            ).scalar_one_or_none()
+
+            if not existing:
+                allocation = AsignacionFinanciador(
+                    budget_line_id=budget_line_id,
+                    funding_source_id=source.id,
+                    aprobado=Decimal("0"),
+                )
+                self.db.add(allocation)
+
+        self.db.flush()
+
+    # =============================================
+    # Funding Summary
+    # =============================================
+
+    def get_funding_summary(self, project_id: int) -> list[FundingSummaryRow]:
+        sources = self.get_project_funding_sources(project_id)
+        if not sources:
+            return []
+
+        # Get total aprobado per source from allocations
+        aprobado_query = (
+            self.db.execute(
+                select(
+                    AsignacionFinanciador.funding_source_id,
+                    func.sum(AsignacionFinanciador.aprobado),
+                )
+                .join(ProjectBudgetLine, AsignacionFinanciador.budget_line_id == ProjectBudgetLine.id)
+                .where(ProjectBudgetLine.project_id == project_id)
+                .group_by(AsignacionFinanciador.funding_source_id)
+            ).all()
+        )
+        aprobado_map = {row[0]: row[1] or Decimal("0") for row in aprobado_query}
+
+        # Get total ejecutado per source from expenses (validado + justificado)
+        ejecutado_query = (
+            self.db.execute(
+                select(
+                    Expense.funding_source_id,
+                    func.sum(Expense.cantidad_euros * Expense.porcentaje / 100),
+                )
+                .where(
+                    Expense.project_id == project_id,
+                    Expense.estado.in_([EstadoGasto.validado, EstadoGasto.justificado]),
+                    Expense.funding_source_id.isnot(None),
+                )
+                .group_by(Expense.funding_source_id)
+            ).all()
+        )
+        ejecutado_map = {row[0]: row[1] or Decimal("0") for row in ejecutado_query}
+
+        rows = []
+        for source in sources:
+            total_aprobado = aprobado_map.get(source.id, Decimal("0"))
+            total_ejecutado = ejecutado_map.get(source.id, Decimal("0"))
+            disponible = total_aprobado - total_ejecutado
+            porcentaje = float(total_ejecutado / total_aprobado * 100) if total_aprobado > 0 else 0.0
+
+            rows.append(FundingSummaryRow(
+                source_id=source.id,
+                source_nombre=source.nombre,
+                source_tipo=source.tipo,
+                total_aprobado=total_aprobado,
+                total_ejecutado=total_ejecutado,
+                disponible=disponible,
+                porcentaje=porcentaje,
+            ))
+
+        return rows
 
     # Seeding methods
     def seed_funders(self):

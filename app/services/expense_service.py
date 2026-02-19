@@ -44,6 +44,8 @@ class ExpenseService:
                 query = query.where(Expense.fecha_factura >= filters.fecha_desde)
             if filters.fecha_hasta:
                 query = query.where(Expense.fecha_factura <= filters.fecha_hasta)
+            if filters.funding_source_id:
+                query = query.where(Expense.funding_source_id == filters.funding_source_id)
 
         return list(self.db.execute(query).scalars().all())
 
@@ -74,6 +76,7 @@ class ExpenseService:
             ubicacion=data.ubicacion,
             estado=EstadoGasto.borrador,
             observaciones=data.observaciones,
+            funding_source_id=data.funding_source_id,
         )
         self.db.add(expense)
         self.db.commit()
