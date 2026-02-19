@@ -4,18 +4,18 @@
     <div class="ml-indicator-header">
         <span class="ml-indicator-code">{{ indicator.codigo }}</span>
         <span class="ml-indicator-desc">{{ tc('indicator', indicator.id, 'descripcion', indicator.descripcion) if tc is defined else indicator.descripcion }}</span>
-        {% if not _counterpart %}
         <div class="ml-indicator-actions">
             <button
                 class="btn btn-icon btn-sm {% if not indicator.verification_sources %}btn-alert{% endif %}"
                 title="{{ _t('ml.verification_sources') if _t else 'Fuentes de verificacion' }}{% if not indicator.verification_sources %} ({{ _t('ml.no_sources') if _t else 'sin fuentes' }}){% endif %}"
                 onclick="openVerificationModal('indicator', {{ indicator.id }})"
             >
-                <i data-lucide="clipboard-list"></i>
+                <i class="fas fa-clipboard-list"></i>
                 {% if indicator.verification_sources %}
                 <span class="source-count-badge">{{ indicator.verification_sources|length }}</span>
                 {% endif %}
             </button>
+            {% if not _counterpart %}
             <button
                 class="btn btn-icon btn-sm"
                 title="{{ _t('ml.update_value') if _t else 'Actualizar valor' }}"
@@ -23,7 +23,7 @@
                 hx-target="#indicator-modal-container"
                 hx-swap="innerHTML"
                 onclick="document.getElementById('indicator-modal-container').classList.add('active')"
-            ><i data-lucide="file-edit"></i></button>
+            ><i class="fas fa-file-pen"></i></button>
             <button
                 class="btn btn-icon btn-sm"
                 title="{{ _t('ml.edit_indicator') if _t else 'Editar indicador' }}"
@@ -31,7 +31,7 @@
                 hx-target="#indicator-modal-container"
                 hx-swap="innerHTML"
                 onclick="document.getElementById('indicator-modal-container').classList.add('active')"
-            ><i data-lucide="pencil"></i></button>
+            ><i class="fas fa-pencil"></i></button>
             <button
                 class="btn btn-icon btn-sm"
                 title="{{ _t('ml.view_history') if _t else 'Ver historial' }}"
@@ -39,7 +39,7 @@
                 hx-target="#indicator-modal-container"
                 hx-swap="innerHTML"
                 onclick="document.getElementById('indicator-modal-container').classList.add('active')"
-            ><i data-lucide="bar-chart-3"></i></button>
+            ><i class="fas fa-chart-bar"></i></button>
             <button
                 class="btn btn-icon btn-sm btn-danger"
                 title="{{ _t('ml.delete') if _t else 'Eliminar' }}"
@@ -47,9 +47,9 @@
                 hx-target="#marco-logico-content"
                 hx-swap="innerHTML"
                 hx-confirm="{{ _t('ml.confirm_delete_indicator') if _t else 'Eliminar este indicador?' }}"
-            ><i data-lucide="x"></i></button>
+            ><i class="fas fa-xmark"></i></button>
+            {% endif %}
         </div>
-        {% endif %}
     </div>
 
     <div class="ml-indicator-body">
@@ -93,10 +93,10 @@
         {% if indicator.unidad_medida or indicator.fuente_verificacion %}
         <div class="ml-indicator-meta">
             {% if indicator.unidad_medida %}
-            <span class="ml-meta-item" title="{{ _t('ml.unit') if _t else 'Unidad de medida' }}"><i data-lucide="ruler"></i> {{ tc('indicator', indicator.id, 'unidad_medida', indicator.unidad_medida) if tc is defined else indicator.unidad_medida }}</span>
+            <span class="ml-meta-item" title="{{ _t('ml.unit') if _t else 'Unidad de medida' }}"><i class="fas fa-ruler"></i> {{ tc('indicator', indicator.id, 'unidad_medida', indicator.unidad_medida) if tc is defined else indicator.unidad_medida }}</span>
             {% endif %}
             {% if indicator.fuente_verificacion %}
-            <span class="ml-meta-item" title="{{ _t('ml.verification_source') if _t else 'Fuente de verificacion' }}"><i data-lucide="clipboard-list"></i> {{ (tc('indicator', indicator.id, 'fuente_verificacion', indicator.fuente_verificacion) if tc is defined else indicator.fuente_verificacion)|truncate(30) }}</span>
+            <span class="ml-meta-item" title="{{ _t('ml.verification_source') if _t else 'Fuente de verificacion' }}"><i class="fas fa-clipboard-list"></i> {{ (tc('indicator', indicator.id, 'fuente_verificacion', indicator.fuente_verificacion) if tc is defined else indicator.fuente_verificacion)|truncate(30) }}</span>
             {% endif %}
         </div>
         {% endif %}

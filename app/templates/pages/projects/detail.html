@@ -27,7 +27,7 @@
 <div class="detail-card">
     {% if justification_alert %}
     <div class="project-alert project-alert-{{ justification_alert.type }}">
-        <span class="alert-icon">{% if justification_alert.type == 'error' %}<i data-lucide="alert-triangle"></i>{% else %}<i data-lucide="clock"></i>{% endif %}</span>
+        <span class="alert-icon">{% if justification_alert.type == 'error' %}<i class="fas fa-triangle-exclamation"></i>{% else %}<i class="fas fa-clock"></i>{% endif %}</span>
         <span class="alert-message">{{ justification_alert.message }}</span>
         {% if project.fecha_justificacion %}
         <span class="alert-date">({{ project.fecha_justificacion.strftime('%d/%m/%Y') }})</span>
@@ -39,7 +39,7 @@
     <div class="project-alert project-alert-warning aplazamiento-banner">
         <div class="aplazamiento-banner-content">
             <div class="aplazamiento-banner-info">
-                <span class="alert-icon"><i data-lucide="clock"></i></span>
+                <span class="alert-icon"><i class="fas fa-clock"></i></span>
                 <div>
                     <strong>Solicitud de aplazamiento pendiente</strong>
                     <p>Solicitado por {{ aplazamiento_pendiente.solicitante.nombre_completo }} el {{ aplazamiento_pendiente.created_at.strftime('%d/%m/%Y') }}</p>
@@ -54,12 +54,12 @@
                 <form method="POST" action="/projects/{{ project.id }}/aplazamientos/{{ aplazamiento_pendiente.id }}/aprobar" style="display:inline">
                     <button type="submit" class="btn btn-success btn-sm"
                         onclick="return confirm('¿Aprobar este aplazamiento? Las fechas del proyecto se actualizaran.')">
-                        <i data-lucide="check"></i> Aprobar
+                        <i class="fas fa-check"></i> Aprobar
                     </button>
                 </form>
                 <button type="button" class="btn btn-danger btn-sm"
                     onclick="document.getElementById('aplazamiento-reject-container').style.display='block'">
-                    <i data-lucide="x"></i> Rechazar
+                    <i class="fas fa-xmark"></i> Rechazar
                 </button>
             </div>
             {% endif %}

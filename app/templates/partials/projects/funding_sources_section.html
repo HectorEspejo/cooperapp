@@ -22,7 +22,7 @@
                 hx-target="#tab-presupuesto"
                 hx-swap="innerHTML"
                 hx-confirm="{{ t('budget.confirm_delete_source') if t is defined else 'Eliminar la fuente? Solo es posible si no tiene gastos asociados.' }}"
-            ><i data-lucide="trash-2"></i></button>
+            ><i class="fas fa-trash"></i></button>
         </div>
         {% endfor %}
     </div>

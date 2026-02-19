@@ -15,13 +15,14 @@ from app.services.document_service import DocumentService
 from app.services.expense_service import ExpenseService
 from app.services.budget_service import BudgetService
 from app.services.translation_service import TranslationService, _retry_pending_in_background
-from app.models.logical_framework import EstadoActividad
+from app.models.logical_framework import EstadoActividad, Indicator, Activity
 from app.models.expense import UbicacionGasto, EstadoGasto
-from app.models.document import CategoriaDocumento, CATEGORIA_NOMBRES
+from app.models.document import CategoriaDocumento, CATEGORIA_NOMBRES, TipoFuenteVerificacion, TIPO_FUENTE_NOMBRES
 from app.models.funding import TipoFuente
 from app.schemas.logical_framework import ActivityUpdate
 from app.schemas.expense import ExpenseCreate, ExpenseFilters
-from app.schemas.document import DocumentCreate
+from app.schemas.document import DocumentCreate, VerificationSourceCreate
+from app.services.verification_source_service import VerificationSourceService
 from app.services.audit_service import AuditService
 from app.models.audit_log import ActorType, AccionAuditoria
 from app.i18n import get_translator
@@ -53,6 +54,18 @@ CATEGORIA_NOMBRES_I18N = {
         "listado_asistencia": "Attendance List",
         "foto": "Photo",
         "otro": "Other",
+    },
+}
+
+
+TIPO_FUENTE_NOMBRES_I18N = {
+    "fr": {
+        "foto": "Photo", "acta": "Proces-verbal", "listado_asistencia": "Liste de Presence",
+        "informe": "Rapport", "certificado": "Certificat", "contrato": "Contrat", "otro": "Autre",
+    },
+    "en": {
+        "foto": "Photo", "acta": "Minutes", "listado_asistencia": "Attendance List",
+        "informe": "Report", "certificado": "Certificate", "contrato": "Contract", "otro": "Other",
     },
 }
 
@@ -151,6 +164,10 @@ def get_expense_service(db: Session = Depends(get_db)) -> ExpenseService:
 
 def get_budget_service(db: Session = Depends(get_db)) -> BudgetService:
     return BudgetService(db)
+
+
+def get_verification_service(db: Session = Depends(get_db)) -> VerificationSourceService:
+    return VerificationSourceService(db)
 
 
 def _trigger_translation_bg(entity_type: str, entity_id: int, fields_data: dict):
@@ -926,3 +943,252 @@ def counterpart_expense_document(
 
     filename = os.path.basename(expense.documento_path)
     return FileResponse(expense.documento_path, filename=filename)
+
+
+# ======================== Counterpart Verification Source Endpoints ========================
+
+
+@router.get("/contraparte/{project_id}/indicators/{indicator_id}/verification-sources", response_class=HTMLResponse)
+def counterpart_indicator_sources_modal(
+    request: Request,
+    project_id: int,
+    indicator_id: int,
+    session: CounterpartSession = Depends(get_current_counterpart),
+    project_service: ProjectService = Depends(get_project_service),
+    verification_service: VerificationSourceService = Depends(get_verification_service),
+    db: Session = Depends(get_db),
+):
+    """Modal de fuentes de verificacion para indicador (contraparte)."""
+    project = _validate_counterpart_project(session, project_id, project_service)
+
+    indicator = db.get(Indicator, indicator_id)
+    if not indicator or indicator.framework.project_id != project_id:
+        raise HTTPException(status_code=404, detail="Indicador no encontrado")
+
+    lang = session.language or "es"
+    t = get_translator(lang)
+    tipo_nombres = TIPO_FUENTE_NOMBRES_I18N.get(lang, TIPO_FUENTE_NOMBRES)
+
+    sources = verification_service.get_indicator_sources(indicator_id)
+    summary = verification_service.get_indicator_summary(indicator_id)
+    available_documents = verification_service.get_available_documents(project_id)
+
+    return templates.TemplateResponse(
+        "partials/projects/verification_sources_modal.html",
+        {
+            "request": request,
+            "target_type": "indicator",
+            "target_id": indicator_id,
+            "target": indicator,
+            "project_id": project_id,
+            "sources": sources,
+            "summary": summary,
+            "available_documents": available_documents,
+            "tipos": TipoFuenteVerificacion,
+            "tipo_nombres": tipo_nombres,
+            "is_counterpart": True,
+            "t": t,
+        },
+    )
+
+
+@router.get("/contraparte/{project_id}/activities/{activity_id}/verification-sources", response_class=HTMLResponse)
+def counterpart_activity_sources_modal(
+    request: Request,
+    project_id: int,
+    activity_id: int,
+    session: CounterpartSession = Depends(get_current_counterpart),
+    project_service: ProjectService = Depends(get_project_service),
+    verification_service: VerificationSourceService = Depends(get_verification_service),
+    db: Session = Depends(get_db),
+):
+    """Modal de fuentes de verificacion para actividad (contraparte)."""
+    project = _validate_counterpart_project(session, project_id, project_service)
+
+    activity = db.get(Activity, activity_id)
+    if not activity or activity.result.objective.framework.project_id != project_id:
+        raise HTTPException(status_code=404, detail="Actividad no encontrada")
+
+    lang = session.language or "es"
+    t = get_translator(lang)
+    tipo_nombres = TIPO_FUENTE_NOMBRES_I18N.get(lang, TIPO_FUENTE_NOMBRES)
+
+    sources = verification_service.get_activity_sources(activity_id)
+    summary = verification_service.get_activity_summary(activity_id)
+    available_documents = verification_service.get_available_documents(project_id)
+
+    return templates.TemplateResponse(
+        "partials/projects/verification_sources_modal.html",
+        {
+            "request": request,
+            "target_type": "activity",
+            "target_id": activity_id,
+            "target": activity,
+            "project_id": project_id,
+            "sources": sources,
+            "summary": summary,
+            "available_documents": available_documents,
+            "tipos": TipoFuenteVerificacion,
+            "tipo_nombres": tipo_nombres,
+            "is_counterpart": True,
+            "t": t,
+        },
+    )
+
+
+@router.post("/contraparte/{project_id}/indicators/{indicator_id}/verification-sources", response_class=HTMLResponse)
+def counterpart_add_indicator_source(
+    request: Request,
+    project_id: int,
+    indicator_id: int,
+    document_id: int = Form(...),
+    tipo: TipoFuenteVerificacion = Form(...),
+    descripcion: str | None = Form(None),
+    session: CounterpartSession = Depends(get_current_counterpart),
+    project_service: ProjectService = Depends(get_project_service),
+    verification_service: VerificationSourceService = Depends(get_verification_service),
+    db: Session = Depends(get_db),
+):
+    """Vincular documento a indicador como fuente de verificacion (contraparte)."""
+    project = _validate_counterpart_project(session, project_id, project_service)
+
+    indicator = db.get(Indicator, indicator_id)
+    if not indicator or indicator.framework.project_id != project_id:
+        raise HTTPException(status_code=404, detail="Indicador no encontrado")
+
+    # Validar que el documento pertenece al proyecto
+    from app.models.document import Document
+    document = db.get(Document, document_id)
+    if not document or document.project_id != project_id:
+        raise HTTPException(status_code=400, detail="Documento no encontrado o no pertenece al proyecto")
+
+    try:
+        data = VerificationSourceCreate(
+            document_id=document_id,
+            indicator_id=indicator_id,
+            tipo=tipo,
+            descripcion=descripcion,
+        )
+        verification_service.create_source(data)
+
+        # Audit log
+        audit = AuditService(db)
+        audit.log(
+            actor_type=ActorType.counterpart,
+            actor_id=str(session.id),
+            actor_email=None,
+            actor_label=f"Contraparte ({project.codigo_contable})",
+            accion=AccionAuditoria.create,
+            recurso="verification_source",
+            recurso_id=None,
+            detalle={"indicator_id": indicator_id, "document_id": document_id},
+            ip_address=request.client.host if request.client else None,
+            project_id=project_id,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    lang = session.language or "es"
+    t = get_translator(lang)
+    tipo_nombres = TIPO_FUENTE_NOMBRES_I18N.get(lang, TIPO_FUENTE_NOMBRES)
+
+    sources = verification_service.get_indicator_sources(indicator_id)
+    summary = verification_service.get_indicator_summary(indicator_id)
+    available_documents = verification_service.get_available_documents(project_id)
+
+    return templates.TemplateResponse(
+        "partials/projects/verification_sources_modal.html",
+        {
+            "request": request,
+            "target_type": "indicator",
+            "target_id": indicator_id,
+            "target": indicator,
+            "project_id": project_id,
+            "sources": sources,
+            "summary": summary,
+            "available_documents": available_documents,
+            "tipos": TipoFuenteVerificacion,
+            "tipo_nombres": tipo_nombres,
+            "is_counterpart": True,
+            "t": t,
+        },
+    )
+
+
+@router.post("/contraparte/{project_id}/activities/{activity_id}/verification-sources", response_class=HTMLResponse)
+def counterpart_add_activity_source(
+    request: Request,
+    project_id: int,
+    activity_id: int,
+    document_id: int = Form(...),
+    tipo: TipoFuenteVerificacion = Form(...),
+    descripcion: str | None = Form(None),
+    session: CounterpartSession = Depends(get_current_counterpart),
+    project_service: ProjectService = Depends(get_project_service),
+    verification_service: VerificationSourceService = Depends(get_verification_service),
+    db: Session = Depends(get_db),
+):
+    """Vincular documento a actividad como fuente de verificacion (contraparte)."""
+    project = _validate_counterpart_project(session, project_id, project_service)
+
+    activity = db.get(Activity, activity_id)
+    if not activity or activity.result.objective.framework.project_id != project_id:
+        raise HTTPException(status_code=404, detail="Actividad no encontrada")
+
+    # Validar que el documento pertenece al proyecto
+    from app.models.document import Document
+    document = db.get(Document, document_id)
+    if not document or document.project_id != project_id:
+        raise HTTPException(status_code=400, detail="Documento no encontrado o no pertenece al proyecto")
+
+    try:
+        data = VerificationSourceCreate(
+            document_id=document_id,
+            activity_id=activity_id,
+            tipo=tipo,
+            descripcion=descripcion,
+        )
+        verification_service.create_source(data)
+
+        # Audit log
+        audit = AuditService(db)
+        audit.log(
+            actor_type=ActorType.counterpart,
+            actor_id=str(session.id),
+            actor_email=None,
+            actor_label=f"Contraparte ({project.codigo_contable})",
+            accion=AccionAuditoria.create,
+            recurso="verification_source",
+            recurso_id=None,
+            detalle={"activity_id": activity_id, "document_id": document_id},
+            ip_address=request.client.host if request.client else None,
+            project_id=project_id,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    lang = session.language or "es"
+    t = get_translator(lang)
+    tipo_nombres = TIPO_FUENTE_NOMBRES_I18N.get(lang, TIPO_FUENTE_NOMBRES)
+
+    sources = verification_service.get_activity_sources(activity_id)
+    summary = verification_service.get_activity_summary(activity_id)
+    available_documents = verification_service.get_available_documents(project_id)
+
+    return templates.TemplateResponse(
+        "partials/projects/verification_sources_modal.html",
+        {
+            "request": request,
+            "target_type": "activity",
+            "target_id": activity_id,
+            "target": activity,
+            "project_id": project_id,
+            "sources": sources,
+            "summary": summary,
+            "available_documents": available_documents,
+            "tipos": TipoFuenteVerificacion,
+            "tipo_nombres": tipo_nombres,
+            "is_counterpart": True,
+            "t": t,
+        },
+    )

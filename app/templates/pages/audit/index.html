@@ -17,7 +17,7 @@
 <div class="audit-filters">
     <div class="audit-filters-group">
         <div class="audit-filter-item">
-            <label for="audit-filter-accion"><i data-lucide="filter" style="width:14px;height:14px"></i> Accion</label>
+            <label for="audit-filter-accion"><i class="fas fa-filter"></i> Accion</label>
             <select id="audit-filter-accion" class="form-control" onchange="loadAuditLogs()">
                 <option value="">Todas las acciones</option>
                 {% for a in acciones %}
@@ -26,16 +26,16 @@
             </select>
         </div>
         <div class="audit-filter-item">
-            <label for="audit-filter-desde"><i data-lucide="calendar" style="width:14px;height:14px"></i> Desde</label>
+            <label for="audit-filter-desde"><i class="fas fa-calendar"></i> Desde</label>
             <input type="date" id="audit-filter-desde" class="form-control" onchange="loadAuditLogs()">
         </div>
         <div class="audit-filter-item">
-            <label for="audit-filter-hasta"><i data-lucide="calendar" style="width:14px;height:14px"></i> Hasta</label>
+            <label for="audit-filter-hasta"><i class="fas fa-calendar"></i> Hasta</label>
             <input type="date" id="audit-filter-hasta" class="form-control" onchange="loadAuditLogs()">
         </div>
         <div class="audit-filter-item audit-filter-actions">
             <button class="btn btn-sm btn-secondary" onclick="clearFilters()">
-                <i data-lucide="x" style="width:14px;height:14px"></i> Limpiar
+                <i class="fas fa-xmark"></i> Limpiar
             </button>
         </div>
     </div>
@@ -88,7 +88,6 @@ function loadAuditLogs(page) {
             renderStats(data);
             renderTable(data);
             renderPagination(data);
-            lucide.createIcons();
         });
 }
 
@@ -104,28 +103,28 @@ function renderStats(data) {
 
     container.innerHTML = `
         <div class="audit-stat-card">
-            <div class="audit-stat-icon icon-primary"><i data-lucide="list"></i></div>
+            <div class="audit-stat-icon icon-primary"><i class="fas fa-list"></i></div>
             <div class="audit-stat-content">
                 <span class="audit-stat-value">${total}</span>
                 <span class="audit-stat-label">Total registros</span>
             </div>
         </div>
         <div class="audit-stat-card">
-            <div class="audit-stat-icon icon-success"><i data-lucide="log-in"></i></div>
+            <div class="audit-stat-icon icon-success"><i class="fas fa-right-to-bracket"></i></div>
             <div class="audit-stat-content">
                 <span class="audit-stat-value">${counts['login'] || 0}</span>
                 <span class="audit-stat-label">Inicios de sesion</span>
             </div>
         </div>
         <div class="audit-stat-card">
-            <div class="audit-stat-icon icon-warning"><i data-lucide="edit-3"></i></div>
+            <div class="audit-stat-icon icon-warning"><i class="fas fa-pen"></i></div>
             <div class="audit-stat-content">
                 <span class="audit-stat-value">${(counts['create'] || 0) + (counts['update'] || 0)}</span>
                 <span class="audit-stat-label">Cambios</span>
             </div>
         </div>
         <div class="audit-stat-card">
-            <div class="audit-stat-icon icon-info"><i data-lucide="download"></i></div>
+            <div class="audit-stat-icon icon-info"><i class="fas fa-download"></i></div>
             <div class="audit-stat-content">
                 <span class="audit-stat-value">${(counts['download'] || 0) + (counts['export'] || 0) + (counts['upload'] || 0)}</span>
                 <span class="audit-stat-label">Archivos</span>
@@ -136,13 +135,13 @@ function renderStats(data) {
 
 function getAccionIcon(accion) {
     const icons = {
-        login: 'log-in', logout: 'log-out', login_failed: 'shield-x',
-        session_expired: 'clock', create: 'plus-circle', update: 'edit-3',
-        delete: 'trash-2', status_change: 'refresh-cw', upload: 'upload',
-        download: 'download', export: 'file-output', role_change: 'user-cog',
+        login: 'right-to-bracket', logout: 'right-from-bracket', login_failed: 'shield',
+        session_expired: 'clock', create: 'circle-plus', update: 'pen',
+        delete: 'trash', status_change: 'arrows-rotate', upload: 'upload',
+        download: 'download', export: 'file-export', role_change: 'user-gear',
         project_assign: 'user-plus', project_unassign: 'user-minus'
     };
-    return icons[accion] || 'activity';
+    return icons[accion] || 'wave-square';
 }
 
 function getAccionClass(accion) {
@@ -177,7 +176,7 @@ function renderTable(data) {
     if (!data.items || data.items.length === 0) {
         tbody.innerHTML = `<tr><td colspan="6" class="text-center">
             <div class="audit-empty">
-                <i data-lucide="inbox" style="width:40px;height:40px;color:var(--color-text-muted)"></i>
+                <i class="fas fa-inbox"></i>
                 <p>No hay registros de auditoria.</p>
             </div>
         </td></tr>`;
@@ -192,7 +191,7 @@ function renderTable(data) {
             </td>
             <td>
                 <span class="audit-accion-badge ${getAccionClass(log.accion)}">
-                    <i data-lucide="${getAccionIcon(log.accion)}" style="width:13px;height:13px"></i>
+                    <i class="fas fa-${getAccionIcon(log.accion)}"></i>
                     ${log.accion_display}
                 </span>
             </td>
@@ -225,9 +224,9 @@ function renderPagination(data) {
     container.innerHTML = `
         <span class="audit-page-info">Mostrando ${(currentPage-1)*pageSize + 1}-${Math.min(currentPage*pageSize, data.total)} de ${data.total}</span>
         <div class="audit-page-controls">
-            ${currentPage > 1 ? `<button class="audit-page-btn" onclick="loadAuditLogs(${currentPage-1})"><i data-lucide="chevron-left" style="width:14px;height:14px"></i></button>` : ''}
+            ${currentPage > 1 ? `<button class="audit-page-btn" onclick="loadAuditLogs(${currentPage-1})"><i class="fas fa-chevron-left"></i></button>` : ''}
             ${pages}
-            ${currentPage < totalPages ? `<button class="audit-page-btn" onclick="loadAuditLogs(${currentPage+1})"><i data-lucide="chevron-right" style="width:14px;height:14px"></i></button>` : ''}
+            ${currentPage < totalPages ? `<button class="audit-page-btn" onclick="loadAuditLogs(${currentPage+1})"><i class="fas fa-chevron-right"></i></button>` : ''}
         </div>
     `;
 }

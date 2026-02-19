@@ -62,7 +62,7 @@
     <div class="budget-alerts">
         {% for alert in budget.validation_alerts %}
         <div class="budget-alert {{ alert.alert_type }}">
-            <span class="alert-icon">{% if alert.alert_type == 'error' %}<i data-lucide="x-circle"></i>{% else %}<i data-lucide="alert-triangle"></i>{% endif %}</span>
+            <span class="alert-icon">{% if alert.alert_type == 'error' %}<i class="fas fa-circle-xmark"></i>{% else %}<i class="fas fa-triangle-exclamation"></i>{% endif %}</span>
             <span class="alert-message">{{ alert.message }}</span>
         </div>
         {% endfor %}
@@ -136,7 +136,7 @@
                                 hx-target="#distribution-modal-body"
                                 hx-trigger="click"
                                 onclick="openDistributionModal()"
-                            ><i data-lucide="split"></i></button>
+                            ><i class="fas fa-code-branch"></i></button>
                             {% endif %}
                         </td>
                         {% endif %}
@@ -184,10 +184,10 @@
                         </td>
                         <td class="col-percent">
                             {% if line.has_deviation_alert %}
-                            <span class="deviation-alert" title="{{ t('budget.deviation_alert') if t is defined else 'Desviacion mayor al 10%' }}"><i data-lucide="alert-triangle"></i></span>
+                            <span class="deviation-alert" title="{{ t('budget.deviation_alert') if t is defined else 'Desviacion mayor al 10%' }}"><i class="fas fa-triangle-exclamation"></i></span>
                             {% endif %}
                             {% if line.has_max_percentage_alert %}
-                            <span class="max-exceeded-alert" title="{{ t('budget.max_exceeded') if t is defined else 'Excede el porcentaje maximo' }}"><i data-lucide="x-circle"></i></span>
+                            <span class="max-exceeded-alert" title="{{ t('budget.max_exceeded') if t is defined else 'Excede el porcentaje maximo' }}"><i class="fas fa-circle-xmark"></i></span>
                             {% endif %}
                             {{ '{:.1f}'.format(line.porcentaje_ejecucion) }}%
                         </td>
@@ -253,7 +253,7 @@
                                 hx-target="#distribution-modal-body"
                                 hx-trigger="click"
                                 onclick="openDistributionModal()"
-                            ><i data-lucide="split"></i></button>
+                            ><i class="fas fa-code-branch"></i></button>
                             {% endif %}
                         </td>
                         {% endif %}
@@ -301,10 +301,10 @@
                         </td>
                         <td class="col-percent">
                             {% if line.has_deviation_alert %}
-                            <span class="deviation-alert" title="{{ t('budget.deviation_alert') if t is defined else 'Desviacion mayor al 10%' }}"><i data-lucide="alert-triangle"></i></span>
+                            <span class="deviation-alert" title="{{ t('budget.deviation_alert') if t is defined else 'Desviacion mayor al 10%' }}"><i class="fas fa-triangle-exclamation"></i></span>
                             {% endif %}
                             {% if line.has_max_percentage_alert %}
-                            <span class="max-exceeded-alert" title="{{ t('budget.max_exceeded') if t is defined else 'Excede el porcentaje maximo' }}"><i data-lucide="x-circle"></i></span>
+                            <span class="max-exceeded-alert" title="{{ t('budget.max_exceeded') if t is defined else 'Excede el porcentaje maximo' }}"><i class="fas fa-circle-xmark"></i></span>
                             {% endif %}
                             {{ '{:.1f}'.format(line.porcentaje_ejecucion) }}%
                         </td>
@@ -335,16 +335,16 @@
             <span class="spain-only-badge">ES</span> {{ t('budget.legend_spain_only') if t is defined else 'Partida solo Espana' }}
         </span>
         <span class="legend-item">
-            <span class="deviation-alert"><i data-lucide="alert-triangle"></i></span> {{ t('budget.legend_deviation') if t is defined else 'Desviacion > 10%' }}
+            <span class="deviation-alert"><i class="fas fa-triangle-exclamation"></i></span> {{ t('budget.legend_deviation') if t is defined else 'Desviacion > 10%' }}
         </span>
         {% if budget.funder_max_indirect_percentage %}
         <span class="legend-item">
-            <span class="max-exceeded-alert"><i data-lucide="x-circle"></i></span> {{ t('budget.legend_indirect_exceeded') if t is defined else 'Indirectos >' }} {{ budget.funder_max_indirect_percentage }}%
+            <span class="max-exceeded-alert"><i class="fas fa-circle-xmark"></i></span> {{ t('budget.legend_indirect_exceeded') if t is defined else 'Indirectos >' }} {{ budget.funder_max_indirect_percentage }}%
         </span>
         {% endif %}
         {% if budget.funder_max_personnel_percentage %}
         <span class="legend-item">
-            <span class="max-exceeded-alert"><i data-lucide="x-circle"></i></span> {{ t('budget.legend_personnel_exceeded') if t is defined else 'Personal >' }} {{ budget.funder_max_personnel_percentage }}%
+            <span class="max-exceeded-alert"><i class="fas fa-circle-xmark"></i></span> {{ t('budget.legend_personnel_exceeded') if t is defined else 'Personal >' }} {{ budget.funder_max_personnel_percentage }}%
         </span>
         {% endif %}
         {% if not budget.audit_required %}

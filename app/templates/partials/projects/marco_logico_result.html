@@ -3,7 +3,7 @@
 <div class="ml-tree-node ml-result" data-result-id="{{ result.id }}">
     <div class="ml-node-header">
         <button class="ml-toggle" onclick="toggleNode(this)">
-            <i data-lucide="chevron-down" class="toggle-icon"></i>
+            <i class="fas fa-chevron-down"></i>
         </button>
         <span class="ml-node-label ml-result-label">{{ result.numero }}</span>
         <span class="ml-node-text">{{ tc('result', result.id, 'descripcion', result.descripcion) if tc is defined else result.descripcion }}</span>
@@ -32,7 +32,7 @@
                 hx-target="#indicator-modal-container"
                 hx-swap="innerHTML"
                 onclick="document.getElementById('indicator-modal-container').classList.add('active')"
-            ><i data-lucide="pencil"></i></button>
+            ><i class="fas fa-pencil"></i></button>
             <button
                 class="btn btn-icon btn-danger"
                 title="{{ _t('ml.delete') if _t else 'Eliminar' }}"
@@ -40,7 +40,7 @@
                 hx-target="#marco-logico-content"
                 hx-swap="innerHTML"
                 hx-confirm="{{ _t('ml.confirm_delete_result') if _t else 'Eliminar este resultado y todas sus actividades?' }}"
-            ><i data-lucide="x"></i></button>
+            ><i class="fas fa-xmark"></i></button>
         </div>
         {% endif %}
     </div>

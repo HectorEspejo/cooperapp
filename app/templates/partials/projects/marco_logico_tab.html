@@ -86,7 +86,13 @@
 
 <script>
 function openVerificationModal(targetType, targetId) {
-    htmx.ajax('GET', '/projects/' + targetType + 's/' + targetId + '/verification-sources', {
+    var plural = targetType === 'activity' ? 'activities' : targetType + 's';
+    {% if is_counterpart is defined and is_counterpart %}
+    var url = '/contraparte/{{ project.id }}/' + plural + '/' + targetId + '/verification-sources';
+    {% else %}
+    var url = '/projects/' + plural + '/' + targetId + '/verification-sources';
+    {% endif %}
+    htmx.ajax('GET', url, {
         target: '#verification-modal-container',
         swap: 'innerHTML'
     }).then(function() {
@@ -110,4 +116,6 @@ function closeVerificationModal() {
         }).observe(container, { attributes: true, attributeFilter: ['class'] });
     }
 });
+
+
 </script>

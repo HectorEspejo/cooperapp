@@ -20,11 +20,11 @@
         <div class="aplazamiento-timeline-item aplazamiento-{{ a.estado.value }}">
             <div class="timeline-marker">
                 {% if a.estado.value == 'aprobado' %}
-                <i data-lucide="check-circle"></i>
+                <i class="fas fa-circle-check"></i>
                 {% elif a.estado.value == 'rechazado' %}
-                <i data-lucide="x-circle"></i>
+                <i class="fas fa-circle-xmark"></i>
                 {% else %}
-                <i data-lucide="clock"></i>
+                <i class="fas fa-clock"></i>
                 {% endif %}
             </div>
             <div class="timeline-content">

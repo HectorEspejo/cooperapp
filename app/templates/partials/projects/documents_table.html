@@ -26,11 +26,11 @@
                     </div>
                     {% elif doc.is_pdf %}
                     <div class="doc-thumbnail doc-pdf" {% if not _counterpart %}onclick="openDocumentPreview({{ doc.id }})"{% endif %}>
-                        <span><i data-lucide="file-text"></i></span>
+                        <span><i class="fas fa-file-lines"></i></span>
                     </div>
                     {% else %}
                     <div class="doc-thumbnail doc-file">
-                        <span><i data-lucide="paperclip"></i></span>
+                        <span><i class="fas fa-paperclip"></i></span>
                     </div>
                     {% endif %}
                 </td>
@@ -58,18 +58,18 @@
                 <td class="col-estado">
                     {% if doc.sellado %}
                     <span class="sellado-badge sellado" title="{{ _t('docs.status_sealed') if _t else 'Sellado' }} {{ doc.fecha_sellado.strftime('%d/%m/%Y %H:%M') if doc.fecha_sellado else '' }}">
-                        <i data-lucide="lock"></i> {{ _t('docs.status_sealed') if _t else 'Sellado' }}
+                        <i class="fas fa-lock"></i> {{ _t('docs.status_sealed') if _t else 'Sellado' }}
                     </span>
                     {% else %}
                     <span class="sellado-badge pendiente">
-                        <i data-lucide="file-edit"></i> {{ _t('docs.status_pending') if _t else 'Pendiente' }}
+                        <i class="fas fa-file-pen"></i> {{ _t('docs.status_pending') if _t else 'Pendiente' }}
                     </span>
                     {% endif %}
                 </td>
                 <td class="col-vinculado">
                     {% if doc.verification_sources %}
                     <span class="vinculado-badge vinculado" title="{{ doc.verification_sources|length }} {{ _t('docs.verification_sources_count') if _t else 'fuente(s) de verificacion' }}">
-                        <i data-lucide="link"></i> {{ doc.verification_sources|length }}
+                        <i class="fas fa-link"></i> {{ doc.verification_sources|length }}
                     </span>
                     {% else %}
                     <span class="vinculado-badge huerfano">
@@ -84,14 +84,14 @@
                             class="btn btn-icon btn-sm"
                             title="{{ _t('docs.download') if _t else 'Descargar' }}"
                             download
-                        ><i data-lucide="download"></i></a>
+                        ><i class="fas fa-download"></i></a>
                         {% if not _counterpart %}
                         {% if doc.is_image or doc.is_pdf %}
                         <button
                             class="btn btn-icon btn-sm"
                             title="{{ _t('docs.preview_action') if _t else 'Previsualizar' }}"
                             onclick="openDocumentPreview({{ doc.id }})"
-                        ><i data-lucide="eye"></i></button>
+                        ><i class="fas fa-eye"></i></button>
                         {% endif %}
                         {% if not doc.sellado %}
                         {% if user and user.rol and user.rol.value in ['director', 'coordinador'] %}
@@ -102,7 +102,7 @@
                             hx-target="#documents-content"
                             hx-swap="innerHTML"
                             hx-confirm="{{ _t('docs.confirm_seal') if _t else 'Sellar este documento? Esta accion no se puede deshacer.' }}"
-                        ><i data-lucide="lock"></i></button>
+                        ><i class="fas fa-lock"></i></button>
                         {% endif %}
                         {% if user and user.rol and user.rol.value in ['director', 'coordinador', 'tecnico_sede', 'gestor_pais'] %}
                         <button
@@ -112,7 +112,7 @@
                             hx-target="#documents-content"
                             hx-swap="innerHTML"
                             hx-confirm="{{ _t('docs.confirm_delete') if _t else 'Eliminar este documento?' }}"
-                        ><i data-lucide="x"></i></button>
+                        ><i class="fas fa-xmark"></i></button>
                         {% endif %}
                         {% endif %}
                         {% endif %}
@@ -125,7 +125,7 @@
 </div>
 {% else %}
 <div class="empty-state documents-empty">
-    <div class="empty-icon"><i data-lucide="file-text"></i></div>
+    <div class="empty-icon"><i class="fas fa-file-lines"></i></div>
     <h3>{{ _t('docs.no_documents') if _t else 'No hay documentos' }}</h3>
     <p>{{ _t('docs.upload_first') if _t else 'Sube el primer documento usando el formulario de arriba.' }}</p>
 </div>

@@ -8,7 +8,7 @@
 {% else %}
 <div class="budget-init-form">
     <div class="empty-state budget-empty">
-        <div class="empty-icon"><i data-lucide="bar-chart-3"></i></div>
+        <div class="empty-icon"><i class="fas fa-chart-bar"></i></div>
         <h3>{{ t('budget.no_budget') if t is defined else 'Sin presupuesto configurado' }}</h3>
         <p>
             {{ t('budget.no_budget_desc') if t is defined else 'El financiador actual no tiene plantillas de presupuesto definidas, o el presupuesto no se ha inicializado correctamente.' }}

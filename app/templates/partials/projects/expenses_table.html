@@ -29,7 +29,7 @@
                     {% if expense.documento_path %}
                     <a href="{% if is_counterpart %}/contraparte/{{ project.id }}/gastos/{{ expense.id }}/document{% else %}/projects/{{ project.id }}/expenses/{{ expense.id }}/document{% endif %}"
                        class="doc-badge doc-attached" title="{{ t('expenses.view_doc') if t is defined else 'Ver documento' }}" target="_blank">
-                        <span class="doc-icon"><i data-lucide="paperclip"></i></span>
+                        <span class="doc-icon"><i class="fas fa-paperclip"></i></span>
                     </a>
                     {% elif expense.estado.value in ['borrador', 'pendiente_revision'] %}
                     <button class="doc-badge doc-missing" title="{{ t('expenses.upload_invoice') if t is defined else 'Subir factura (requerido para validar)' }}"
@@ -37,7 +37,7 @@
                             hx-target="#expense-upload-modal-content"
                             hx-trigger="click"
                             onclick="openExpenseUploadModal()">
-                        <span class="doc-icon"><i data-lucide="paperclip"></i></span>
+                        <span class="doc-icon"><i class="fas fa-paperclip"></i></span>
                     </button>
                     {% else %}
                     <span class="doc-badge doc-none" title="{{ t('expenses.no_doc') if t is defined else 'Sin documento' }}">-</span>
@@ -90,7 +90,7 @@
                            title="{{ t('expenses.view_doc') if t is defined else 'Ver documento' }}"
                            href="/contraparte/{{ project.id }}/gastos/{{ expense.id }}/document"
                            target="_blank">
-                            <i data-lucide="file-text"></i>
+                            <i class="fas fa-file-lines"></i>
                         </a>
                         {% elif expense.estado.value == 'pendiente_revision' and not expense.documento_path and expense.funding_source and expense.funding_source.tipo.value == 'contraparte' %}
                         <button
@@ -100,7 +100,7 @@
                             hx-target="#expense-upload-modal-content"
                             hx-trigger="click"
                             onclick="openExpenseUploadModal()"
-                        ><i data-lucide="upload"></i></button>
+                        ><i class="fas fa-upload"></i></button>
                         {% endif %}
                         {% else %}
                         {# Portal principal: acciones completas #}
@@ -112,7 +112,7 @@
                             hx-target="#expense-modal-content"
                             hx-trigger="click"
                             onclick="openExpenseModal()"
-                        ><i data-lucide="pencil"></i></button>
+                        ><i class="fas fa-pencil"></i></button>
                         {% if user and user.rol and user.rol.value in ['director', 'coordinador'] %}
                         {% if expense.documento_path %}
                         <button
@@ -123,9 +123,9 @@
                             hx-select="#expenses-content"
                             hx-swap="outerHTML"
                             hx-confirm="{{ t('expenses.confirm_validate') if t is defined else 'Validar este gasto? Se actualizara el presupuesto ejecutado.' }}"
-                        ><i data-lucide="check"></i></button>
+                        ><i class="fas fa-check"></i></button>
                         {% else %}
-                        <span class="btn-icon btn-disabled" title="{{ t('expenses.doc_required') if t is defined else 'Debe adjuntar factura para validar' }}"><i data-lucide="check"></i></span>
+                        <span class="btn-icon btn-disabled" title="{{ t('expenses.doc_required') if t is defined else 'Debe adjuntar factura para validar' }}"><i class="fas fa-check"></i></span>
                         {% endif %}
                         {% endif %}
                         <button
@@ -136,7 +136,7 @@
                             hx-select="#expenses-content"
                             hx-swap="outerHTML"
                             hx-confirm="{{ t('expenses.confirm_delete') if t is defined else 'Eliminar este gasto?' }}"
-                        ><i data-lucide="trash-2"></i></button>
+                        ><i class="fas fa-trash"></i></button>
                         {% elif expense.estado.value == 'pendiente_revision' %}
                         {% if user and user.rol and user.rol.value in ['director', 'coordinador'] %}
                         {% if expense.documento_path %}
@@ -148,9 +148,9 @@
                             hx-select="#expenses-content"
                             hx-swap="outerHTML"
                             hx-confirm="{{ t('expenses.confirm_validate_short') if t is defined else 'Validar este gasto?' }}"
-                        ><i data-lucide="check"></i></button>
+                        ><i class="fas fa-check"></i></button>
                         {% else %}
-                        <span class="btn-icon btn-disabled" title="{{ t('expenses.doc_required') if t is defined else 'Debe adjuntar factura para validar' }}"><i data-lucide="check"></i></span>
+                        <span class="btn-icon btn-disabled" title="{{ t('expenses.doc_required') if t is defined else 'Debe adjuntar factura para validar' }}"><i class="fas fa-check"></i></span>
                         {% endif %}
                         <button
                             class="btn-icon btn-warning"
@@ -160,7 +160,7 @@
                             hx-select="#expenses-content"
                             hx-swap="outerHTML"
                             hx-confirm="{{ t('expenses.confirm_reject') if t is defined else 'Rechazar este gasto?' }}"
-                        ><i data-lucide="x"></i></button>
+                        ><i class="fas fa-xmark"></i></button>
                         {% endif %}
                         <button
                             class="btn-icon"
@@ -169,7 +169,7 @@
                             hx-target="#expenses-content"
                             hx-select="#expenses-content"
                             hx-swap="outerHTML"
-                        ><i data-lucide="undo-2"></i></button>
+                        ><i class="fas fa-rotate-left"></i></button>
                         {% elif expense.estado.value == 'validado' %}
                         {% if user and user.rol and user.rol.value in ['director', 'coordinador'] %}
                         <button
@@ -180,7 +180,7 @@
                             hx-select="#expenses-content"
                             hx-swap="outerHTML"
                             hx-confirm="{{ t('expenses.confirm_revert') if t is defined else 'Revertir a borrador? Se restara el importe del presupuesto ejecutado.' }}"
-                        ><i data-lucide="undo-2"></i></button>
+                        ><i class="fas fa-rotate-left"></i></button>
                         {% endif %}
                         {% elif expense.estado.value == 'rechazado' %}
                         <button
@@ -190,7 +190,7 @@
                             hx-target="#expenses-content"
                             hx-select="#expenses-content"
                             hx-swap="outerHTML"
-                        ><i data-lucide="undo-2"></i></button>
+                        ><i class="fas fa-rotate-left"></i></button>
                         <button
                             class="btn-icon btn-danger"
                             title="{{ t('expenses.delete') if t is defined else 'Eliminar' }}"
@@ -199,7 +199,7 @@
                             hx-select="#expenses-content"
                             hx-swap="outerHTML"
                             hx-confirm="{{ t('expenses.confirm_delete') if t is defined else 'Eliminar este gasto?' }}"
-                        ><i data-lucide="trash-2"></i></button>
+                        ><i class="fas fa-trash"></i></button>
                         {% endif %}
                         {% endif %}
                     </div>
@@ -211,7 +211,7 @@
 </div>
 {% else %}
 <div class="empty-state expenses-empty">
-    <div class="empty-icon"><i data-lucide="clipboard-list"></i></div>
+    <div class="empty-icon"><i class="fas fa-clipboard-list"></i></div>
     <h3>{{ t('expenses.no_expenses') if t is defined else 'Sin gastos registrados' }}</h3>
     <p>{{ t('expenses.no_expenses_desc') if t is defined else 'No hay gastos registrados para este proyecto. Haz clic en "Nuevo Gasto" para comenzar.' }}</p>
 </div>

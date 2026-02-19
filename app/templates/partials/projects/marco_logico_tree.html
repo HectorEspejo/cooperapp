@@ -6,7 +6,7 @@
     <div class="ml-tree-node ml-objective" data-objective-id="{{ objective.id }}">
         <div class="ml-node-header">
             <button class="ml-toggle" onclick="toggleNode(this)">
-                <i data-lucide="chevron-down" class="toggle-icon"></i>
+                <i class="fas fa-chevron-down"></i>
             </button>
             <span class="ml-node-label">OE{{ objective.numero }}</span>
             <span class="ml-node-text">{{ tc('specific_objective', objective.id, 'descripcion', objective.descripcion) if tc is defined else objective.descripcion }}</span>
@@ -35,7 +35,7 @@
                     hx-target="#indicator-modal-container"
                     hx-swap="innerHTML"
                     onclick="document.getElementById('indicator-modal-container').classList.add('active')"
-                ><i data-lucide="pencil"></i></button>
+                ><i class="fas fa-pencil"></i></button>
                 <button
                     class="btn btn-icon btn-danger"
                     title="{{ _t('ml.delete') if _t else 'Eliminar' }}"
@@ -43,7 +43,7 @@
                     hx-target="#marco-logico-content"
                     hx-swap="innerHTML"
                     hx-confirm="{{ _t('ml.confirm_delete_objective') if _t else 'Eliminar este objetivo y todos sus elementos?' }}"
-                ><i data-lucide="x"></i></button>
+                ><i class="fas fa-xmark"></i></button>
             </div>
             {% endif %}
         </div>

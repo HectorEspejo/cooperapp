@@ -1,12 +1,14 @@
+{% set _t = t if t is defined else None %}
+{% set _counterpart = is_counterpart if is_counterpart is defined else false %}
 <div class="source-card {% if source.validado %}validated{% endif %}">
     <div class="source-header">
         <div class="source-doc-info">
             {% if source.document.is_image %}
-            <span class="source-doc-icon"><i data-lucide="image"></i></span>
+            <span class="source-doc-icon"><i class="fas fa-image"></i></span>
             {% elif source.document.is_pdf %}
-            <span class="source-doc-icon"><i data-lucide="file-text"></i></span>
+            <span class="source-doc-icon"><i class="fas fa-file-lines"></i></span>
             {% else %}
-            <span class="source-doc-icon"><i data-lucide="paperclip"></i></span>
+            <span class="source-doc-icon"><i class="fas fa-paperclip"></i></span>
             {% endif %}
             <span class="source-doc-name" title="{{ source.document.original_filename }}">
                 {{ source.document.original_filename|truncate(30) }}
@@ -14,28 +16,34 @@
         </div>
         <div class="source-actions">
             <a
+                {% if _counterpart %}
+                href="/contraparte/{{ project_id }}/documents/{{ source.document.id }}/download"
+                {% else %}
                 href="/api/documents/{{ source.document.id }}/download"
+                {% endif %}
                 class="btn btn-icon btn-sm"
-                title="Descargar"
+                title="{{ _t('vs.download') if _t else 'Descargar' }}"
                 download
-            ><i data-lucide="download"></i></a>
+            ><i class="fas fa-download"></i></a>
+            {% if not _counterpart %}
             {% if not source.validado %}
             <button
                 class="btn btn-icon btn-sm btn-success"
-                title="Validar fuente"
+                title="{{ _t('vs.validate_source') if _t else 'Validar fuente' }}"
                 hx-post="/projects/verification-sources/{{ source.id }}/validate"
                 hx-target=".verification-modal"
                 hx-swap="outerHTML"
-            ><i data-lucide="check"></i></button>
+            ><i class="fas fa-check"></i></button>
             {% endif %}
             <button
                 class="btn btn-icon btn-sm btn-danger"
-                title="Eliminar vinculo"
+                title="{{ _t('vs.delete_link') if _t else 'Eliminar vinculo' }}"
                 hx-delete="/projects/verification-sources/{{ source.id }}"
                 hx-target=".verification-modal"
                 hx-swap="outerHTML"
-                hx-confirm="¿Eliminar esta fuente de verificacion?"
-            ><i data-lucide="x"></i></button>
+                hx-confirm="{{ _t('vs.confirm_delete') if _t else 'Eliminar esta fuente de verificacion?' }}"
+            ><i class="fas fa-xmark"></i></button>
+            {% endif %}
         </div>
     </div>
     <div class="source-body">
@@ -45,11 +53,11 @@
             </span>
             {% if source.validado %}
             <span class="source-validated-badge" title="Validado el {{ source.fecha_validacion.strftime('%d/%m/%Y') if source.fecha_validacion else '' }}">
-                <i data-lucide="check"></i> Validado
+                <i class="fas fa-check"></i> {{ _t('vs.validated_badge') if _t else 'Validado' }}
             </span>
             {% else %}
             <span class="source-pending-badge">
-                Pendiente
+                {{ _t('vs.pending_badge') if _t else 'Pendiente' }}
             </span>
             {% endif %}
         </div>

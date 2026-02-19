@@ -154,13 +154,13 @@
 
         {% if aplazamiento_pendiente %}
         <div class="alert alert-warning aplazamiento-alert">
-            <i data-lucide="clock"></i>
+            <i class="fas fa-clock"></i>
             <span>Hay una solicitud de aplazamiento pendiente de aprobacion (solicitada por {{ aplazamiento_pendiente.solicitante.nombre_completo }} el {{ aplazamiento_pendiente.created_at.strftime('%d/%m/%Y') }}).</span>
         </div>
         {% elif user and user.rol and user.rol.value in ['director', 'coordinador', 'tecnico_sede'] %}
         <div class="aplazamiento-action">
             <button type="button" class="btn btn-warning" onclick="document.getElementById('aplazamiento-modal-container').style.display='block'">
-                <i data-lucide="calendar-plus"></i> Solicitar Aplazamiento de Fechas
+                <i class="fas fa-calendar-plus"></i> Solicitar Aplazamiento de Fechas
             </button>
         </div>
         {% endif %}
