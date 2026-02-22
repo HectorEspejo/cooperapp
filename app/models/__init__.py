@@ -1,5 +1,5 @@
-from app.models.project import Project, Plazo, ODSObjetivo, EstadoProyecto, TipoProyecto, Financiador, ODS, ODS_NOMBRES
-from app.models.budget import Funder, BudgetLineTemplate, ProjectBudgetLine, CategoriaPartida
+from app.models.project import Project, Plazo, ODSObjetivo, EstadoProyecto, TipoProyecto, ODS, ODS_NOMBRES
+from app.models.budget import Funder, BudgetLineTemplate, BudgetTemplateVersion, ProjectBudgetLine, CategoriaPartida
 from app.models.expense import Expense, UbicacionGasto, EstadoGasto
 from app.models.transfer import Transfer, EstadoTransferencia, EntidadBancaria, MonedaLocal, PAIS_MONEDA_MAP
 from app.models.logical_framework import (
@@ -20,8 +20,8 @@ from app.models.postponement import Aplazamiento, EstadoAplazamiento
 from app.models.funding import FuenteFinanciacion, AsignacionFinanciador, TipoFuente, TIPO_FUENTE_NOMBRES as TIPO_FUENTE_FINANCIACION_NOMBRES
 
 __all__ = [
-    "Project", "Plazo", "ODSObjetivo", "EstadoProyecto", "TipoProyecto", "Financiador", "ODS", "ODS_NOMBRES",
-    "Funder", "BudgetLineTemplate", "ProjectBudgetLine", "CategoriaPartida",
+    "Project", "Plazo", "ODSObjetivo", "EstadoProyecto", "TipoProyecto", "ODS", "ODS_NOMBRES",
+    "Funder", "BudgetLineTemplate", "BudgetTemplateVersion", "ProjectBudgetLine", "CategoriaPartida",
     "Expense", "UbicacionGasto", "EstadoGasto",
     "Transfer", "EstadoTransferencia", "EntidadBancaria", "MonedaLocal", "PAIS_MONEDA_MAP",
     "LogicalFramework", "SpecificObjective", "Result", "Activity",

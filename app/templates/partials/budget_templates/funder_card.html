@@ -1,0 +1,124 @@
+{% set funder = funder_data.funder if funder_data is defined else fd.funder %}
+{% set versions = funder_data.versions if funder_data is defined else fd.versions %}
+{% set project_count = funder_data.project_count if funder_data is defined else fd.project_count %}
+
+<div class="detail-card funder-card" id="funder-{{ funder.id }}" style="margin-bottom: 1rem;">
+    <div class="funder-header" onclick="toggleFunder({{ funder.id }})" style="cursor: pointer;">
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+            {% if funder.color %}
+            <span style="display: inline-block; width: 16px; height: 16px; border-radius: 3px; background-color: {{ funder.color }};"></span>
+            {% endif %}
+            <div>
+                <h3 style="margin: 0;">{{ funder.name }}</h3>
+                <small style="color: var(--text-muted);">
+                    {{ funder.code }}
+                    {% if funder.max_indirect_percentage %} | Max. indirectos: {{ funder.max_indirect_percentage }}%{% endif %}
+                    {% if funder.max_personnel_percentage %} | Max. personal: {{ funder.max_personnel_percentage }}%{% endif %}
+                    {% if funder.min_amount_for_audit %} | Auditoria desde {{ funder.min_amount_for_audit }} EUR{% endif %}
+                </small>
+            </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span class="badge">{{ versions|length }} version{{ 'es' if versions|length != 1 else '' }}</span>
+            <span class="badge">{{ project_count }} proyecto{{ 's' if project_count != 1 else '' }}</span>
+            <button type="button" class="btn btn-sm btn-secondary"
+                hx-get="/plantillas-presupuesto/financiadores/{{ funder.id }}/editar"
+                hx-target="#funder-edit-{{ funder.id }}"
+                hx-swap="innerHTML"
+                onclick="event.stopPropagation()">
+                <i class="fas fa-pen"></i>
+            </button>
+            {% if project_count == 0 %}
+            <button type="button" class="btn btn-sm btn-danger"
+                hx-delete="/plantillas-presupuesto/financiadores/{{ funder.id }}"
+                hx-target="#funder-{{ funder.id }}"
+                hx-swap="outerHTML"
+                hx-confirm="Eliminar financiador {{ funder.name }}?"
+                onclick="event.stopPropagation()">
+                <i class="fas fa-trash"></i>
+            </button>
+            {% endif %}
+            <i class="fas fa-chevron-down funder-chevron" id="chevron-{{ funder.id }}"></i>
+        </div>
+    </div>
+
+    <div id="funder-edit-{{ funder.id }}"></div>
+
+    <div id="funder-body-{{ funder.id }}" class="funder-body" style="display: none; padding-top: 1rem;">
+        <!-- Versiones -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h4 style="margin: 0;">Versiones de Plantilla</h4>
+            <button type="button" class="btn btn-sm btn-primary"
+                hx-post="/plantillas-presupuesto/financiadores/{{ funder.id }}/versiones"
+                hx-target="#versions-list-{{ funder.id }}"
+                hx-swap="beforeend">
+                <i class="fas fa-plus"></i> Nueva Version
+            </button>
+        </div>
+
+        <div id="versions-list-{{ funder.id }}">
+            {% for vd in versions %}
+            <div class="version-item" id="version-item-{{ vd.version.id }}" style="border: 1px solid var(--border-color); border-radius: 8px; padding: 0.75rem; margin-bottom: 0.5rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <strong>v{{ vd.version.version }}</strong>
+                        <span class="badge {% if vd.version.is_active %}badge-success{% else %}badge-muted{% endif %}">
+                            {{ 'Activa' if vd.version.is_active else 'Inactiva' }}
+                        </span>
+                        <small style="color: var(--text-muted);">{{ vd.line_count }} lineas | {{ vd.project_count }} proyecto{{ 's' if vd.project_count != 1 else '' }} | {{ vd.version.created_at.strftime('%d/%m/%Y') }}</small>
+                    </div>
+                    <div style="display: flex; gap: 0.25rem;">
+                        <button type="button" class="btn btn-sm btn-secondary"
+                            hx-get="/plantillas-presupuesto/versiones/{{ vd.version.id }}"
+                            hx-target="#version-detail-{{ vd.version.id }}"
+                            hx-swap="innerHTML"
+                            onclick="document.getElementById('version-detail-{{ vd.version.id }}').style.display='block'">
+                            <i class="fas fa-eye"></i> Ver
+                        </button>
+                        <button type="button" class="btn btn-sm btn-secondary"
+                            hx-post="/plantillas-presupuesto/versiones/{{ vd.version.id }}/clonar"
+                            hx-target="#versions-list-{{ funder.id }}"
+                            hx-swap="beforeend">
+                            <i class="fas fa-copy"></i> Clonar
+                        </button>
+                        <button type="button" class="btn btn-sm btn-secondary"
+                            hx-put="/plantillas-presupuesto/versiones/{{ vd.version.id }}/activa"
+                            hx-target="#version-item-{{ vd.version.id }}"
+                            hx-swap="outerHTML">
+                            <i class="fas fa-toggle-{{ 'on' if vd.version.is_active else 'off' }}"></i>
+                        </button>
+                        {% if vd.is_editable %}
+                        <button type="button" class="btn btn-sm btn-danger"
+                            hx-delete="/plantillas-presupuesto/versiones/{{ vd.version.id }}"
+                            hx-target="#version-item-{{ vd.version.id }}"
+                            hx-swap="outerHTML"
+                            hx-confirm="Eliminar version v{{ vd.version.version }}?{% if vd.project_count > 0 %} (se desasociara de {{ vd.project_count }} proyecto{{ 's' if vd.project_count != 1 else '' }} en formulacion){% endif %}">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+                <div id="version-detail-{{ vd.version.id }}" style="display: none; margin-top: 0.75rem;"></div>
+            </div>
+            {% endfor %}
+        </div>
+
+        {% if not versions %}
+        <p style="color: var(--text-muted); text-align: center; padding: 1rem;">Sin versiones. Crea una nueva version para definir las partidas presupuestarias.</p>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function toggleFunder(id) {
+    const body = document.getElementById('funder-body-' + id);
+    const chevron = document.getElementById('chevron-' + id);
+    if (body.style.display === 'none') {
+        body.style.display = 'block';
+        chevron.style.transform = 'rotate(180deg)';
+    } else {
+        body.style.display = 'none';
+        chevron.style.transform = 'rotate(0deg)';
+    }
+}
+</script>

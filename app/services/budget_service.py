@@ -2,8 +2,8 @@ from decimal import Decimal
 from collections import defaultdict
 from sqlalchemy import select, func
 from sqlalchemy.orm import Session, selectinload
-from app.models.budget import Funder, BudgetLineTemplate, ProjectBudgetLine, CategoriaPartida
-from app.models.project import Project, Financiador
+from app.models.budget import Funder, BudgetLineTemplate, BudgetTemplateVersion, ProjectBudgetLine, CategoriaPartida
+from app.models.project import Project, EstadoProyecto
 from app.models.expense import Expense, EstadoGasto
 from app.models.funding import FuenteFinanciacion, AsignacionFinanciador, TipoFuente
 from app.schemas.budget import (
@@ -15,15 +15,6 @@ from app.schemas.budget import (
     BudgetValidationAlert,
 )
 from app.schemas.funding import FundingSummaryRow
-
-
-# Mapping from Financiador enum to Funder code
-FINANCIADOR_TO_FUNDER_CODE = {
-    Financiador.aacid: "AACID",
-    Financiador.aecid: "AECID",
-    Financiador.diputacion_malaga: "DIPU",
-    Financiador.ayuntamiento_malaga: "AYTO",
-}
 
 
 AACID_BUDGET_TEMPLATES = [
@@ -145,12 +136,221 @@ class BudgetService:
         query = select(Funder).where(Funder.code == code)
         return self.db.execute(query).scalar_one_or_none()
 
-    def get_funder_for_financiador(self, financiador: Financiador) -> Funder | None:
-        """Get the Funder that corresponds to a project's Financiador enum"""
-        code = FINANCIADOR_TO_FUNDER_CODE.get(financiador)
-        if code:
-            return self.get_funder_by_code(code)
-        return None
+    # Funder CRUD methods
+    def create_funder(self, code: str, name: str, max_indirect_pct=None, max_personnel_pct=None,
+                      min_audit=None, color=None) -> Funder:
+        funder = Funder(
+            code=code, name=name,
+            max_indirect_percentage=max_indirect_pct,
+            max_personnel_percentage=max_personnel_pct,
+            min_amount_for_audit=min_audit,
+            color=color,
+        )
+        self.db.add(funder)
+        self.db.commit()
+        self.db.refresh(funder)
+        return funder
+
+    def update_funder(self, funder_id: int, **kwargs) -> Funder | None:
+        funder = self.get_funder_by_id(funder_id)
+        if not funder:
+            return None
+        for key, value in kwargs.items():
+            if hasattr(funder, key):
+                setattr(funder, key, value)
+        self.db.commit()
+        self.db.refresh(funder)
+        return funder
+
+    def delete_funder(self, funder_id: int) -> bool:
+        if self.funder_has_projects(funder_id):
+            raise ValueError("No se puede eliminar un financiador con proyectos asociados")
+        funder = self.get_funder_by_id(funder_id)
+        if not funder:
+            return False
+        self.db.delete(funder)
+        self.db.commit()
+        return True
+
+    def funder_has_projects(self, funder_id: int) -> bool:
+        count = self.db.execute(
+            select(func.count(Project.id)).where(Project.funder_id == funder_id)
+        ).scalar()
+        return count > 0
+
+    def get_funder_project_count(self, funder_id: int) -> int:
+        return self.db.execute(
+            select(func.count(Project.id)).where(Project.funder_id == funder_id)
+        ).scalar() or 0
+
+    # Template version methods
+    def get_template_version(self, version_id: int) -> BudgetTemplateVersion | None:
+        return self.db.get(BudgetTemplateVersion, version_id)
+
+    def get_funder_versions(self, funder_id: int) -> list[BudgetTemplateVersion]:
+        query = (
+            select(BudgetTemplateVersion)
+            .where(BudgetTemplateVersion.funder_id == funder_id)
+            .order_by(BudgetTemplateVersion.version)
+        )
+        return list(self.db.execute(query).scalars().all())
+
+    def get_active_funder_versions(self, funder_id: int) -> list[BudgetTemplateVersion]:
+        query = (
+            select(BudgetTemplateVersion)
+            .where(
+                BudgetTemplateVersion.funder_id == funder_id,
+                BudgetTemplateVersion.is_active == True,
+            )
+            .order_by(BudgetTemplateVersion.version)
+        )
+        return list(self.db.execute(query).scalars().all())
+
+    def get_next_version_number(self, funder_id: int) -> int:
+        max_version = self.db.execute(
+            select(func.max(BudgetTemplateVersion.version))
+            .where(BudgetTemplateVersion.funder_id == funder_id)
+        ).scalar()
+        return (max_version or 0) + 1
+
+    def create_template_version(self, funder_id: int) -> BudgetTemplateVersion:
+        version_num = self.get_next_version_number(funder_id)
+        version = BudgetTemplateVersion(
+            funder_id=funder_id,
+            version=version_num,
+            is_active=True,
+        )
+        self.db.add(version)
+        self.db.commit()
+        self.db.refresh(version)
+        return version
+
+    def clone_template_version(self, version_id: int) -> BudgetTemplateVersion:
+        source = self.get_template_version(version_id)
+        if not source:
+            raise ValueError("Version no encontrada")
+
+        new_version = self.create_template_version(source.funder_id)
+
+        # Clone lines
+        source_lines = self.db.execute(
+            select(BudgetLineTemplate)
+            .where(BudgetLineTemplate.template_version_id == version_id)
+            .order_by(BudgetLineTemplate.order)
+        ).scalars().all()
+
+        for line in source_lines:
+            new_line = BudgetLineTemplate(
+                funder_id=source.funder_id,
+                template_version_id=new_version.id,
+                code=line.code,
+                name=line.name,
+                category=line.category,
+                is_spain_only=line.is_spain_only,
+                order=line.order,
+                max_percentage=line.max_percentage,
+            )
+            self.db.add(new_line)
+
+        self.db.commit()
+        self.db.refresh(new_version)
+        return new_version
+
+    def delete_template_version(self, version_id: int) -> bool:
+        if not self.version_is_editable(version_id):
+            raise ValueError(
+                "No se puede eliminar una version utilizada por proyectos fuera de formulacion"
+            )
+        version = self.get_template_version(version_id)
+        if not version:
+            return False
+        # Desasociar proyectos en formulacion que usen esta version
+        projects_using = self.db.execute(
+            select(Project).where(Project.template_version_id == version_id)
+        ).scalars().all()
+        for proj in projects_using:
+            proj.template_version_id = None
+        self.db.delete(version)
+        self.db.commit()
+        return True
+
+    def version_has_projects(self, version_id: int) -> bool:
+        count = self.db.execute(
+            select(func.count(Project.id)).where(Project.template_version_id == version_id)
+        ).scalar()
+        return count > 0
+
+    def version_is_editable(self, version_id: int) -> bool:
+        """Una version es editable si no tiene proyectos o si todos estan en formulacion."""
+        non_formulation_count = self.db.execute(
+            select(func.count(Project.id)).where(
+                Project.template_version_id == version_id,
+                Project.estado != EstadoProyecto.formulacion,
+            )
+        ).scalar()
+        return non_formulation_count == 0
+
+    def get_version_project_count(self, version_id: int) -> int:
+        return self.db.execute(
+            select(func.count(Project.id)).where(Project.template_version_id == version_id)
+        ).scalar() or 0
+
+    def toggle_version_active(self, version_id: int) -> BudgetTemplateVersion | None:
+        version = self.get_template_version(version_id)
+        if not version:
+            return None
+        version.is_active = not version.is_active
+        self.db.commit()
+        self.db.refresh(version)
+        return version
+
+    # Template line CRUD
+    def add_template_line(self, version_id: int, code: str, name: str, category: CategoriaPartida,
+                          is_spain_only: bool = False, order: int = 0, max_pct=None) -> BudgetLineTemplate:
+        version = self.get_template_version(version_id)
+        if not version:
+            raise ValueError("Version no encontrada")
+        line = BudgetLineTemplate(
+            funder_id=version.funder_id,
+            template_version_id=version_id,
+            code=code,
+            name=name,
+            category=category,
+            is_spain_only=is_spain_only,
+            order=order,
+            max_percentage=max_pct,
+        )
+        self.db.add(line)
+        self.db.commit()
+        self.db.refresh(line)
+        return line
+
+    def update_template_line(self, line_id: int, **kwargs) -> BudgetLineTemplate | None:
+        line = self.db.get(BudgetLineTemplate, line_id)
+        if not line:
+            return None
+        for key, value in kwargs.items():
+            if hasattr(line, key):
+                setattr(line, key, value)
+        self.db.commit()
+        self.db.refresh(line)
+        return line
+
+    def delete_template_line(self, line_id: int) -> bool:
+        line = self.db.get(BudgetLineTemplate, line_id)
+        if not line:
+            return False
+        self.db.delete(line)
+        self.db.commit()
+        return True
+
+    def get_version_lines(self, version_id: int) -> list[BudgetLineTemplate]:
+        query = (
+            select(BudgetLineTemplate)
+            .where(BudgetLineTemplate.template_version_id == version_id)
+            .order_by(BudgetLineTemplate.order)
+        )
+        return list(self.db.execute(query).scalars().all())
 
     # Template methods
     def get_funder_templates(self, funder_id: int) -> list[BudgetLineTemplate]:
@@ -413,24 +613,26 @@ class BudgetService:
         return budget_lines
 
     def initialize_budget_from_project(self, project: Project) -> list[ProjectBudgetLine]:
-        """Initialize budget for a project based on its financiador field"""
+        """Initialize budget for a project based on its funder_id and template_version_id"""
         # Check if budget already exists
         existing = self.get_project_budget(project.id)
         if existing:
             return existing
 
-        # Get funder from project's financiador
-        funder = self.get_funder_for_financiador(project.financiador)
+        if not project.funder_id:
+            return []
+
+        funder = self.get_funder_by_id(project.funder_id)
         if not funder:
             return []
 
-        # Get templates for the funder
-        templates = self.get_funder_templates(funder.id)
+        # Get templates: prefer specific version, fallback to funder templates
+        if project.template_version_id:
+            templates = self.get_version_lines(project.template_version_id)
+        else:
+            templates = self.get_funder_templates(funder.id)
         if not templates:
             return []
-
-        # Update project's funder_id
-        project.funder_id = funder.id
 
         # Create budget lines from templates
         budget_lines = []
@@ -474,27 +676,20 @@ class BudgetService:
         return budget_lines
 
     def reinitialize_budget_for_new_funder(self, project: Project) -> list[ProjectBudgetLine]:
-        """Delete existing budget and create new one based on project's financiador"""
-        # Get the new funder
-        new_funder = self.get_funder_for_financiador(project.financiador)
-        if not new_funder:
+        """Delete existing budget and create new one based on project's funder_id"""
+        if not project.funder_id:
             return []
-
-        # Check if funder changed
-        if project.funder_id == new_funder.id:
-            # Same funder, return existing budget
-            return self.get_project_budget(project.id)
 
         # Delete existing budget lines
         existing = self.get_project_budget(project.id)
         for line in existing:
             self.db.delete(line)
 
-        # Update project's funder_id
-        project.funder_id = new_funder.id
-
-        # Get templates for the new funder
-        templates = self.get_funder_templates(new_funder.id)
+        # Get templates: prefer specific version, fallback to funder templates
+        if project.template_version_id:
+            templates = self.get_version_lines(project.template_version_id)
+        else:
+            templates = self.get_funder_templates(project.funder_id)
         if not templates:
             self.db.commit()
             return []
@@ -634,8 +829,8 @@ class BudgetService:
         if existing:
             return existing
 
-        # Determine the agency name from the project's financiador
-        agency_name = project.financiador.value
+        # Determine the agency name from the project's funder
+        agency_name = project.funder.name if project.funder else project.financiador
 
         sources_data = [
             (agency_name, TipoFuente.agencia, 1),

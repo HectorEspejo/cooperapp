@@ -6,7 +6,7 @@ from decimal import Decimal
 from datetime import date, datetime
 from typing import List
 from app.database import get_db, SessionLocal
-from app.models.project import EstadoProyecto, TipoProyecto, Financiador
+from app.models.project import EstadoProyecto, TipoProyecto
 from app.models.user import User, Rol
 from app.schemas.project import ProjectCreate, ProjectUpdate, PlazoCreate
 from app.services.project_service import ProjectService
@@ -37,10 +37,16 @@ def get_service(db: Session = Depends(get_db)) -> ProjectService:
 
 
 def get_common_context(service: ProjectService) -> dict:
+    from app.services.budget_service import BudgetService
+    budget_service = BudgetService(service.db)
+    funders = budget_service.get_all_funders()
+    # Pre-load active versions for each funder
+    for funder in funders:
+        funder._active_versions = budget_service.get_active_funder_versions(funder.id)
     return {
         "estados": list(EstadoProyecto),
         "tipos": list(TipoProyecto),
-        "financiadores": list(Financiador),
+        "funders": funders,
         "paises": service.get_unique_paises(),
         "sectores": service.get_unique_sectores(),
         "ods_list": service.get_all_ods(),
@@ -125,13 +131,17 @@ async def projects_create(
 ):
     form_data = await request.form()
 
+    from app.services.budget_service import BudgetService
+    budget_service = BudgetService(service.db)
+
     codigo_contable = form_data.get("codigo_contable")
     codigo_area = form_data.get("codigo_area")
     titulo = form_data.get("titulo")
     pais = form_data.get("pais")
     estado = form_data.get("estado")
     tipo = form_data.get("tipo")
-    financiador = form_data.get("financiador")
+    funder_id = form_data.get("funder_id")
+    template_version_id = form_data.get("template_version_id") or None
     sector = form_data.get("sector")
     subvencion = form_data.get("subvencion")
     cuenta_bancaria = form_data.get("cuenta_bancaria") or None
@@ -139,6 +149,10 @@ async def projects_create(
     fecha_finalizacion = form_data.get("fecha_finalizacion")
     fecha_justificacion = form_data.get("fecha_justificacion") or None
     ampliado = form_data.get("ampliado") == "true"
+
+    # Resolve funder name for backward compat
+    funder = budget_service.get_funder_by_id(int(funder_id)) if funder_id else None
+    financiador_name = funder.name if funder else ""
 
     # Parse ODS from form (checkboxes)
     ods_ids = [int(x) for x in form_data.getlist("ods_ids[]")]
@@ -176,7 +190,9 @@ async def projects_create(
         pais=pais,
         estado=EstadoProyecto(estado),
         tipo=TipoProyecto(tipo),
-        financiador=Financiador(financiador),
+        financiador=financiador_name,
+        funder_id=int(funder_id) if funder_id else None,
+        template_version_id=int(template_version_id) if template_version_id else None,
         sector=sector,
         subvencion=Decimal(subvencion.replace(",", ".")),
         cuenta_bancaria=cuenta_bancaria,
@@ -225,7 +241,7 @@ def projects_detail(
 
     # Calculate justification deadline alert for Diputación projects
     justification_alert = None
-    if project.financiador == Financiador.diputacion_malaga and project.fecha_justificacion:
+    if project.funder and project.funder.code == "DIPU" and project.fecha_justificacion:
         days_until = (project.fecha_justificacion - date.today()).days
         if days_until <= 30:
             if days_until < 0:
@@ -302,6 +318,9 @@ async def projects_update(
     user: User = Depends(require_permission(Permiso.proyecto_editar)),
     service: ProjectService = Depends(get_service),
 ):
+    from app.services.budget_service import BudgetService
+    budget_service = BudgetService(service.db)
+
     form_data = await request.form()
 
     codigo_contable = form_data.get("codigo_contable")
@@ -310,7 +329,8 @@ async def projects_update(
     pais = form_data.get("pais")
     estado = form_data.get("estado")
     tipo = form_data.get("tipo")
-    financiador = form_data.get("financiador")
+    funder_id = form_data.get("funder_id")
+    template_version_id = form_data.get("template_version_id") or None
     sector = form_data.get("sector")
     subvencion = form_data.get("subvencion")
     cuenta_bancaria = form_data.get("cuenta_bancaria") or None
@@ -318,6 +338,10 @@ async def projects_update(
     fecha_finalizacion = form_data.get("fecha_finalizacion")
     fecha_justificacion = form_data.get("fecha_justificacion") or None
     ampliado = form_data.get("ampliado") == "true"
+
+    # Resolve funder name for backward compat
+    funder = budget_service.get_funder_by_id(int(funder_id)) if funder_id else None
+    financiador_name = funder.name if funder else ""
 
     # Parse ODS from form (checkboxes)
     ods_ids = [int(x) for x in form_data.getlist("ods_ids[]")]
@@ -355,7 +379,9 @@ async def projects_update(
         pais=pais,
         estado=EstadoProyecto(estado),
         tipo=TipoProyecto(tipo),
-        financiador=Financiador(financiador),
+        financiador=financiador_name,
+        funder_id=int(funder_id) if funder_id else None,
+        template_version_id=int(template_version_id) if template_version_id else None,
         sector=sector,
         subvencion=Decimal(subvencion.replace(",", ".")),
         cuenta_bancaria=cuenta_bancaria,

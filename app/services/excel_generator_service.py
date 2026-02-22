@@ -9,20 +9,11 @@ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 from sqlalchemy.orm import Session
 
-from app.models.project import Project, Financiador
+from app.models.project import Project
 from app.models.expense import Expense, EstadoGasto, UbicacionGasto
 from app.models.transfer import Transfer
 from app.models.budget import ProjectBudgetLine
 from app.models.report import TipoInforme
-
-
-# Funder colors for Excel headers
-FUNDER_COLORS = {
-    Financiador.aacid: "006633",          # AACID - Green
-    Financiador.aecid: "C41E3A",          # AECID - Red
-    Financiador.diputacion_malaga: "003366",  # DIPU - Navy blue
-    Financiador.ayuntamiento_malaga: "8B1E3F",  # AYTO - Brand color
-}
 
 
 class ExcelGeneratorService:
@@ -84,7 +75,9 @@ class ExcelGeneratorService:
 
     def _get_header_fill(self, project: Project) -> PatternFill:
         """Get the header fill color based on funder."""
-        color = FUNDER_COLORS.get(project.financiador, "8B1E3F")
+        color = "8B1E3F"
+        if project.funder and project.funder.color:
+            color = project.funder.color.lstrip("#")
         return PatternFill(start_color=color, end_color=color, fill_type="solid")
 
     def _get_header_font(self) -> Font:
@@ -114,7 +107,7 @@ class ExcelGeneratorService:
         ws["B4"] = project.titulo
         ws.merge_cells("B4:G4")
         ws["A5"] = "Financiador:"
-        ws["B5"] = project.financiador.value
+        ws["B5"] = project.financiador
         ws["D5"] = "Generado:"
         ws["E5"] = datetime.now().strftime("%d/%m/%Y %H:%M")
 
@@ -471,7 +464,7 @@ class ExcelGeneratorService:
             ("Pais", project.pais),
             ("Sector", project.sector),
             ("Tipo", project.tipo.value.replace("_", " ").title()),
-            ("Financiador", project.financiador.value),
+            ("Financiador", project.financiador),
             ("Estado", project.estado.value.replace("_", " ").title()),
         ]
 

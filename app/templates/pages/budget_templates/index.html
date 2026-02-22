@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block title %}Plantillas Presupuesto - CooperApp{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Plantillas Presupuestarias</h1>
+    <button type="button" class="btn btn-primary" onclick="document.getElementById('new-funder-form').style.display = document.getElementById('new-funder-form').style.display === 'none' ? 'block' : 'none'">
+        <i class="fas fa-plus"></i> Nuevo Financiador
+    </button>
+</div>
+
+<!-- Form nuevo financiador -->
+<div id="new-funder-form" class="form-card" style="display: none; margin-bottom: 1.5rem;">
+    <h3>Nuevo Financiador</h3>
+    <form
+        hx-post="/plantillas-presupuesto/financiadores"
+        hx-target="#funders-list"
+        hx-swap="beforeend"
+        hx-on::after-request="if(event.detail.successful) { document.getElementById('new-funder-form').style.display='none'; this.reset(); }"
+    >
+        <div class="form-grid form-grid-3">
+            <div class="form-group">
+                <label for="new-code">Codigo *</label>
+                <input type="text" id="new-code" name="code" required placeholder="Ej: AACID" maxlength="50">
+            </div>
+            <div class="form-group">
+                <label for="new-name">Nombre *</label>
+                <input type="text" id="new-name" name="name" required placeholder="Nombre completo">
+            </div>
+            <div class="form-group">
+                <label for="new-color">Color</label>
+                <input type="color" id="new-color" name="color" value="#4A7C59">
+            </div>
+        </div>
+        <div class="form-grid form-grid-3">
+            <div class="form-group">
+                <label for="new-max-indirect">Max. Indirectos (%)</label>
+                <input type="number" id="new-max-indirect" name="max_indirect_percentage" step="0.01" min="0" max="100" placeholder="Sin limite">
+            </div>
+            <div class="form-group">
+                <label for="new-max-personnel">Max. Personal (%)</label>
+                <input type="number" id="new-max-personnel" name="max_personnel_percentage" step="0.01" min="0" max="100" placeholder="Sin limite">
+            </div>
+            <div class="form-group">
+                <label for="new-min-audit">Min. Auditoria (EUR)</label>
+                <input type="number" id="new-min-audit" name="min_amount_for_audit" step="0.01" min="0" placeholder="Sin minimo">
+            </div>
+        </div>
+        <div class="form-actions">
+            <button type="button" class="btn btn-secondary" onclick="document.getElementById('new-funder-form').style.display='none'">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Crear Financiador</button>
+        </div>
+    </form>
+</div>
+
+<div id="funders-list">
+    {% for fd in funders_data %}
+    {% include "partials/budget_templates/funder_card.html" with context %}
+    {% endfor %}
+</div>
+
+{% if not funders_data %}
+<div class="empty-state">
+    <div class="empty-icon"><i class="fas fa-university"></i></div>
+    <h3>Sin financiadores</h3>
+    <p>Crea el primer financiador para comenzar a gestionar plantillas presupuestarias.</p>
+</div>
+{% endif %}
+{% endblock %}

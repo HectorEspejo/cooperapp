@@ -19,13 +19,6 @@ class TipoProyecto(str, Enum):
     accion_humanitaria = "accion_humanitaria"
 
 
-class Financiador(str, Enum):
-    aacid = "AACID"
-    aecid = "AECID"
-    diputacion_malaga = "Diputación de Málaga"
-    ayuntamiento_malaga = "Ayuntamiento de Málaga"
-
-
 class ODS(str, Enum):
     ods_1 = "1"
     ods_2 = "2"
@@ -118,7 +111,7 @@ class Project(Base):
     pais: Mapped[str] = mapped_column(String(100), index=True)
     estado: Mapped[EstadoProyecto] = mapped_column(SQLEnum(EstadoProyecto), index=True)
     tipo: Mapped[TipoProyecto] = mapped_column(SQLEnum(TipoProyecto), index=True)
-    financiador: Mapped[Financiador] = mapped_column(SQLEnum(Financiador), index=True)
+    financiador: Mapped[str] = mapped_column(String(200), index=True)
     sector: Mapped[str] = mapped_column(String(200))
     subvencion: Mapped[Decimal] = mapped_column(Numeric(15, 2))
     cuenta_bancaria: Mapped[str | None] = mapped_column(String(34), nullable=True)  # IBAN max 34 chars
@@ -129,10 +122,16 @@ class Project(Base):
     funder_id: Mapped[int | None] = mapped_column(
         ForeignKey("funders.id", ondelete="SET NULL"), nullable=True
     )
+    template_version_id: Mapped[int | None] = mapped_column(
+        ForeignKey("budget_template_versions.id", ondelete="SET NULL"), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
     )
+
+    funder: Mapped["Funder | None"] = relationship(foreign_keys=[funder_id])
+    template_version: Mapped["BudgetTemplateVersion | None"] = relationship(foreign_keys=[template_version_id])
 
     plazos: Mapped[list["Plazo"]] = relationship(
         back_populates="project", cascade="all, delete-orphan", order_by="Plazo.fecha_limite"
@@ -170,7 +169,7 @@ class Project(Base):
 
 
 # Import at end to avoid circular import
-from app.models.budget import ProjectBudgetLine
+from app.models.budget import ProjectBudgetLine, Funder, BudgetTemplateVersion
 from app.models.expense import Expense
 from app.models.transfer import Transfer
 from app.models.logical_framework import LogicalFramework

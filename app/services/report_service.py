@@ -149,7 +149,7 @@ class ReportService:
             project_id=project_id,
             tipo=tipo,
             periodo=periodo,
-            formato_financiador=project.financiador.value,
+            formato_financiador=project.financiador,
             nombre_archivo=filename,
             ruta=filepath,
             generado_por=generado_por,
@@ -187,7 +187,7 @@ class ReportService:
             project_id=project_id,
             tipo=TipoInforme.ficha_proyecto,  # Pack type
             periodo=None,
-            formato_financiador=project.financiador.value,
+            formato_financiador=project.financiador,
             nombre_archivo=filename,
             ruta=filepath,
             generado_por=generado_por,

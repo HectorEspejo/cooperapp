@@ -657,7 +657,7 @@ def counterpart_expenses(
     budget_lines = expense_service.get_budget_lines_with_balance(project_id)
     funding_sources = budget_service.get_project_funding_sources(project_id)
 
-    funder = budget_service.get_funder_for_financiador(project.financiador)
+    funder = budget_service.get_funder_by_id(project.funder_id) if project.funder_id else None
     funder_code = funder.code if funder else None
 
     lang = session.language or "es"
@@ -698,7 +698,7 @@ def counterpart_new_expense_form(
 
     budget_lines = expense_service.get_budget_lines_with_balance(project_id)
 
-    funder = budget_service.get_funder_for_financiador(project.financiador)
+    funder = budget_service.get_funder_by_id(project.funder_id) if project.funder_id else None
     funder_code = funder.code if funder else None
 
     lang = session.language or "es"
@@ -783,7 +783,7 @@ async def counterpart_create_expense(
     budget_lines = expense_service.get_budget_lines_with_balance(project_id)
     funding_sources = budget_service.get_project_funding_sources(project_id)
 
-    funder = budget_service.get_funder_for_financiador(project.financiador)
+    funder = budget_service.get_funder_by_id(project.funder_id) if project.funder_id else None
     funder_code = funder.code if funder else None
 
     lang = session.language or "es"
@@ -897,7 +897,7 @@ async def counterpart_upload_document(
     budget_lines = expense_service.get_budget_lines_with_balance(project_id)
     funding_sources = budget_service.get_project_funding_sources(project_id)
 
-    funder = budget_service.get_funder_for_financiador(project.financiador)
+    funder = budget_service.get_funder_by_id(project.funder_id) if project.funder_id else None
     funder_code = funder.code if funder else None
 
     lang = session.language or "es"

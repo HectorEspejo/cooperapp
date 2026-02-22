@@ -1,0 +1,196 @@
+<div class="version-detail-content" id="version-detail-content-{{ version.id }}">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+        <div>
+            <strong>Version v{{ version.version }}</strong>
+            <span class="badge {% if version.is_active %}badge-success{% else %}badge-muted{% endif %}">
+                {{ 'Activa' if version.is_active else 'Inactiva' }}
+            </span>
+            {% if project_count > 0 %}
+            <span class="badge {% if is_editable %}badge-info{% else %}badge-warning{% endif %}">
+                En uso por {{ project_count }} proyecto{{ 's' if project_count != 1 else '' }}{% if is_editable %} (en formulacion){% endif %}
+            </span>
+            {% endif %}
+        </div>
+        <div style="display: flex; gap: 0.25rem;">
+            <button type="button" class="btn btn-sm btn-secondary"
+                hx-post="/plantillas-presupuesto/versiones/{{ version.id }}/clonar"
+                hx-target="#versions-list-{{ version.funder_id }}"
+                hx-swap="beforeend">
+                <i class="fas fa-copy"></i> Clonar como nueva
+            </button>
+        </div>
+    </div>
+
+    {% if lines %}
+    <table class="data-table" style="width: 100%; font-size: 0.875rem;">
+        <thead>
+            <tr>
+                <th>Codigo</th>
+                <th>Nombre</th>
+                <th>Categoria</th>
+                <th>Solo Espana</th>
+                <th>Orden</th>
+                <th>% Max</th>
+                {% if is_editable %}
+                <th>Acciones</th>
+                {% endif %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for line in lines %}
+            <tr id="line-row-{{ line.id }}">
+                <td><code>{{ line.code }}</code></td>
+                <td>{{ line.name }}</td>
+                <td><span class="badge">{{ line.category.value|replace('_', ' ')|title }}</span></td>
+                <td>{{ 'Si' if line.is_spain_only else 'No' }}</td>
+                <td>{{ line.order }}</td>
+                <td>{{ line.max_percentage if line.max_percentage else '-' }}</td>
+                {% if is_editable %}
+                <td>
+                    <div style="display: flex; gap: 0.25rem;">
+                        <button type="button" class="btn btn-sm btn-secondary"
+                            onclick="editLine({{ line.id }}, '{{ line.code }}', '{{ line.name }}', '{{ line.category.value }}', {{ 'true' if line.is_spain_only else 'false' }}, {{ line.order }}, '{{ line.max_percentage if line.max_percentage else '' }}', {{ version.id }})">
+                            <i class="fas fa-pen"></i>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-danger"
+                            hx-delete="/plantillas-presupuesto/lineas/{{ line.id }}"
+                            hx-target="#version-detail-content-{{ version.id }}"
+                            hx-swap="outerHTML"
+                            hx-confirm="Eliminar linea {{ line.code }}?">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+                {% endif %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="color: var(--text-muted); text-align: center; padding: 0.5rem;">Sin lineas de presupuesto.</p>
+    {% endif %}
+
+    {% if is_editable %}
+    <!-- Form para anadir nueva linea -->
+    <div style="margin-top: 0.75rem; padding: 0.75rem; border: 1px dashed var(--border-color); border-radius: 8px;">
+        <strong style="font-size: 0.875rem;">Anadir linea</strong>
+        <form
+            hx-post="/plantillas-presupuesto/versiones/{{ version.id }}/lineas"
+            hx-target="#version-detail-content-{{ version.id }}"
+            hx-swap="outerHTML"
+            style="margin-top: 0.5rem;"
+        >
+            <div class="form-grid" style="grid-template-columns: 80px 1fr 150px 80px 60px 80px auto; gap: 0.5rem; align-items: end;">
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label style="font-size: 0.75rem;">Codigo</label>
+                    <input type="text" name="code" required placeholder="A.I.1" style="font-size: 0.875rem;">
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label style="font-size: 0.75rem;">Nombre</label>
+                    <input type="text" name="name" required placeholder="Nombre de la partida" style="font-size: 0.875rem;">
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label style="font-size: 0.75rem;">Categoria</label>
+                    <select name="category" required style="font-size: 0.875rem;">
+                        {% for cat in categorias %}
+                        <option value="{{ cat.value }}">{{ cat.value|replace('_', ' ')|title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label style="font-size: 0.75rem;">Espana</label>
+                    <select name="is_spain_only" style="font-size: 0.875rem;">
+                        <option value="false">No</option>
+                        <option value="true">Si</option>
+                    </select>
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label style="font-size: 0.75rem;">Orden</label>
+                    <input type="number" name="order" value="{{ (lines|length) + 1 }}" min="0" style="font-size: 0.875rem;">
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label style="font-size: 0.75rem;">% Max</label>
+                    <input type="number" name="max_percentage" step="0.01" min="0" max="100" placeholder="-" style="font-size: 0.875rem;">
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <button type="submit" class="btn btn-sm btn-primary" style="margin-top: 1.25rem;">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Edit line modal (inline) -->
+<div id="edit-line-modal-{{ version.id }}" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; display: none; align-items: center; justify-content: center;">
+    <div class="form-card" style="max-width: 600px; width: 90%; margin: auto; position: relative; top: 50%; transform: translateY(-50%);">
+        <h3>Editar Linea</h3>
+        <form id="edit-line-form-{{ version.id }}"
+            hx-target="#version-detail-content-{{ version.id }}"
+            hx-swap="outerHTML">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Codigo</label>
+                    <input type="text" name="code" id="edit-line-code-{{ version.id }}" required>
+                </div>
+                <div class="form-group">
+                    <label>Nombre</label>
+                    <input type="text" name="name" id="edit-line-name-{{ version.id }}" required>
+                </div>
+            </div>
+            <div class="form-grid form-grid-3">
+                <div class="form-group">
+                    <label>Categoria</label>
+                    <select name="category" id="edit-line-category-{{ version.id }}" required>
+                        {% for cat in categorias %}
+                        <option value="{{ cat.value }}">{{ cat.value|replace('_', ' ')|title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Solo Espana</label>
+                    <select name="is_spain_only" id="edit-line-spain-{{ version.id }}">
+                        <option value="false">No</option>
+                        <option value="true">Si</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Orden</label>
+                    <input type="number" name="order" id="edit-line-order-{{ version.id }}" min="0">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>% Maximo</label>
+                <input type="number" name="max_percentage" id="edit-line-maxpct-{{ version.id }}" step="0.01" min="0" max="100">
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeEditLine({{ version.id }})">Cancelar</button>
+                <button type="submit" class="btn btn-primary">Guardar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function editLine(lineId, code, name, category, isSpain, order, maxPct, versionId) {
+    const modal = document.getElementById('edit-line-modal-' + versionId);
+    const form = document.getElementById('edit-line-form-' + versionId);
+    form.setAttribute('hx-put', '/plantillas-presupuesto/lineas/' + lineId);
+    htmx.process(form);
+
+    document.getElementById('edit-line-code-' + versionId).value = code;
+    document.getElementById('edit-line-name-' + versionId).value = name;
+    document.getElementById('edit-line-category-' + versionId).value = category;
+    document.getElementById('edit-line-spain-' + versionId).value = isSpain ? 'true' : 'false';
+    document.getElementById('edit-line-order-' + versionId).value = order;
+    document.getElementById('edit-line-maxpct-' + versionId).value = maxPct;
+
+    modal.style.display = 'flex';
+}
+
+function closeEditLine(versionId) {
+    document.getElementById('edit-line-modal-' + versionId).style.display = 'none';
+}
+</script>

@@ -1,0 +1,53 @@
+<div class="form-card" style="margin: 0.5rem 0;">
+    <form
+        {% if is_edit %}
+        hx-put="/plantillas-presupuesto/lineas/{{ line.id }}"
+        {% else %}
+        hx-post="/plantillas-presupuesto/versiones/{{ version_id }}/lineas"
+        {% endif %}
+        hx-target="#version-detail-content-{{ version_id }}"
+        hx-swap="outerHTML"
+    >
+        <div class="form-grid form-grid-3">
+            <div class="form-group">
+                <label>Codigo *</label>
+                <input type="text" name="code" value="{{ line.code if is_edit else '' }}" required>
+            </div>
+            <div class="form-group">
+                <label>Nombre *</label>
+                <input type="text" name="name" value="{{ line.name if is_edit else '' }}" required>
+            </div>
+            <div class="form-group">
+                <label>Categoria *</label>
+                <select name="category" required>
+                    {% for cat in categorias %}
+                    <option value="{{ cat.value }}" {% if is_edit and line.category == cat %}selected{% endif %}>
+                        {{ cat.value|replace('_', ' ')|title }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <div class="form-grid form-grid-3">
+            <div class="form-group">
+                <label>Solo Espana</label>
+                <select name="is_spain_only">
+                    <option value="false" {% if not is_edit or not line.is_spain_only %}selected{% endif %}>No</option>
+                    <option value="true" {% if is_edit and line.is_spain_only %}selected{% endif %}>Si</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Orden</label>
+                <input type="number" name="order" value="{{ line.order if is_edit else 0 }}" min="0">
+            </div>
+            <div class="form-group">
+                <label>% Maximo</label>
+                <input type="number" name="max_percentage" step="0.01" min="0" max="100"
+                    value="{{ line.max_percentage if is_edit and line.max_percentage else '' }}">
+            </div>
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">{{ 'Guardar' if is_edit else 'Anadir' }}</button>
+        </div>
+    </form>
+</div>

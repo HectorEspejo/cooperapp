@@ -23,14 +23,39 @@ class Funder(Base):
     max_indirect_percentage: Mapped[Decimal | None] = mapped_column(Numeric(5, 2), nullable=True)
     max_personnel_percentage: Mapped[Decimal | None] = mapped_column(Numeric(5, 2), nullable=True)
     min_amount_for_audit: Mapped[Decimal | None] = mapped_column(Numeric(15, 2), nullable=True)
+    color: Mapped[str | None] = mapped_column(String(7), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     templates: Mapped[list["BudgetLineTemplate"]] = relationship(
         back_populates="funder", cascade="all, delete-orphan"
     )
+    versions: Mapped[list["BudgetTemplateVersion"]] = relationship(
+        back_populates="funder", cascade="all, delete-orphan",
+        order_by="BudgetTemplateVersion.version"
+    )
 
     def __repr__(self) -> str:
         return f"<Funder {self.code}: {self.name}>"
+
+
+class BudgetTemplateVersion(Base):
+    __tablename__ = "budget_template_versions"
+
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    funder_id: Mapped[int] = mapped_column(ForeignKey("funders.id", ondelete="CASCADE"))
+    version: Mapped[int] = mapped_column(Integer)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+    funder: Mapped["Funder"] = relationship(back_populates="versions")
+    lines: Mapped[list["BudgetLineTemplate"]] = relationship(
+        back_populates="template_version",
+        foreign_keys="BudgetLineTemplate.template_version_id",
+        cascade="all, delete-orphan"
+    )
+
+    def __repr__(self) -> str:
+        return f"<BudgetTemplateVersion {self.funder_id} v{self.version}>"
 
 
 class BudgetLineTemplate(Base):
@@ -38,6 +63,9 @@ class BudgetLineTemplate(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     funder_id: Mapped[int] = mapped_column(ForeignKey("funders.id", ondelete="CASCADE"))
+    template_version_id: Mapped[int | None] = mapped_column(
+        ForeignKey("budget_template_versions.id", ondelete="CASCADE"), nullable=True
+    )
     parent_id: Mapped[int | None] = mapped_column(
         ForeignKey("budget_line_templates.id", ondelete="CASCADE"), nullable=True
     )
@@ -49,6 +77,9 @@ class BudgetLineTemplate(Base):
     max_percentage: Mapped[Decimal | None] = mapped_column(Numeric(5, 2), nullable=True)
 
     funder: Mapped["Funder"] = relationship(back_populates="templates")
+    template_version: Mapped["BudgetTemplateVersion | None"] = relationship(
+        back_populates="lines", foreign_keys=[template_version_id]
+    )
     parent: Mapped["BudgetLineTemplate | None"] = relationship(
         "BudgetLineTemplate", remote_side=[id], back_populates="children"
     )

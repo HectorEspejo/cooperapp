@@ -163,7 +163,7 @@
                     <dt>Tipo</dt>
                     <dd>{{ project.tipo.value|replace('_', ' ')|title }}</dd>
                     <dt>Financiador</dt>
-                    <dd>{{ project.financiador.value }}</dd>
+                    <dd>{{ project.funder.name if project.funder else project.financiador }}</dd>
                     <dt>Ampliado</dt>
                     <dd>{{ 'Si' if project.ampliado else 'No' }}</dd>
                 </dl>

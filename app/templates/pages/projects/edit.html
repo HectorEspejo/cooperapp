@@ -80,15 +80,37 @@
                 </select>
             </div>
             <div class="form-group">
-                <label for="financiador">Financiador *</label>
-                <select id="financiador" name="financiador" required onchange="showFunderInfo(this.value)">
-                    {% for f in financiadores %}
-                    <option value="{{ f.value }}" {% if project.financiador == f %}selected{% endif %}>
-                        {{ f.value }}
+                <label for="funder_id">Financiador *</label>
+                <select id="funder_id" name="funder_id" required
+                    hx-get=""
+                    hx-target="#template-version-container"
+                    hx-swap="innerHTML"
+                    hx-trigger="change"
+                    onchange="this.setAttribute('hx-get', '/plantillas-presupuesto/financiadores/' + this.value + '/versiones-select'); htmx.process(this); htmx.trigger(this, 'change')">
+                    {% for f in funders %}
+                    <option value="{{ f.id }}" {% if project.funder_id == f.id %}selected{% endif %}>
+                        {{ f.name }} ({{ f.code }})
                     </option>
                     {% endfor %}
                 </select>
                 <div id="funder-info" class="funder-info-tooltip" style="display: none;"></div>
+            </div>
+        </div>
+
+        <div class="form-grid">
+            <div class="form-group" id="template-version-container">
+                <label for="template_version_id">Version de Plantilla</label>
+                <select id="template_version_id" name="template_version_id">
+                    {% if project.funder_id %}
+                    {% for f in funders %}
+                    {% if f.id == project.funder_id and f._active_versions is defined %}
+                    {% for v in f._active_versions %}
+                    <option value="{{ v.id }}" {% if project.template_version_id == v.id %}selected{% endif %}>v{{ v.version }}</option>
+                    {% endfor %}
+                    {% endif %}
+                    {% endfor %}
+                    {% endif %}
+                </select>
             </div>
         </div>
 
@@ -190,6 +212,25 @@
     </form>
 </div>
 
+<!-- Modal confirmacion cambio de plantilla presupuestaria -->
+<div class="modal-overlay" id="budget-change-modal" style="display:none;" onclick="if(event.target===this) window._budgetModal.cancel()">
+    <div class="aplazamiento-modal" style="max-width: 500px;">
+        <div class="modal-header">
+            <h3><i class="fas fa-exclamation-triangle" style="color: var(--warning-color);"></i> Cambio de plantilla presupuestaria</h3>
+            <button type="button" class="btn-close" onclick="window._budgetModal.cancel()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p>Al cambiar el financiador o la version de plantilla, <strong>se eliminaran todas las partidas presupuestarias actuales</strong> y se crearan nuevas a partir de la plantilla seleccionada.</p>
+            <p style="color: var(--danger-color); font-weight: 500;">Los importes aprobados y ejecutados introducidos se perderan.</p>
+            <p>Esta accion no se puede deshacer.</p>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="window._budgetModal.cancel()">Cancelar</button>
+            <button type="button" class="btn btn-danger" onclick="window._budgetModal.confirm()">Confirmar cambio</button>
+        </div>
+    </div>
+</div>
+
 {% if project.estado.value != 'formulacion' and not aplazamiento_pendiente and user and user.rol and user.rol.value in ['director', 'coordinador', 'tecnico_sede'] %}
 <div id="aplazamiento-modal-container" style="display:none">
     {% include "partials/projects/aplazamiento_form.html" %}
@@ -199,58 +240,59 @@
 
 {% block scripts %}
 <script>
-// Funder information data
-const funderInfo = {
-    'AACID': {
-        name: 'Agencia Andaluza de Cooperacion Internacional para el Desarrollo',
-        lines: '20 partidas presupuestarias',
-        indirectos: 'Sin limite explicito de costes indirectos',
-        especial: null
-    },
-    'AECID': {
-        name: 'Agencia Espanola de Cooperacion Internacional para el Desarrollo',
-        lines: '12 partidas presupuestarias',
-        indirectos: 'Maximo 10% de costes indirectos',
-        especial: null
-    },
-    'Diputación de Málaga': {
-        name: 'Diputacion Provincial de Malaga',
-        lines: '9 partidas presupuestarias',
-        indirectos: 'Maximo 8% de costes indirectos',
-        especial: 'Justificacion max. 3 meses tras fin de ejecucion'
-    },
-    'Ayuntamiento de Málaga': {
-        name: 'Ayuntamiento de Malaga',
-        lines: '6 partidas presupuestarias (estructura simplificada)',
-        indirectos: 'Maximo 7% de costes indirectos',
-        especial: 'Personal max. 50% del total. Auditoria opcional si subvencion < 30.000 EUR'
+(function() {
+    var initialFunderId = '{{ project.funder_id or "" }}';
+    var initialVersionId = '{{ project.template_version_id or "" }}';
+    // Valores confirmados (se actualizan cuando el usuario acepta el cambio)
+    var confirmedFunderId = initialFunderId;
+    var confirmedVersionId = initialVersionId;
+
+    var modal = document.getElementById('budget-change-modal');
+
+    // Load version select for initially selected funder
+    var funderSelect = document.getElementById('funder_id');
+    if (funderSelect && funderSelect.value) {
+        funderSelect.setAttribute('hx-get', '/plantillas-presupuesto/financiadores/' + funderSelect.value + '/versiones-select');
+        htmx.process(funderSelect);
     }
-};
 
-function showFunderInfo(value) {
-    const infoDiv = document.getElementById('funder-info');
-    const info = funderInfo[value];
+    // Escuchar cambios en el financiador
+    if (funderSelect) {
+        funderSelect.addEventListener('change', function() {
+            if (this.value !== confirmedFunderId) {
+                modal.style.display = 'flex';
+            }
+        });
+    }
 
-    if (info) {
-        let html = `<strong>${info.name}</strong><br>`;
-        html += `<span class="info-line">${info.lines}</span><br>`;
-        html += `<span class="info-line">${info.indirectos}</span>`;
-        if (info.especial) {
-            html += `<br><span class="info-line info-special">${info.especial}</span>`;
+    // Escuchar cambios en la version (incluye selects cargados por HTMX)
+    document.addEventListener('change', function(e) {
+        if (e.target && e.target.id === 'template_version_id') {
+            if (e.target.value !== confirmedVersionId) {
+                modal.style.display = 'flex';
+            }
         }
-        infoDiv.innerHTML = html;
-        infoDiv.style.display = 'block';
-    } else {
-        infoDiv.style.display = 'none';
-    }
-}
+    });
 
-// Show info for initially selected funder
-document.addEventListener('DOMContentLoaded', function() {
-    const select = document.getElementById('financiador');
-    if (select && select.value) {
-        showFunderInfo(select.value);
-    }
-});
+    window._budgetModal = {
+        cancel: function() {
+            modal.style.display = 'none';
+            // Revertir financiador
+            funderSelect.value = confirmedFunderId;
+            // Revertir version
+            var versionSelect = document.getElementById('template_version_id');
+            if (versionSelect) {
+                versionSelect.value = confirmedVersionId;
+            }
+        },
+        confirm: function() {
+            modal.style.display = 'none';
+            // Aceptar los nuevos valores como confirmados
+            confirmedFunderId = funderSelect.value;
+            var versionSelect = document.getElementById('template_version_id');
+            confirmedVersionId = versionSelect ? versionSelect.value : '';
+        }
+    };
+})();
 </script>
 {% endblock %}

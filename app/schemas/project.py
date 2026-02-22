@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from decimal import Decimal
 from pydantic import BaseModel, Field, ConfigDict
-from app.models.project import EstadoProyecto, TipoProyecto, Financiador
+from app.models.project import EstadoProyecto, TipoProyecto
 
 
 # Plazo Schemas
@@ -46,7 +46,9 @@ class ProjectBase(BaseModel):
     pais: str = Field(..., max_length=100)
     estado: EstadoProyecto
     tipo: TipoProyecto
-    financiador: Financiador
+    financiador: str = Field(..., max_length=200)
+    funder_id: int | None = None
+    template_version_id: int | None = None
     sector: str = Field(..., max_length=200)
     subvencion: Decimal = Field(..., ge=0, decimal_places=2)
     cuenta_bancaria: str | None = Field(None, max_length=34)
@@ -68,7 +70,9 @@ class ProjectUpdate(BaseModel):
     pais: str | None = Field(None, max_length=100)
     estado: EstadoProyecto | None = None
     tipo: TipoProyecto | None = None
-    financiador: Financiador | None = None
+    financiador: str | None = Field(None, max_length=200)
+    funder_id: int | None = None
+    template_version_id: int | None = None
     sector: str | None = Field(None, max_length=200)
     subvencion: Decimal | None = Field(None, ge=0)
     cuenta_bancaria: str | None = Field(None, max_length=34)

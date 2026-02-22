@@ -76,14 +76,28 @@
                 </select>
             </div>
             <div class="form-group">
-                <label for="financiador">Financiador *</label>
-                <select id="financiador" name="financiador" required onchange="showFunderInfo(this.value)">
+                <label for="funder_id">Financiador *</label>
+                <select id="funder_id" name="funder_id" required
+                    hx-get=""
+                    hx-target="#template-version-container"
+                    hx-swap="innerHTML"
+                    hx-trigger="change"
+                    onchange="this.setAttribute('hx-get', '/plantillas-presupuesto/financiadores/' + this.value + '/versiones-select'); htmx.process(this); htmx.trigger(this, 'change')">
                     <option value="">Seleccionar...</option>
-                    {% for f in financiadores %}
-                    <option value="{{ f.value }}">{{ f.value }}</option>
+                    {% for f in funders %}
+                    <option value="{{ f.id }}">{{ f.name }} ({{ f.code }})</option>
                     {% endfor %}
                 </select>
                 <div id="funder-info" class="funder-info-tooltip" style="display: none;"></div>
+            </div>
+        </div>
+
+        <div class="form-grid">
+            <div class="form-group" id="template-version-container">
+                <label for="template_version_id">Version de Plantilla *</label>
+                <select id="template_version_id" name="template_version_id" required>
+                    <option value="">Seleccionar primero un financiador</option>
+                </select>
             </div>
         </div>
 
@@ -162,52 +176,6 @@
 {% block scripts %}
 <script>
 let plazoIndex = 0;
-
-// Funder information data
-const funderInfo = {
-    'AACID': {
-        name: 'Agencia Andaluza de Cooperacion Internacional para el Desarrollo',
-        lines: '20 partidas presupuestarias',
-        indirectos: 'Sin limite explicito de costes indirectos',
-        especial: null
-    },
-    'AECID': {
-        name: 'Agencia Espanola de Cooperacion Internacional para el Desarrollo',
-        lines: '12 partidas presupuestarias',
-        indirectos: 'Maximo 10% de costes indirectos',
-        especial: null
-    },
-    'Diputación de Málaga': {
-        name: 'Diputacion Provincial de Malaga',
-        lines: '9 partidas presupuestarias',
-        indirectos: 'Maximo 8% de costes indirectos',
-        especial: 'Justificacion max. 3 meses tras fin de ejecucion'
-    },
-    'Ayuntamiento de Málaga': {
-        name: 'Ayuntamiento de Malaga',
-        lines: '6 partidas presupuestarias (estructura simplificada)',
-        indirectos: 'Maximo 7% de costes indirectos',
-        especial: 'Personal max. 50% del total. Auditoria opcional si subvencion < 30.000 EUR'
-    }
-};
-
-function showFunderInfo(value) {
-    const infoDiv = document.getElementById('funder-info');
-    const info = funderInfo[value];
-
-    if (info) {
-        let html = `<strong>${info.name}</strong><br>`;
-        html += `<span class="info-line">${info.lines}</span><br>`;
-        html += `<span class="info-line">${info.indirectos}</span>`;
-        if (info.especial) {
-            html += `<br><span class="info-line info-special">${info.especial}</span>`;
-        }
-        infoDiv.innerHTML = html;
-        infoDiv.style.display = 'block';
-    } else {
-        infoDiv.style.display = 'none';
-    }
-}
 
 function addPlazo() {
     const container = document.getElementById('plazos-container');

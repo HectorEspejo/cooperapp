@@ -13,6 +13,7 @@ class FunderResponse(BaseModel):
     max_indirect_percentage: Decimal | None
     max_personnel_percentage: Decimal | None
     min_amount_for_audit: Decimal | None
+    color: str | None = None
     created_at: datetime
 
 

@@ -1,0 +1,45 @@
+<div class="form-card" style="margin: 0.75rem 0; border: 2px solid var(--primary-color);">
+    <h4>Editar Financiador: {{ funder.name }}</h4>
+    <form
+        hx-put="/plantillas-presupuesto/financiadores/{{ funder.id }}"
+        hx-target="#funder-{{ funder.id }}"
+        hx-swap="outerHTML"
+    >
+        <div class="form-grid form-grid-3">
+            <div class="form-group">
+                <label>Codigo *</label>
+                <input type="text" name="code" value="{{ funder.code }}" required maxlength="50">
+            </div>
+            <div class="form-group">
+                <label>Nombre *</label>
+                <input type="text" name="name" value="{{ funder.name }}" required>
+            </div>
+            <div class="form-group">
+                <label>Color</label>
+                <input type="color" name="color" value="{{ funder.color or '#4A7C59' }}">
+            </div>
+        </div>
+        <div class="form-grid form-grid-3">
+            <div class="form-group">
+                <label>Max. Indirectos (%)</label>
+                <input type="number" name="max_indirect_percentage" step="0.01" min="0" max="100"
+                    value="{{ funder.max_indirect_percentage or '' }}">
+            </div>
+            <div class="form-group">
+                <label>Max. Personal (%)</label>
+                <input type="number" name="max_personnel_percentage" step="0.01" min="0" max="100"
+                    value="{{ funder.max_personnel_percentage or '' }}">
+            </div>
+            <div class="form-group">
+                <label>Min. Auditoria (EUR)</label>
+                <input type="number" name="min_amount_for_audit" step="0.01" min="0"
+                    value="{{ funder.min_amount_for_audit or '' }}">
+            </div>
+        </div>
+        <div class="form-actions">
+            <button type="button" class="btn btn-secondary"
+                onclick="document.getElementById('funder-edit-{{ funder.id }}').innerHTML=''">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Guardar</button>
+        </div>
+    </form>
+</div>

@@ -232,7 +232,7 @@
                         type="text"
                         id="financiado_por"
                         name="financiado_por"
-                        value="{{ expense.financiado_por if expense else project.financiador.value }}"
+                        value="{{ expense.financiado_por if expense else (project.funder.name if project.funder else project.financiador) }}"
                         maxlength="100"
                         required
                     >

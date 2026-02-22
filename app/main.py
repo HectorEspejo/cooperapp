@@ -22,6 +22,7 @@ from app.views.users import router as users_router
 from app.views.counterpart import router as counterpart_router
 from app.views.audit import router as audit_router
 from app.views.postponements import router as postponements_router
+from app.views.budget_templates import router as budget_templates_router
 from app.services.project_service import ProjectService
 from app.services.budget_service import BudgetService
 
@@ -52,6 +53,33 @@ async def lifespan(app: FastAPI):
             ))
             conn.commit()
 
+    # Migration: add template_version_id to budget_line_templates if missing
+    blt_columns = [c["name"] for c in inspector.get_columns("budget_line_templates")]
+    if "template_version_id" not in blt_columns:
+        with engine.connect() as conn:
+            conn.execute(text(
+                "ALTER TABLE budget_line_templates ADD COLUMN template_version_id INTEGER "
+                "REFERENCES budget_template_versions(id) ON DELETE CASCADE"
+            ))
+            conn.commit()
+
+    # Migration: add template_version_id to projects if missing
+    proj_columns = [c["name"] for c in inspector.get_columns("projects")]
+    if "template_version_id" not in proj_columns:
+        with engine.connect() as conn:
+            conn.execute(text(
+                "ALTER TABLE projects ADD COLUMN template_version_id INTEGER "
+                "REFERENCES budget_template_versions(id) ON DELETE SET NULL"
+            ))
+            conn.commit()
+
+    # Migration: add color to funders if missing
+    funder_columns = [c["name"] for c in inspector.get_columns("funders")]
+    if "color" not in funder_columns:
+        with engine.connect() as conn:
+            conn.execute(text("ALTER TABLE funders ADD COLUMN color VARCHAR(7)"))
+            conn.commit()
+
     # Create uploads directory for expense documents
     os.makedirs("uploads", exist_ok=True)
 
@@ -70,6 +98,57 @@ async def lifespan(app: FastAPI):
         budget_service.seed_aecid_templates()
         budget_service.seed_dipu_templates()
         budget_service.seed_ayto_templates()
+
+        # Migration: create v1 for funders without versions and assign templates
+        from app.models.budget import BudgetTemplateVersion, BudgetLineTemplate
+        from sqlalchemy import select as sa_select2
+        all_funders = budget_service.get_all_funders()
+        for funder_obj in all_funders:
+            existing_versions = budget_service.get_funder_versions(funder_obj.id)
+            if not existing_versions:
+                # Create v1
+                v1 = BudgetTemplateVersion(
+                    funder_id=funder_obj.id,
+                    version=1,
+                    is_active=True,
+                )
+                db.add(v1)
+                db.flush()
+
+                # Assign existing templates to this version
+                templates_without_version = db.execute(
+                    sa_select2(BudgetLineTemplate).where(
+                        BudgetLineTemplate.funder_id == funder_obj.id,
+                        BudgetLineTemplate.template_version_id.is_(None),
+                    )
+                ).scalars().all()
+                for tmpl in templates_without_version:
+                    tmpl.template_version_id = v1.id
+                db.commit()
+
+        # Migration: assign template_version_id to projects with funder_id
+        from app.models.project import Project as ProjectModel2
+        projects_without_version = db.execute(
+            sa_select2(ProjectModel2).where(
+                ProjectModel2.funder_id.isnot(None),
+                ProjectModel2.template_version_id.is_(None),
+            )
+        ).scalars().all()
+        for proj in projects_without_version:
+            # Find v1 for this funder
+            funder_versions = budget_service.get_funder_versions(proj.funder_id)
+            if funder_versions:
+                proj.template_version_id = funder_versions[0].id
+        if projects_without_version:
+            db.commit()
+
+        # Migration: set funder colors
+        funder_colors = {"AACID": "#006633", "AECID": "#C41E3A", "DIPU": "#003366", "AYTO": "#8B1E3F"}
+        for code, color in funder_colors.items():
+            funder_obj = budget_service.get_funder_by_code(code)
+            if funder_obj and not funder_obj.color:
+                funder_obj.color = color
+        db.commit()
 
         # Migration: create default funding sources for existing projects with budgets
         from app.models.project import Project as ProjectModel
@@ -142,6 +221,7 @@ app.include_router(documents_router, prefix="/projects")
 app.include_router(verification_sources_router, prefix="/projects")
 app.include_router(reports_router, prefix="/projects")
 app.include_router(postponements_router, prefix="/projects")
+app.include_router(budget_templates_router)
 
 
 @app.get("/")

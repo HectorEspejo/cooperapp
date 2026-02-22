@@ -1,7 +1,7 @@
 from decimal import Decimal
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
-from app.models.project import Project, Plazo, ODSObjetivo, EstadoProyecto, TipoProyecto, ODS_NOMBRES, Financiador
+from app.models.project import Project, Plazo, ODSObjetivo, EstadoProyecto, TipoProyecto, ODS_NOMBRES
 from app.schemas.project import ProjectCreate, ProjectUpdate, ProjectStats, PlazoCreate, PlazoUpdate
 
 
@@ -98,8 +98,9 @@ class ProjectService:
         if not project:
             return None
 
-        # Track if financiador changed
-        old_financiador = project.financiador
+        # Track if funder or template version changed
+        old_funder_id = project.funder_id
+        old_template_version_id = project.template_version_id
 
         update_data = data.model_dump(exclude_unset=True, exclude={"ods_ids"})
         for field, value in update_data.items():
@@ -115,8 +116,13 @@ class ProjectService:
         self.db.commit()
         self.db.refresh(project)
 
-        # If financiador changed, reinitialize budget
-        if data.financiador is not None and data.financiador != old_financiador:
+        # If funder or template version changed, reinitialize budget
+        funder_changed = data.funder_id is not None and data.funder_id != old_funder_id
+        version_changed = (
+            data.template_version_id is not None
+            and data.template_version_id != old_template_version_id
+        )
+        if funder_changed or version_changed:
             self.budget_service.reinitialize_budget_for_new_funder(project)
 
         return project
