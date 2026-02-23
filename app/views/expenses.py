@@ -693,7 +693,7 @@ async def upload_document(
         budget_line = expense.budget_line
         concepto_short = expense.concepto[:50] if len(expense.concepto) > 50 else expense.concepto
         document_data = DocumentCreate(
-            categoria=CategoriaDocumento.factura,
+            categoria=CategoriaDocumento.fv_eco_factura,
             descripcion=f"Factura - {budget_line.name} - {concepto_short}",
         )
         document_service.create_document(project_id, file, document_data)

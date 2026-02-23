@@ -3,7 +3,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from app.database import get_db, SessionLocal
-from app.models.document import CategoriaDocumento, CATEGORIA_NOMBRES
+from app.models.document import CategoriaDocumento, CATEGORIA_NOMBRES, CATEGORIA_GRUPOS
 from app.models.user import User
 from app.services.document_service import DocumentService
 from app.services.project_service import ProjectService
@@ -60,6 +60,7 @@ def documents_tab(
             "summary": summary,
             "categorias": CategoriaDocumento,
             "categoria_nombres": CATEGORIA_NOMBRES,
+            "categoria_grupos": CATEGORIA_GRUPOS,
         },
     )
 
@@ -158,6 +159,7 @@ async def upload_document(
             "summary": summary,
             "categorias": CategoriaDocumento,
             "categoria_nombres": CATEGORIA_NOMBRES,
+            "categoria_grupos": CATEGORIA_GRUPOS,
         },
     )
 
@@ -208,6 +210,7 @@ def delete_document(
             "summary": summary,
             "categorias": CategoriaDocumento,
             "categoria_nombres": CATEGORIA_NOMBRES,
+            "categoria_grupos": CATEGORIA_GRUPOS,
         },
     )
 
@@ -260,6 +263,7 @@ def seal_document(
             "summary": summary,
             "categorias": CategoriaDocumento,
             "categoria_nombres": CATEGORIA_NOMBRES,
+            "categoria_grupos": CATEGORIA_GRUPOS,
         },
     )
 

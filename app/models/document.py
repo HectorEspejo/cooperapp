@@ -6,30 +6,76 @@ from app.database import Base
 
 
 class CategoriaDocumento(str, Enum):
-    factura = "factura"
-    comprobante = "comprobante"
-    fuente_verificacion = "fuente_verificacion"
-    informe = "informe"
-    contrato = "contrato"
+    # Fuentes de verificacion economicas
+    fv_eco_factura = "fv_eco_factura"
+    fv_eco_recibo = "fv_eco_recibo"
+    fv_eco_cheque = "fv_eco_cheque"
+    fv_eco_nomina = "fv_eco_nomina"
+    fv_eco_liquidacion_transporte = "fv_eco_liquidacion_transporte"
+    fv_eco_contrato = "fv_eco_contrato"
+    fv_eco_prestacion_servicios = "fv_eco_prestacion_servicios"
+    # Fuentes de verificacion tecnicas
+    fv_tec_lista_presencia = "fv_tec_lista_presencia"
+    fv_tec_encuesta = "fv_tec_encuesta"
+    fv_tec_foto = "fv_tec_foto"
+    fv_tec_registro = "fv_tec_registro"
+    fv_tec_acta_entrega = "fv_tec_acta_entrega"
+    # Convenios
     convenio = "convenio"
-    acta = "acta"
-    listado_asistencia = "listado_asistencia"
-    foto = "foto"
+    # Otros
     otro = "otro"
 
 
 CATEGORIA_NOMBRES = {
-    "factura": "Factura",
-    "comprobante": "Comprobante",
-    "fuente_verificacion": "Fuente de Verificacion",
-    "informe": "Informe",
-    "contrato": "Contrato",
+    "fv_eco_factura": "Factura",
+    "fv_eco_recibo": "Recibo",
+    "fv_eco_cheque": "Cheque",
+    "fv_eco_nomina": "Nomina",
+    "fv_eco_liquidacion_transporte": "Liquidacion de transporte",
+    "fv_eco_contrato": "Contrato",
+    "fv_eco_prestacion_servicios": "Prestacion de servicios",
+    "fv_tec_lista_presencia": "Lista de presencia",
+    "fv_tec_encuesta": "Encuesta / cuestionario",
+    "fv_tec_foto": "Foto",
+    "fv_tec_registro": "Registro",
+    "fv_tec_acta_entrega": "Acta de entrega de materiales",
     "convenio": "Convenio",
-    "acta": "Acta",
-    "listado_asistencia": "Listado de Asistencia",
-    "foto": "Foto",
     "otro": "Otro",
 }
+
+
+CATEGORIA_GRUPOS = [
+    {
+        "nombre": "FV Economicas",
+        "categorias": [
+            CategoriaDocumento.fv_eco_factura,
+            CategoriaDocumento.fv_eco_recibo,
+            CategoriaDocumento.fv_eco_cheque,
+            CategoriaDocumento.fv_eco_nomina,
+            CategoriaDocumento.fv_eco_liquidacion_transporte,
+            CategoriaDocumento.fv_eco_contrato,
+            CategoriaDocumento.fv_eco_prestacion_servicios,
+        ],
+    },
+    {
+        "nombre": "FV Tecnicas",
+        "categorias": [
+            CategoriaDocumento.fv_tec_lista_presencia,
+            CategoriaDocumento.fv_tec_encuesta,
+            CategoriaDocumento.fv_tec_foto,
+            CategoriaDocumento.fv_tec_registro,
+            CategoriaDocumento.fv_tec_acta_entrega,
+        ],
+    },
+    {
+        "nombre": "Convenios",
+        "categorias": [CategoriaDocumento.convenio],
+    },
+    {
+        "nombre": "Otros",
+        "categorias": [CategoriaDocumento.otro],
+    },
+]
 
 
 class TipoFuenteVerificacion(str, Enum):

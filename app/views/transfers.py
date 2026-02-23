@@ -700,7 +700,7 @@ async def upload_emission_document(
         if copy_to_project:
             await file.seek(0)
             document_data = DocumentCreate(
-                categoria=CategoriaDocumento.factura,
+                categoria=CategoriaDocumento.fv_eco_factura,
                 descripcion=f"Justificante emision - Transferencia {transfer.numero_display}"
             )
             document_service.create_document(project_id, file, document_data)
@@ -757,7 +757,7 @@ async def upload_reception_document(
         if copy_to_project:
             await file.seek(0)
             document_data = DocumentCreate(
-                categoria=CategoriaDocumento.factura,
+                categoria=CategoriaDocumento.fv_eco_factura,
                 descripcion=f"Justificante recepcion - Transferencia {transfer.numero_display}"
             )
             document_service.create_document(project_id, file, document_data)

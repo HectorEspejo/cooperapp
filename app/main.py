@@ -80,6 +80,27 @@ async def lifespan(app: FastAPI):
             conn.execute(text("ALTER TABLE funders ADD COLUMN color VARCHAR(7)"))
             conn.commit()
 
+    # Migration: update document categories from old enum values to new ones
+    with engine.connect() as conn:
+        old_to_new = {
+            "factura": "fv_eco_factura",
+            "comprobante": "fv_eco_recibo",
+            "fuente_verificacion": "otro",
+            "informe": "otro",
+            "contrato": "fv_eco_contrato",
+            "convenio": "convenio",
+            "acta": "fv_tec_acta_entrega",
+            "listado_asistencia": "fv_tec_lista_presencia",
+            "foto": "fv_tec_foto",
+            "otro": "otro",
+        }
+        for old_val, new_val in old_to_new.items():
+            if old_val != new_val:
+                conn.execute(text(
+                    "UPDATE documents SET categoria = :new_val WHERE categoria = :old_val"
+                ), {"old_val": old_val, "new_val": new_val})
+        conn.commit()
+
     # Create uploads directory for expense documents
     os.makedirs("uploads", exist_ok=True)
 

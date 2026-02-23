@@ -9,7 +9,7 @@ from app.models.logical_framework import (
 from app.models.document import (
     Document, VerificationSource,
     CategoriaDocumento, TipoFuenteVerificacion,
-    CATEGORIA_NOMBRES, TIPO_FUENTE_NOMBRES
+    CATEGORIA_NOMBRES, CATEGORIA_GRUPOS, TIPO_FUENTE_NOMBRES
 )
 from app.models.report import Report, TipoInforme, TIPO_INFORME_NOMBRES
 from app.models.user import User, Rol, user_project
@@ -28,7 +28,7 @@ __all__ = [
     "Indicator", "IndicatorUpdate", "EstadoActividad",
     "Document", "VerificationSource",
     "CategoriaDocumento", "TipoFuenteVerificacion",
-    "CATEGORIA_NOMBRES", "TIPO_FUENTE_NOMBRES",
+    "CATEGORIA_NOMBRES", "CATEGORIA_GRUPOS", "TIPO_FUENTE_NOMBRES",
     "Report", "TipoInforme", "TIPO_INFORME_NOMBRES",
     "User", "Rol", "user_project",
     "CounterpartSession",

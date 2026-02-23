@@ -17,7 +17,7 @@ from app.services.budget_service import BudgetService
 from app.services.translation_service import TranslationService, _retry_pending_in_background
 from app.models.logical_framework import EstadoActividad, Indicator, Activity
 from app.models.expense import UbicacionGasto, EstadoGasto
-from app.models.document import CategoriaDocumento, CATEGORIA_NOMBRES, TipoFuenteVerificacion, TIPO_FUENTE_NOMBRES
+from app.models.document import CategoriaDocumento, CATEGORIA_NOMBRES, CATEGORIA_GRUPOS, TipoFuenteVerificacion, TIPO_FUENTE_NOMBRES
 from app.models.funding import TipoFuente
 from app.schemas.logical_framework import ActivityUpdate
 from app.schemas.expense import ExpenseCreate, ExpenseFilters
@@ -32,29 +32,52 @@ templates = Jinja2Templates(directory="app/templates")
 
 CATEGORIA_NOMBRES_I18N = {
     "fr": {
-        "factura": "Facture",
-        "comprobante": "Justificatif",
-        "fuente_verificacion": "Source de Verification",
-        "informe": "Rapport",
-        "contrato": "Contrat",
+        "fv_eco_factura": "Facture",
+        "fv_eco_recibo": "Recu",
+        "fv_eco_cheque": "Cheque",
+        "fv_eco_nomina": "Fiche de paie",
+        "fv_eco_liquidacion_transporte": "Liquidation de transport",
+        "fv_eco_contrato": "Contrat",
+        "fv_eco_prestacion_servicios": "Prestation de services",
+        "fv_tec_lista_presencia": "Liste de presence",
+        "fv_tec_encuesta": "Enquete / questionnaire",
+        "fv_tec_foto": "Photo",
+        "fv_tec_registro": "Registre",
+        "fv_tec_acta_entrega": "Proces-verbal de remise de materiaux",
         "convenio": "Convention",
-        "acta": "Proces-verbal",
-        "listado_asistencia": "Liste de Presence",
-        "foto": "Photo",
         "otro": "Autre",
     },
     "en": {
-        "factura": "Invoice",
-        "comprobante": "Receipt",
-        "fuente_verificacion": "Verification Source",
-        "informe": "Report",
-        "contrato": "Contract",
+        "fv_eco_factura": "Invoice",
+        "fv_eco_recibo": "Receipt",
+        "fv_eco_cheque": "Check",
+        "fv_eco_nomina": "Payroll",
+        "fv_eco_liquidacion_transporte": "Transport settlement",
+        "fv_eco_contrato": "Contract",
+        "fv_eco_prestacion_servicios": "Service provision",
+        "fv_tec_lista_presencia": "Attendance list",
+        "fv_tec_encuesta": "Survey / questionnaire",
+        "fv_tec_foto": "Photo",
+        "fv_tec_registro": "Record",
+        "fv_tec_acta_entrega": "Materials delivery certificate",
         "convenio": "Agreement",
-        "acta": "Minutes",
-        "listado_asistencia": "Attendance List",
-        "foto": "Photo",
         "otro": "Other",
     },
+}
+
+CATEGORIA_GRUPOS_I18N = {
+    "fr": [
+        {"nombre": "SV Economiques", "categorias": ["fv_eco_factura", "fv_eco_recibo", "fv_eco_cheque", "fv_eco_nomina", "fv_eco_liquidacion_transporte", "fv_eco_contrato", "fv_eco_prestacion_servicios"]},
+        {"nombre": "SV Techniques", "categorias": ["fv_tec_lista_presencia", "fv_tec_encuesta", "fv_tec_foto", "fv_tec_registro", "fv_tec_acta_entrega"]},
+        {"nombre": "Conventions", "categorias": ["convenio"]},
+        {"nombre": "Autres", "categorias": ["otro"]},
+    ],
+    "en": [
+        {"nombre": "Economic VS", "categorias": ["fv_eco_factura", "fv_eco_recibo", "fv_eco_cheque", "fv_eco_nomina", "fv_eco_liquidacion_transporte", "fv_eco_contrato", "fv_eco_prestacion_servicios"]},
+        {"nombre": "Technical VS", "categorias": ["fv_tec_lista_presencia", "fv_tec_encuesta", "fv_tec_foto", "fv_tec_registro", "fv_tec_acta_entrega"]},
+        {"nombre": "Agreements", "categorias": ["convenio"]},
+        {"nombre": "Other", "categorias": ["otro"]},
+    ],
 }
 
 
@@ -68,6 +91,20 @@ TIPO_FUENTE_NOMBRES_I18N = {
         "informe": "Report", "certificado": "Certificate", "contrato": "Contract", "otro": "Other",
     },
 }
+
+
+def _get_categoria_grupos_for_lang(lang: str) -> list[dict]:
+    """Devuelve CATEGORIA_GRUPOS adaptado al idioma, con objetos CategoriaDocumento."""
+    if lang in CATEGORIA_GRUPOS_I18N:
+        grupos_i18n = CATEGORIA_GRUPOS_I18N[lang]
+        return [
+            {
+                "nombre": g["nombre"],
+                "categorias": [CategoriaDocumento(c) for c in g["categorias"]],
+            }
+            for g in grupos_i18n
+        ]
+    return CATEGORIA_GRUPOS
 
 
 def _build_content_translator(db: Session, language: str):
@@ -290,6 +327,7 @@ def counterpart_documents(
     t = get_translator(lang)
     tc = _build_content_translator(db, lang)
     cat_nombres = CATEGORIA_NOMBRES_I18N.get(lang, CATEGORIA_NOMBRES)
+    cat_grupos = _get_categoria_grupos_for_lang(lang)
     response = templates.TemplateResponse(
         "partials/projects/documents_tab.html",
         {
@@ -299,6 +337,7 @@ def counterpart_documents(
             "summary": summary,
             "categorias": CategoriaDocumento,
             "categoria_nombres": cat_nombres,
+            "categoria_grupos": cat_grupos,
             "is_counterpart": True,
             "lang": lang,
             "t": t,
@@ -518,6 +557,7 @@ async def counterpart_upload_document(
     t = get_translator(lang)
     tc = _build_content_translator(db, lang)
     cat_nombres = CATEGORIA_NOMBRES_I18N.get(lang, CATEGORIA_NOMBRES)
+    cat_grupos = _get_categoria_grupos_for_lang(lang)
 
     documents = doc_service.get_project_documents(project_id)
     summary = doc_service.get_document_summary(project_id)
@@ -531,6 +571,7 @@ async def counterpart_upload_document(
             "summary": summary,
             "categorias": CategoriaDocumento,
             "categoria_nombres": cat_nombres,
+            "categoria_grupos": cat_grupos,
             "is_counterpart": True,
             "lang": lang,
             "t": t,
@@ -884,7 +925,7 @@ async def counterpart_upload_document(
         budget_line = expense.budget_line
         concepto_short = expense.concepto[:50] if len(expense.concepto) > 50 else expense.concepto
         document_data = DocumentCreate(
-            categoria=CategoriaDocumento.factura,
+            categoria=CategoriaDocumento.fv_eco_factura,
             descripcion=f"Factura - {budget_line.name} - {concepto_short}",
         )
         doc_service.create_document(project_id, file, document_data)
