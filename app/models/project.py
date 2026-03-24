@@ -1,7 +1,7 @@
 from enum import Enum
 from datetime import date, datetime
 from decimal import Decimal
-from sqlalchemy import String, Numeric, Boolean, Date, DateTime, Enum as SQLEnum, ForeignKey, Table, Column, Integer
+from sqlalchemy import String, Text, Numeric, Boolean, Date, DateTime, Enum as SQLEnum, ForeignKey, Table, Column, Integer
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database import Base
 
@@ -119,6 +119,20 @@ class Project(Base):
     fecha_finalizacion: Mapped[date] = mapped_column(Date)
     fecha_justificacion: Mapped[date | None] = mapped_column(Date, nullable=True)
     ampliado: Mapped[bool] = mapped_column(Boolean, default=False)
+
+    # AACID-specific fields
+    convocatoria: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    numero_aacid: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    municipios: Mapped[str | None] = mapped_column(Text, nullable=True)
+    duracion_meses: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    descripcion_breve: Mapped[str | None] = mapped_column(Text, nullable=True)
+    crs_sector_1: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    crs_sector_2: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    crs_sector_3: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    ods_meta_1: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    ods_meta_2: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    ods_meta_3: Mapped[str | None] = mapped_column(String(200), nullable=True)
+
     funder_id: Mapped[int | None] = mapped_column(
         ForeignKey("funders.id", ondelete="SET NULL"), nullable=True
     )
@@ -163,6 +177,18 @@ class Project(Base):
     funding_sources: Mapped[list["FuenteFinanciacion"]] = relationship(
         back_populates="project", cascade="all, delete-orphan", order_by="FuenteFinanciacion.orden"
     )
+    narratives: Mapped[list["ProjectNarrative"]] = relationship(
+        back_populates="project", cascade="all, delete-orphan", order_by="ProjectNarrative.section_code"
+    )
+    beneficiary: Mapped["ProjectBeneficiary | None"] = relationship(
+        back_populates="project", cascade="all, delete-orphan", uselist=False
+    )
+    volunteer: Mapped["ProjectVolunteer | None"] = relationship(
+        back_populates="project", cascade="all, delete-orphan", uselist=False
+    )
+    markers: Mapped[list["ProjectMarker"]] = relationship(
+        back_populates="project", cascade="all, delete-orphan", order_by="ProjectMarker.marker_name"
+    )
 
     def __repr__(self) -> str:
         return f"<Project {self.codigo_contable}: {self.titulo[:30]}...>"
@@ -177,3 +203,4 @@ from app.models.document import Document
 from app.models.report import Report
 from app.models.postponement import Aplazamiento
 from app.models.funding import FuenteFinanciacion
+from app.models.aacid import ProjectNarrative, ProjectBeneficiary, ProjectVolunteer, ProjectMarker

@@ -12,6 +12,7 @@ class TipoInforme(str, Enum):
     ficha_proyecto = "ficha_proyecto"
     informe_tecnico_mensual = "informe_tecnico_mensual"
     informe_economico = "informe_economico"
+    anexo_iia = "anexo_iia"
 
 
 # Spanish display names for report types
@@ -22,6 +23,7 @@ TIPO_INFORME_NOMBRES = {
     TipoInforme.ficha_proyecto: "Ficha del Proyecto",
     TipoInforme.informe_tecnico_mensual: "Informe Tecnico Mensual",
     TipoInforme.informe_economico: "Informe Economico",
+    TipoInforme.anexo_iia: "Anexo II A (AACID)",
 }
 
 
